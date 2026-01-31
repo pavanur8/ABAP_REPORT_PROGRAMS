@@ -1,0 +1,44 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO10_ALVOOPS_TRAFFICL_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro10_alvoops_trafficl_641.
+
+TYPES : BEGIN OF lt,
+          vbeln  TYPE vbeln_va,
+          erdat  TYPE erdat,
+          erzet  TYPE erzet,
+          ernam  TYPE ernam,
+          vbtyp  TYPE vbtypl,
+          lights TYPE c,
+        END OF lt.
+
+DATA itab TYPE TABLE OF lt.
+DATA sl_alv TYPE REF TO cl_salv_table.
+*DATA ocloumn TYPE REF TO cl_salv_columns_table.
+
+SELECT vbeln erdat erzet ernam vbtyp
+FROM vbak
+INTO TABLE itab UP TO 100 ROWS.
+
+TRY.
+    CALL METHOD cl_salv_table=>factory
+      IMPORTING
+        r_salv_table = sl_alv
+      CHANGING
+        t_table      = itab.
+  CATCH cx_salv_msg.
+ENDTRY.
+
+CALL METHOD sl_alv->if_salv_gui_om_table_action~display.
+*sl_alv->display( ).
+
+DATA(ocloumn) = sl_alv->get_columns( ).
+
+TRY.
+    CALL METHOD ocloumn->set_exception_column
+      EXPORTING
+        value = 'LIGHTS'.
+  CATCH cx_salv_data_error.
+ENDTRY.

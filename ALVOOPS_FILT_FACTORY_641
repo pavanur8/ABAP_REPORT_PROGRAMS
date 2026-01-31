@@ -1,0 +1,163 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO8_ALVOOPS_FACTORY_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report ZPRO9_ALVOOPS_FILT_FACTORY_641.
+
+tables VBAK.
+
+types : begin of LTVBAK,
+          VBELN type VBELN_VA,
+          ERDAT type ERDAT,
+          ERZET type ERZET,
+          ERNAM type ERNAM,
+          VBTYP type VBTYPl,
+        end of LTVBAK.
+
+types : begin of LTVBAP,
+          VBELN type VBELN_VA,
+          POSNR type POSNR_VA,
+          MATNR type MATNR,
+        end of LTVBAP.
+
+types : begin of LTFINAL,
+          VBELN type VBELN_VA,
+          ERDAT type ERDAT,
+          ERZET type ERZET,
+          ERNAM type ERNAM,
+          VBTYP type VBTYPl,
+          POSNR type POSNR_VA,
+          MATNR type MATNR,
+        end of LTFINAL.
+
+data ITAB_VBAK type table of LTVBAK.
+data WA_VBAK type  LTVBAK.
+data ITAB_VBAP type table of LTVBAP.
+data WA_VBAP type  LTVBAP.
+data ITAB_FINAL type table of LTFINAL.
+data WA_FINAL type LTFINAL.
+data ITAB_FIELDCAT type LVC_T_FCAT.
+data WA_FIELDCAT type LVC_S_FCAT.
+data LO_OBJECT type ref to CL_GUI_CUSTOM_CONTAINER.
+data LO_GRID type ref to CL_GUI_ALV_GRID.
+data LO_ALV type ref to CL_SALV_TABLE.
+data LO_FUN type ref to CL_SALV_FUNCTIONS_LIST.
+data LV_COLUM type ref to CL_SALV_COLUMNS_TABLE.
+data  LV_filter   type ref to CL_SALV_FILTERS.
+data  Lo_filt   type ref to CL_SALV_FILTER.
+
+select-options S_VBELN for VBAK-VBELN.
+
+select VBELN ERDAT ERZET ERNAM VBTYP
+from  VBAK
+into table ITAB_VBAK
+where VBELN in S_VBELN.
+
+if ITAB_VBAK is not initial.
+  select VBELN POSNR MATNR
+  from VBAP
+  into table ITAB_VBAP
+  for all entries in ITAB_VBAK
+  where VBELN = ITAB_VBAK-VBELN.
+endif.
+
+loop at ITAB_VBAK into WA_VBAK.
+  loop at ITAB_VBAP into WA_VBAP where VBELN = WA_VBAK-VBELN.
+    WA_FINAL-VBELN = WA_VBAK-VBELN.
+    WA_FINAL-ERDAT = WA_VBAK-ERDAT.
+    WA_FINAL-ERZET = WA_VBAK-ERZET.
+    WA_FINAL-ERNAM = WA_VBAK-ERNAM.
+    WA_FINAL-VBTYP = WA_VBAK-VBTYP.
+    WA_FINAL-POSNR = WA_VBAP-POSNR.
+    WA_FINAL-MATNR = WA_VBAP-MATNR.
+    append WA_FINAL to ITAB_FINAL.
+    clear WA_FINAL.
+  endloop.
+endloop.
+
+try.
+    call method CL_SALV_TABLE=>FACTORY
+*  EXPORTING
+*    list_display   = IF_SALV_C_BOOL_SAP=>FALSE
+*    r_container    =
+*    container_name =
+      importing
+        R_SALV_TABLE = LO_ALV
+      changing
+        T_TABLE      = ITAB_FINAL.
+  catch CX_SALV_MSG.
+endtry.
+
+call method LO_ALV->IF_SALV_GUI_OM_TABLE_INFO~GET_FUNCTIONS
+  receiving
+    VALUE = LO_FUN.
+
+call method LO_FUN->SET_DEFAULT
+  exporting
+    VALUE = IF_SALV_C_BOOL_SAP=>TRUE.
+
+call method LO_ALV->IF_SALV_GUI_OM_TABLE_INFO~GET_COLUMNS
+  receiving
+    VALUE = LV_COLUM.
+
+call method LV_COLUM->SET_COLUMN_POSITION
+  exporting
+    COLUMNNAME = 'ERNAM'
+    POSITION   = 2.
+
+call method LV_COLUM->SET_COLUMN_POSITION
+  exporting
+    COLUMNNAME = 'ERZET'
+    POSITION   = 3.
+
+call method LO_ALV->IF_SALV_GUI_OM_TABLE_INFO~GET_FILTERS
+  receiving
+    VALUE = LV_filter.
+
+*try.
+*    call method LV_FILTER->ADD_FILTER
+*      exporting
+*        COLUMNNAME = 'POSNR'
+*        SIGN       = 'I'
+*        OPTION     = 'BT'
+*        LOW        = '20'
+*       HIGH       = '40'
+**      RECEIVING
+**       VALUE      =
+*      .
+*  catch CX_SALV_NOT_FOUND.
+*  catch CX_SALV_DATA_ERROR.
+*  catch CX_SALV_EXISTING.
+*endtry.
+
+try.
+    call method LV_FILTER->ADD_FILTER
+      exporting
+        COLUMNNAME = 'POSNR'
+        SIGN       = 'I'
+        OPTION     = 'EQ'
+        LOW        = '10'
+*       HIGH       = '40'
+      receiving
+        VALUE      = LO_FILT.
+  catch CX_SALV_NOT_FOUND.
+  catch CX_SALV_DATA_ERROR.
+  catch CX_SALV_EXISTING.
+endtry.
+
+try.
+    call method LO_FILT->ADD_SELOPT
+      exporting
+        SIGN   = 'I'
+        OPTION = 'EQ'
+        LOW    = '20'
+*       HIGH   =
+*  receiving
+*       VALUE  =
+      .
+  catch CX_SALV_DATA_ERROR.
+endtry.
+
+
+call method LO_ALV->IF_SALV_GUI_OM_TABLE_ACTION~DISPLAY.

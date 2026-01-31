@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_SYSTEM_VAR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_system_var_641.
+
+*DATA lv_unam TYPE syuname.
+*DATA lv_unam  TYPE mandt.
+DATA lv_unam TYPE sytcode .
+
+*============================================================
+*CALL METHOD cl_abap_syst=>get_user_name "Calling User Name..
+*  RECEIVING
+*    user_name = lv_unam.
+
+*=============================================================
+*CALL METHOD cl_abap_syst=>get_client  "Calling Client Number.
+*  RECEIVING
+*    client = lv_unam.
+
+*==============================================================
+CALL METHOD cl_abap_syst=>get_transaction_code
+  RECEIVING
+    transaction_code = lv_unam.
+
+WRITE lv_unam.

@@ -1,0 +1,148 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_BAPI_GETDETAILS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_bapi_getdetails_641.
+
+" Selection parameter for PO number
+PARAMETERS p_ebeln TYPE ekko-ebeln DEFAULT '4500012164'.
+
+" Modern internal tables for PO items and BAPI return messages
+DATA:
+  lt_po_items TYPE STANDARD TABLE OF bapiekpo WITH DEFAULT KEY,
+  ls_po_item  TYPE bapiekpo,
+  lt_return   TYPE STANDARD TABLE OF bapiret2 WITH DEFAULT KEY,
+  ls_return   TYPE bapiret2.
+
+START-OF-SELECTION.
+
+  " 1. Call the BAPI to fetch PO details
+  CALL FUNCTION 'BAPI_PO_GETDETAIL'
+    EXPORTING
+      purchaseorder = p_ebeln
+      items         = 'X'               " Flag to fetch item data
+    TABLES
+      po_items      = lt_po_items
+      return        = lt_return.
+
+  " 2. Display any return messages (errors, warnings, info)
+  IF lt_return IS NOT INITIAL.
+    LOOP AT lt_return INTO ls_return.
+      WRITE: / ls_return-type COLOR COL_NEGATIVE,
+             ls_return-message.
+    ENDLOOP.
+  ENDIF.
+
+  " 3. If no items came back, stop here
+  IF lt_po_items IS INITIAL.
+    WRITE: / 'No items found for purchase order', p_ebeln COLOR COL_HEADING.
+    EXIT.
+  ENDIF.
+
+  " 4. Loop through each PO item and write key fields
+  LOOP AT lt_po_items INTO ls_po_item.
+    WRITE: / 'PO Number      =', ls_po_item-po_number    COLOR COL_HEADING.
+    WRITE: / 'Item           =', ls_po_item-po_item.
+    WRITE: / 'Material Name  =', ls_po_item-material.
+    WRITE: / 'Material       =', ls_po_item-pur_mat.
+    WRITE: / 'Changed On     =', ls_po_item-changed_on.
+    WRITE: / 'Short Text     =', ls_po_item-short_text.
+    WRITE: / 'Company Code   =', ls_po_item-co_code.
+    WRITE: / 'Plant          =', ls_po_item-plant.
+    WRITE: / 'Material Group =', ls_po_item-mat_grp.
+    WRITE: / 'Quantity       =', ls_po_item-quantity.
+    WRITE: / 'Unit           =', ls_po_item-unit.
+    WRITE: / 'Net Price      =', ls_po_item-net_price.
+    ULINE.
+  ENDLOOP.
+
+*TABLES ekko.
+*
+*DATA : BEGIN OF i_poitem OCCURS 0.
+*         INCLUDE STRUCTURE bapiekpo.
+*DATA : END OF  i_poitem.
+*
+*PARAMETERS p_ebeln LIKE ekko-ebeln DEFAULT '4500012164'.
+*
+*CALL FUNCTION 'BAPI_PO_GETDETAIL'
+*  EXPORTING
+*    purchaseorder = p_ebeln
+*   ITEMS         = 'X'
+**   ACCOUNT_ASSIGNMENT               = ' '
+**   SCHEDULES     = ' '
+**   HISTORY       = ' '
+**   ITEM_TEXTS    = ' '
+**   HEADER_TEXTS  = ' '
+**   SERVICES      = ' '
+**   CONFIRMATIONS = ' '
+**   SERVICE_TEXTS = ' '
+**   EXTENSIONS    = ' '
+** IMPORTING
+**   PO_HEADER     =
+**   PO_ADDRESS    =
+*  TABLES
+**   PO_HEADER_TEXTS                  =
+*    po_items      = i_poitem
+**   PO_ITEM_ACCOUNT_ASSIGNMENT       =
+**   PO_ITEM_SCHEDULES                =
+**   PO_ITEM_CONFIRMATIONS            =
+**   PO_ITEM_TEXTS =
+**   PO_ITEM_HISTORY                  =
+**   PO_ITEM_HISTORY_TOTALS           =
+**   PO_ITEM_LIMITS                   =
+**   PO_ITEM_CONTRACT_LIMITS          =
+**   PO_ITEM_SERVICES                 =
+**   PO_ITEM_SRV_ACCASS_VALUES        =
+**   RETURN        =
+**   PO_SERVICES_TEXTS                =
+**   EXTENSIONOUT  =
+**   NFMETALLITMS  =
+* .
+*LOOP AT  i_poitem.
+*  WRITE :/ 'Po Number  =' , i_poitem-po_number COLOR COL_HEADING,
+*  / 'ITEM              = ' , i_poitem-po_item,
+*  / 'MATERIAL NAME     = ' , i_poitem-material,
+*  / 'MATERIAL          = ' , i_poitem-pur_mat,
+*  / 'CHANGED ON        = ' , i_poitem-changed_on,
+*  / 'SHORT TEXT        = ' , i_poitem-short_text,
+*  / 'COMPANY CODE      = ' , i_poitem-co_code,
+*  / 'PLANT             = ' , i_poitem-plant,
+*  / 'MATERIAL GROUP    = ' , i_poitem-mat_grp,
+*  / 'QUANTITY          = ' , i_poitem-quantity LEFT-JUSTIFIED,
+*  / 'UNIT              = ' , i_poitem-unit,
+*  / 'NET PRICE         = ' , i_poitem-net_price LEFT-JUSTIFIED.
+*
+*  ULINE.
+*ENDLOOP.
+
+
+*TABLES: ekko.
+*
+*PARAMETERS: p_ebeln TYPE ekko-ebeln DEFAULT '4500012164'.
+*
+*DATA: lt_po_items TYPE TABLE OF bapiekpo WITH HEADER LINE.
+*
+*CALL FUNCTION 'BAPI_PO_GETDETAIL'
+*  EXPORTING
+*    purchaseorder = p_ebeln
+*    items         = 'X'  " Important: fetch item data
+*  TABLES
+*    po_items      = lt_po_items.
+*
+*LOOP AT lt_po_items.
+*  WRITE: / 'PO Number        :', lt_po_items-po_number COLOR COL_HEADING,
+*         / 'Item             :', lt_po_items-po_item,
+*         / 'Material         :', lt_po_items-material,
+*         / 'Pur. Material    :', lt_po_items-pur_mat,
+*         / 'Changed On       :', lt_po_items-changed_on,
+*         / 'Short Text       :', lt_po_items-short_text,
+*         / 'Company Code     :', lt_po_items-co_code,
+*         / 'Plant            :', lt_po_items-plant,
+*         / 'Material Group   :', lt_po_items-mat_grp,
+*         / 'Quantity         :', lt_po_items-quantity,
+*         / 'Unit             :', lt_po_items-unit,
+*         / 'Net Price        :', lt_po_items-net_price.
+*
+*  ULINE.
+*ENDLOOP.

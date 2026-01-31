@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_ME_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_me_641.
+
+CLASS lcl_example DEFINITION.
+  PUBLIC SECTION.
+    DATA: mv_data TYPE string.
+    METHODS: set_data IMPORTING iv_data TYPE string,
+      get_data RETURNING VALUE(rv_data) TYPE string.
+ENDCLASS.
+
+CLASS lcl_example IMPLEMENTATION.
+  METHOD set_data.
+    me->mv_data = iv_data.  " Use ME to set instance attribute
+  ENDMETHOD.
+  METHOD get_data.
+    rv_data = me->mv_data.  " Use ME to access instance attribute
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA: lo_obj TYPE REF TO lcl_example.
+  CREATE OBJECT lo_obj.
+  lo_obj->set_data( 'Hello ABAP' ).
+  WRITE: / lo_obj->get_data( ).

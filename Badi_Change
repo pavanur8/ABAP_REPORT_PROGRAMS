@@ -1,0 +1,19 @@
+*&---------------------------------------------------------------------*
+*& Report ZBADI_CHANGE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zbadi_change_641.
+
+DATA obj_badi TYPE REF TO zbadi_changee1.
+DATA var TYPE char1.
+PARAMETERS pfilter TYPE n.
+
+GET BADI obj_badi FILTERS zfilter1 = pfilter.
+
+CALL BADI obj_badi->change
+  CHANGING
+    pvalue = var.
+
+WRITE var.
+*cl_demo_output=>display( var ).

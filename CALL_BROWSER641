@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+*& TITLE: Display URL web address
+*&-------------------------------*
+*& Report ZREPORT_CALL_BROWSER641
+*&-------------------------------*
+*& Simple ABAP code to call and display any website URL with
+*& your SAP GUI
+*&-------------------------------*
+REPORT zreport_call_browser641.
+
+*DATA p_url TYPE  tihttpnvp.
+
+PARAMETERS: p_url TYPE  string DEFAULT 'www.google.com'.
+
+
+START-OF-SELECTION.
+
+*Call website URL and display contents within SAP dialog window
+  CALL METHOD cl_abap_browser=>show_url
+    EXPORTING
+      url          = p_url
+      title        = 'My Browser Window'
+      size         = cl_abap_browser=>xlarge "MEDIUM/LARGE/XLARGE
+      modal        = abap_true
+      printing     = abap_false
+      buttons      = 'X'
+      format       = cl_abap_browser=>landscape
+      position     = cl_abap_browser=>topleft
+*     CONTAINER    =
+      context_menu = abap_false.
+
+
+
+*  TYPES: BEGIN OF ty_param,
+*           name  TYPE string,
+*           value TYPE string,
+*         END OF ty_param.
+*
+*  DATA: ls_param TYPE ty_param.
+*
+*  ls_param-name  = 'www.google.com'.
+*  ls_param-value = '010000000405'.
+
+
+*  cl_lsapi_manager=>navigate_to_intent(
+*            object = 'your_semantic_object'
+*            action = 'your_action'
+*            parameters = p_url
+*            navigation_mode = if_lsapi=>gc_s_navigation_mode-new_external_window ).

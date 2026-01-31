@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*& Report Z_3_CONTAINER_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_3_container_641.
+
+
+DATA : obj_custom  TYPE REF TO cl_gui_custom_container,
+       obj_split   TYPE REF TO cl_gui_splitter_container,
+       obj_grid1   TYPE REF TO cl_gui_container,
+       obj_grid2   TYPE REF TO cl_gui_container,
+       obj_grid3   TYPE REF TO cl_gui_container,
+       salv1       TYPE REF TO cl_salv_table,
+       salv2       TYPE REF TO cl_salv_table,
+       salv3       TYPE REF TO cl_salv_table,
+       obj_display TYPE REF TO cl_salv_display_settings.
+
+DATA : zcx_obj TYPE REF TO cx_salv_msg,
+       zcx_msg TYPE string.
+
+DATA: lt_ekko TYPE TABLE OF ekko,
+      lt_ekpo TYPE TABLE OF ekpo,
+      lt_ekbe TYPE TABLE OF ekbe.
+
+SELECT * FROM ekko INTO TABLE lt_ekko UP TO 10 ROWS.
+SELECT * FROM ekpo INTO TABLE lt_ekpo UP TO 10 ROWS.
+SELECT * FROM ekbe INTO TABLE lt_ekbe UP TO 10 ROWS.
+
+CALL SCREEN 9000.
+
+INCLUDE z_3_container_641_status_90o01.
+
+INCLUDE z_3_container_641_user_commi01.

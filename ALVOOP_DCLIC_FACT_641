@@ -1,0 +1,93 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO10_ALVOOP_CLIC_FACTORY_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report ZPRO10_ALVOOP_DCLIC_FACT_641.
+
+types : begin of LSD,
+          VBELN type VBELN_VA,
+          ERDAT type ERDAT,
+          ERZET type ERZET,
+          ERNAM type ERNAM,
+          VBTYP type VBTYPL,
+        end of LSD.
+
+types : begin of LSS,
+          VBELN type VBELN_VA,
+          POSNR type POSNR_VA,
+          MATNR type MATNR,
+        end of LSS.
+
+data ITAB type table of LSD.
+data WA type LSD.
+data ITAB_VBAP type table of LSS.
+data WA_VBAP type  LSS.
+data LV_VBELN type VBELN_VA.
+data LO_ALV type ref to CL_SALV_TABLE.
+data LO_ALV1 type ref to CL_SALV_TABLE.
+data LO_EVENT type ref to CL_SALV_EVENTS_TABLE.
+
+select-options SVBELN for Lv_vbeln.
+
+class CLAS definition.
+  public section.
+    methods HANDLER for event DOUBLE_CLICK of CL_SALV_EVENTS_TABLE importing ROW COLUMN.
+endclass.
+
+class CLAS implementation.
+  method HANDLER.
+    read table ITAB into WA index ROW.
+    if SY-SUBRC = 0.
+      select VBELN POSNR MATNR
+      from VBAP
+      into table ITAB_VBAP
+      where VBELN = WA-VBELN.
+
+      try.
+          call method CL_SALV_TABLE=>FACTORY
+*         exporting
+*           LIST_DISPLAY   = IF_SALV_C_BOOL_SAP=>FALSE
+*           R_CONTAINER    =
+*           CONTAINER_NAME =
+            importing
+              R_SALV_TABLE = LO_ALV1
+            changing
+              T_TABLE      = ITAB_VBAP.
+        catch CX_SALV_MSG.
+      endtry.
+
+      call method LO_ALV1->IF_SALV_GUI_OM_TABLE_ACTION~DISPLAY.
+    endif.
+  endmethod.
+endclass.
+
+start-of-selection.
+
+  select VBELN ERDAT ERZET ERNAM VBTYP
+  from VBAK
+  into table ITAB
+  where VBELN in SVBELN.
+
+
+  try.
+      call method CL_SALV_TABLE=>FACTORY
+*      exporting
+*        LIST_DISPLAY = IF_SALV_C_BOOL_SAP=>FALSE
+*        R_CONTAINER  =
+**       CONTAINER_NAME =
+        importing
+          R_SALV_TABLE = LO_ALV
+        changing
+          T_TABLE      = ITAB.
+    catch CX_SALV_MSG.
+  endtry.
+
+  call method LO_ALV->IF_SALV_GUI_OM_TABLE_INFO~GET_EVENT
+    receiving
+      VALUE = LO_EVENT.
+
+  data(LO_OBJ) = new CLAS( ).
+  set handler LO_OBJ->HANDLER for LO_EVENT.
+
+  call method LO_ALV->IF_SALV_GUI_OM_TABLE_ACTION~DISPLAY.

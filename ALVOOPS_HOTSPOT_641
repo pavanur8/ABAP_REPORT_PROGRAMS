@@ -1,0 +1,882 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_ALVOOPS_HOTSPOT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_alvoops_hotspot_641.
+
+
+INCLUDE zsod_analytics_dec.      "DECLARATION
+
+INCLUDE zsod_analytics_ss.      "SELECTION SCREEN.
+
+INCLUDE zsod_local_class.       "LOCAL CLASS
+
+AT SELECTION-SCREEN.
+  PERFORM at_sel_scr.
+
+START-OF-SELECTION.
+  CALL SCREEN 1234.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_1234  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_1234 OUTPUT.
+  SET PF-STATUS 'STAT'.
+
+  CREATE OBJECT cc
+    EXPORTING
+      container_name              = 'CUSTOM_CONTAINER'
+    EXCEPTIONS
+      cntl_error                  = 1
+      cntl_system_error           = 2
+      create_error                = 3
+      lifetime_error              = 4
+      lifetime_dynpro_dynpro_link = 5
+      OTHERS                      = 6.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  CREATE OBJECT gd
+    EXPORTING
+      i_parent          = cc
+    EXCEPTIONS
+      error_cntl_create = 1
+      error_cntl_init   = 2
+      error_cntl_link   = 3
+      error_dp_create   = 4
+      OTHERS            = 5.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  INCLUDE zsod_analytics_fd.                            "FETCH DATA
+
+  DATA rc2 TYPE REF TO event_class.
+  CREATE OBJECT rc2.
+
+  IF sod_an = 'X'.
+    SET HANDLER rc2->toolbar FOR gd.
+    SET HANDLER rc2->uc FOR gd.
+
+    CALL METHOD gd->set_table_for_first_display
+      EXPORTING
+        is_layout                     = wa_layout1
+      CHANGING
+        it_outtab                     = it_final
+        it_fieldcatalog               = it_fcat
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+
+  ELSE.
+
+    SET HANDLER rc2->ehm FOR gd.
+    SET HANDLER rc2->toolbar_save FOR gd.
+    SET HANDLER rc2->uc FOR gd.
+
+    CALL METHOD gd->set_table_for_first_display
+      EXPORTING
+        is_layout                     = wa_layout
+      CHANGING
+        it_outtab                     = it_final_bulk_st
+        it_fieldcatalog               = it_fcat
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_1234  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_1234 INPUT.
+  IF sy-ucomm = 'BACK'.
+    LEAVE TO SCREEN 0.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Form  AT_SEL_SCR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM at_sel_scr .
+  IF s_wrkst-low IS NOT INITIAL.
+    IF s_wrkst-low = 'DECO'
+    OR s_wrkst-low = 'deco'
+    OR s_wrkst-low = 'Deco'
+    OR s_wrkst-low = 'SOLDIERS'
+    OR s_wrkst-low = 'soldiers'
+    OR s_wrkst-low = 'Soldiers' .
+      MESSAGE 'Please give inputs other than DECO & SOLDIERS' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+
+  IF s_wrkst-high IS NOT INITIAL.
+    IF s_wrkst-high = 'DECO'
+      OR s_wrkst-high = 'deco'
+      OR s_wrkst-high = 'Deco'
+      OR s_wrkst-high = 'SOLDIERS'
+      OR s_wrkst-high = 'soldiers'
+      OR s_wrkst-high = 'Soldiers' .
+      MESSAGE 'Please give inputs other than DECO & SOLDIERS' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&  Include           ZSOD_ANALYTICS_DEC
+*&---------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*&  Include           ZSOD_ANALYTICS_SS
+*&---------------------------------------------------------------------*
+
+
+*&---------------------------------------------------------------------*
+*&  Include           ZSOD_LOCAL_CLASS
+*&---------------------------------------------------------------------*
+
+CLASS event_class DEFINITION.
+  PUBLIC SECTION.
+    DATA: l_valid   TYPE c,
+          c_refresh TYPE c,
+          c_refres  TYPE c VALUE 'X'.
+
+    METHODS: ehm
+      FOR EVENT hotspot_click OF cl_gui_alv_grid
+      IMPORTING e_row_id e_column_id,
+
+      toolbar
+        FOR EVENT toolbar OF cl_gui_alv_grid
+        IMPORTING e_object e_interactive,
+
+      uc
+        FOR EVENT user_command OF cl_gui_alv_grid
+        IMPORTING e_ucomm,
+
+      toolbar_save
+        FOR EVENT toolbar OF cl_gui_alv_grid
+        IMPORTING e_object e_interactive.
+ENDCLASS.
+
+CLASS event_class IMPLEMENTATION.
+
+  METHOD ehm.
+    CALL METHOD gd->check_changed_data
+      IMPORTING
+        e_valid   = l_valid
+      CHANGING
+        c_refresh = c_refres.
+
+    READ TABLE it_final_bulk_st INTO wa_final_bulk_st INDEX e_row_id-index.
+    IF sy-subrc = 0.
+      IF wa_final_bulk_st
+check = ' '.   " The value for checkbox will not be stored with hotspot link, th
+        ats why the check on the previous value.
+        wa_final_bulk_st-check = 'X'.
+
+        ls_stylerow-fieldname = 'STATUS'.
+        ls_stylerow-style = cl_gui_alv_grid=>mc_style_enabled.
+        "set field to disabled
+        DELETE wa_final_bulk_st-field_style WHERE fieldname = 'STATUS'.
+        APPEND ls_stylerow TO wa_final_bulk_st-field_style.
+        MODIFY it_final_bulk_st FROM wa_final_bulk_st INDEX e_row_id-index.
+        CLEAR ls_stylerow.
+      ELSE.
+        CLEAR wa_final_bulk_st-check.
+        ls_stylerow-fieldname = 'STATUS'.
+        ls_stylerow-style = cl_gui_alv_grid=>mc_style_disabled.
+        DELETE wa_final_bulk_st-field_style WHERE fieldname = 'STATUS'.
+        APPEND ls_stylerow TO wa_final_bulk_st-field_style.
+        MODIFY it_final_bulk_st FROM wa_final_bulk_st INDEX e_row_id-index.
+
+        CLEAR ls_stylerow.
+      ENDIF.
+    ENDIF.
+
+    CALL METHOD gd->refresh_table_display.
+  ENDMETHOD.
+
+  METHOD toolbar.
+    DATA: ls_toolbar  TYPE stb_button.
+* append a separator to normal toolbar
+    CLEAR ls_toolbar.
+    MOVE 3 TO ls_toolbar-butn_type.
+    APPEND ls_toolbar TO e_object->mt_toolbar.
+* append an icon to show booking table
+    CLEAR ls_toolbar.
+    MOVE 'PRODUCTION' TO ls_toolbar-function.
+*    MOVE icon_employee TO ls_toolbar-icon.
+    MOVE 'Production Details'(111) TO ls_toolbar-quickinfo.
+    MOVE 'PRODUCTION'(112) TO ls_toolbar-text.
+    MOVE ' ' TO ls_toolbar-disabled.
+    APPEND ls_toolbar TO e_object->mt_toolbar.
+  ENDMETHOD.
+
+  METHOD toolbar_save.
+    DATA: ls_toolbar1  TYPE stb_button.
+* append a separator to normal toolbar
+    CLEAR ls_toolbar1.
+    MOVE 3 TO ls_toolbar1-butn_type.
+    APPEND ls_toolbar1 TO e_object->mt_toolbar.
+* append an icon to show booking table
+    CLEAR ls_toolbar1.
+    MOVE 'SAVE' TO ls_toolbar1-function.
+*    MOVE icon_employee TO ls_toolbar-icon.
+    MOVE 'SAVE'(111) TO ls_toolbar1-quickinfo.
+    MOVE 'SAVE'(112) TO ls_toolbar1-text.
+    MOVE ' ' TO ls_toolbar1-disabled.
+    APPEND ls_toolbar1 TO e_object->mt_toolbar.
+  ENDMETHOD.
+
+  METHOD uc.
+    CASE e_ucomm.
+      WHEN 'PRODUCTION'.
+        CALL SCREEN 1235.
+      WHEN 'SAVE'.
+
+        CALL METHOD gd->check_changed_data.
+
+        CLEAR : wa_final_bulk_st1, wa_final_bulk_st.
+        LOOP AT it_final_bulk_st INTO wa_final_bulk_st.
+          wa_final_bulk_st1-matnr = wa_final_bulk_st-matnr.
+          wa_final_bulk_st1-werks = wa_final_bulk_st-werks.
+          wa_final_bulk_st1-factory = wa_final_bulk_st-factory.
+          wa_final_bulk_st1-maktx = wa_final_bulk_st-maktx.
+          wa_final_bulk_st1-bulk1 = wa_final_bulk_st-bulk.
+          wa_final_bulk_st1-bulk_des = wa_final_bulk_st-bulk_des.
+          wa_final_bulk_st1-wrkst = wa_final_bulk_st-wrkst.
+          wa_final_bulk_st1-last_15m_sales = wa_final_bulk_st1-last_15m_sales.
+          wa_final_bulk_st1-last_3m_sales = wa_final_bulk_st-last_3m_sales.
+          wa_final_bulk_st1-bulk_strategy = wa_final_bulk_st-bulk_strategy.
+          wa_final_bulk_st1-frequency = wa_final_bulk_st-frequency.
+          wa_final_bulk_st1-check1 = wa_final_bulk_st-check.
+          wa_final_bulk_st1-status1 = wa_final_bulk_st-status.
+          wa_final_bulk_st1-comment1 = wa_final_bulk_st-comment.
+          MODIFY zsod_analytics FROM wa_final_bulk_st1.
+          CLEAR wa_final_bulk_st1.
+        ENDLOOP.
+
+    ENDCASE.
+  ENDMETHOD.
+ENDCLASS.
+
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_1235  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_1235 OUTPUT.
+  SET PF-STATUS 'STAT_2'.
+  REFRESH it_final_prd1.
+  it_final_prd1 = it_final.
+  SORT it_final_prd1 BY matnr factory.
+  SORT it_final_prd BY matnr factory.
+  DELETE ADJACENT DUPLICATES FROM it_final_prd1 COMPARING matnr factory.
+  LOOP AT it_final_prd1 INTO wa_final_prd1.
+    wa_final_prd-matnr = wa_final_prd1-matnr .
+    wa_final_prd-maktx  = wa_final_prd1-maktx    .
+    wa_final_prd-matkl = wa_final_prd1-matkl                  .
+    wa_final_prd-wgbez = wa_final_prd1-wgbez                   .
+    wa_final_prd-wrkst  = wa_final_prd1-wrkst                  .
+    wa_final_prd-factory   = wa_final_prd1-factory                   .
+    wa_final_prd-bulk    = wa_final_prd1-bulk                    .
+    wa_final_prd-bulk_des   = wa_final_prd1-bulk_des                   .
+    wa_final_prd-last_15m_prd   = wa_final_prd1-last_15m_prd                   .
+    wa_final_prd-prd_frequency   = wa_final_prd1
+prd_frequency                   .
+    wa_final_prd-avg_prd   = wa_final_prd1-avg_prd                   .
+    wa_final_prd-pr_m1 = wa_final_prd1-pr_m1                   .
+    wa_final_prd-pr_m2 = wa_final_prd1-pr_m2                   .
+    wa_final_prd-pr_m3 = wa_final_prd1-pr_m3                   .
+    wa_final_prd-pr_m4 = wa_final_prd1-pr_m4                   .
+    wa_final_prd-pr_m5 = wa_final_prd1-pr_m5                   .
+    wa_final_prd-pr_m6 = wa_final_prd1-pr_m6                   .
+    wa_final_prd-pr_m7 = wa_final_prd1-pr_m7                   .
+    wa_final_prd-pr_m8 = wa_final_prd1-pr_m8                   .
+    wa_final_prd-pr_m9 = wa_final_prd1-pr_m9                   .
+    wa_final_prd-pr_m10 = wa_final_prd1-pr_m10                   .
+    wa_final_prd-pr_m11 = wa_final_prd1-pr_m11                   .
+    wa_final_prd-pr_m12 = wa_final_prd1-pr_m12                   .
+    wa_final_prd-pr_m13 = wa_final_prd1-pr_m13                   .
+    wa_final_prd-pr_m14 = wa_final_prd1-pr_m14                   .
+    wa_final_prd-pr_m15 = wa_final_prd1-pr_m15                   .
+    wa_final_prd-pr_m1_band = wa_final_prd1-pr_m1_band                   .
+    wa_final_prd-pr_m2_band = wa_final_prd1-pr_m2_band                   .
+    wa_final_prd-pr_m3_band = wa_final_prd1-pr_m3_band                   .
+    wa_final_prd-pr_m4_band = wa_final_prd1-pr_m4_band                   .
+    wa_final_prd-pr_m5_band = wa_final_prd1-pr_m5_band                   .
+    wa_final_prd-pr_m6_band = wa_final_prd1-pr_m6_band                   .
+    wa_final_prd-pr_m7_band = wa_final_prd1-pr_m7_band                   .
+    wa_final_prd-pr_m8_band = wa_final_prd1-pr_m8_band                   .
+    wa_final_prd-pr_m9_band = wa_final_prd1-pr_m9_band                   .
+    wa_final_prd-pr_m10_band = wa_final_prd1-pr_m10_band                   .
+    wa_final_prd-pr_m11_band = wa_final_prd1-pr_m11_band
+     wa_final_prd-pr_m12_band = wa_final_prd1-pr_m12_band                   .
+    wa_final_prd-pr_m13_band = wa_final_prd1-pr_m13_band                   .
+    wa_final_prd-pr_m14_band = wa_final_prd1-pr_m14_band                   .
+    wa_final_prd-pr_m15_band = wa_final_prd1-pr_m15_band                   .
+
+    LOOP AT it_final INTO wa_final WHERE matnr = wa_final_prd
+matnr AND factory = wa_final_prd-factory.
+      wa_final_prd-last_15m_sales = wa_final-last_15m_sales + wa_final_prd
+last_15m_sales .
+      wa_final_prd-m1 = wa_final-m1 + wa_final_prd-m1 .
+      wa_final_prd-m2 = wa_final-m2 + wa_final_prd-m2 .
+      wa_final_prd-m3 = wa_final-m3 + wa_final_prd-m3 .
+      wa_final_prd-m4 = wa_final-m4 + wa_final_prd-m4 .
+      wa_final_prd-m5 = wa_final-m5 + wa_final_prd-m5 .
+      wa_final_prd-m6 = wa_final-m6 + wa_final_prd-m6 .
+      wa_final_prd-m7 = wa_final-m7 + wa_final_prd-m7 .
+      wa_final_prd-m8 = wa_final-m8 + wa_final_prd-m8 .
+      wa_final_prd-m9 = wa_final-m9 + wa_final_prd-m9 .
+      wa_final_prd-m10 = wa_final-m10 + wa_final_prd-m10 .
+      wa_final_prd-m11 = wa_final-m11 + wa_final_prd-m11 .
+      wa_final_prd-m12 = wa_final-m12 + wa_final_prd-m12 .
+      wa_final_prd-m13 = wa_final-m13 + wa_final_prd-m13 .
+      wa_final_prd-m14 = wa_final-m14 + wa_final_prd-m14 .
+      wa_final_prd-m15 = wa_final-m15 + wa_final_prd-m15 .
+      wa_final_prd-sales_frequency = wa_final-sales_frequency + wa_final_prd
+sales_frequency .
+      wa_final_prd-avg_sales_band = wa_final_prd-avg_sales_band + wa_final
+avg_sales_band .
+      CLEAR wa_final.
+    ENDLOOP.
+    IF wa_final_prd-sales_frequency NE 0.
+      wa_final_prd-avg_sales = wa_final_prd-last_15m_sales / wa_final_prd
+sales_frequency .
+    ENDIF.
+
+    APPEND wa_final_prd TO it_final_prd .
+    CLEAR wa_final_prd .
+  ENDLOOP.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'MATNR'.
+  wa_fcat_prd-coltext = 'SKU Material'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'MAKTX'.
+  wa_fcat_prd-coltext = 'SKU Description'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'FACTORY'.
+  wa_fcat_prd-coltext = 'Factory'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'BULK'.
+  wa_fcat_prd-coltext = 'Bulk'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'BULK_DES'.
+  wa_fcat_prd-coltext = 'BULK Description'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'WRKST'.
+  wa_fcat_prd-coltext = 'Basic material (MBD)'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'MATKL'.
+  wa_fcat_prd-coltext = 'Material Group'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'WGBEZ'.
+  wa_fcat_prd-coltext = 'Material Group Des'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'LAST_15M_SALES'.
+  wa_fcat_prd-coltext = 'TOTAL LAST 15M Sales Volume'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'SALES_FREQUENCY'.
+  wa_fcat_prd-coltext = 'Sales frequency'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'AVG_SALES'.
+  wa_fcat_prd-coltext = 'Average sales'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month15+4(2) '.' month15+0(4) INTO sales_m15.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M15'.
+  wa_fcat_prd-coltext = sales_m15.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month14+4(2) '.' month14+0(4) INTO sales_m14.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M14'.
+  wa_fcat_prd-coltext = sales_m14.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month13+4(2) '.' month13+0(4) INTO sales_m13.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M13'.
+  wa_fcat_prd-coltext = sales_m13.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month12+4(2) '.' month12+0(4) INTO sales_m12.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M12'.
+  wa_fcat_prd-coltext = sales_m12.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month11+4(2) '.' month11+0(4) INTO sales_m11.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M11'.
+  wa_fcat_prd-coltext = sales_m11.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month10+4(2) '.' month10+0(4) INTO sales_m10.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M10'.
+  wa_fcat_prd-coltext = sales_m10.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month9+4(2) '.' month9+0(4) INTO sales_m9.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M9'.
+  wa_fcat_prd-coltext = sales_m9.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month8+4(2) '.' month8+0(4) INTO sales_m8.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M8'.
+  wa_fcat_prd-coltext = sales_m8.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month7+4(2) '.' month7+0(4) INTO sales_m7.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M7'.
+  wa_fcat_prd-coltext = sales_m7.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month6+4(2) '.' month6+0(4) INTO sales_m6.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M6'.
+  wa_fcat_prd-coltext = sales_m6.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month5+4(2) '.' month5+0(4) INTO sales_m5.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M5'.
+  wa_fcat_prd-coltext = sales_m5.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month4+4(2) '.' month4+0(4) INTO sales_m4.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M4'.
+  wa_fcat_prd-coltext = sales_m4.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month3+4(2) '.' month3+0(4) INTO sales_m3.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M3'.
+  wa_fcat_prd-coltext = sales_m3.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month2+4(2) '.' month2+0(4) INTO sales_m2.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M2'.
+  wa_fcat_prd-coltext = sales_m2.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'SALES' month1+4(2) '.' month1+0(4) INTO sales_m1.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'M1'.
+  wa_fcat_prd-coltext = sales_m1.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'AVG_SALES_BAND'.
+  wa_fcat_prd-coltext = 'Average sales BAND'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'LAST_15M_PRD'.
+  wa_fcat_prd-coltext = 'Total L15 Production Volume '.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PRD_FREQUENCY'.
+  wa_fcat_prd-coltext = 'Production frequency '.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'AVG_PRD'.
+  wa_fcat_prd-coltext = 'Average Production'.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month15+4(2) '.' month15+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M15'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month14+4(2) '.' month14+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M14'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month13+4(2) '.' month13+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M13'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month12+4(2) '.' month12+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M12'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month11+4(2) '.' month11+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M11'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month10+4(2) '.' month10+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M10'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month9+4(2) '.' month9+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M9'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month8+4(2) '.' month8+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M8'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month7+4(2) '.' month7+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M7'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month6+4(2) '.' month6+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M6'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month5+4(2) '.' month5+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M5'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month4+4(2) '.' month4+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M4'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month3+4(2) '.' month3+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M3'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month2+4(2) '.' month2+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M2'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'PRD' month1+4(2) '.' month1+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M1'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month15+4(2) '.' month15+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M15_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month14+4(2) '.' month14+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M14_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month13+4(2) '.' month13+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M13_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month12+4(2) '.' month12+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M12_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month11+4(2) '.' month11+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M11_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month10+4(2) '.' month10+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M10_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month9+4(2) '.' month9+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M9_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month8+4(2) '.' month8+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M8_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month7+4(2) '.' month7+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M7_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month6+4(2) '.' month6+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M6_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month5+4(2) '.' month5+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M5_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month4+4(2) '.' month4+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M4_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month3+4(2) '.' month3+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M3_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month2+4(2) '.' month2+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M2_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  CONCATENATE 'Prd BAND' month1+4(2) '.' month1+0(4) INTO prd.
+  sno_prd = sno_prd + 1.
+  wa_fcat_prd-fieldname = 'PR_M1_BAND'.
+  wa_fcat_prd-coltext = prd.
+  wa_fcat_prd-col_pos = sno_prd.
+  APPEND wa_fcat_prd TO it_fcat_prd.
+  CLEAR wa_fcat_prd.
+
+  DATA: cc1 TYPE REF TO cl_gui_custom_container,
+        gd1 TYPE REF TO cl_gui_alv_grid.
+
+  CREATE OBJECT cc1
+    EXPORTING
+      container_name              = 'CONTAINER1'
+    EXCEPTIONS
+      cntl_error                  = 1
+      cntl_system_error           = 2
+      create_error                = 3
+      lifetime_error              = 4
+      lifetime_dynpro_dynpro_link = 5
+      OTHERS                      = 6.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  CREATE OBJECT gd1
+    EXPORTING
+      i_parent          = cc1
+    EXCEPTIONS
+      error_cntl_create = 1
+      error_cntl_init   = 2
+      error_cntl_link   = 3
+      error_dp_create   = 4
+      OTHERS            = 5.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+  CALL METHOD gd1->set_table_for_first_display
+    CHANGING
+      it_outtab                     = it_final_prd
+      it_fieldcatalog               = it_fcat_prd
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+ENDMODULE.
+
+MODULE user_command_1235 INPUT.
+  IF sy-ucomm = 'BACK'.
+    LEAVE TO SCREEN 0.
+  ENDIF.
+ENDMODULE.

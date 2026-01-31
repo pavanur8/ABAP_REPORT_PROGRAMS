@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZANAGRAM_VALID_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zanagram_valid_641.
+
+TYPES : BEGIN OF lty_str,
+          char TYPE c,
+          val  TYPE i,
+        END OF lty_str.
+
+DATA : lt_dict TYPE HASHED TABLE OF lty_str WITH UNIQUE KEY char,
+       ls_dict TYPE lty_str.
+
+FIELD-SYMBOLS : <fs_dict> TYPE lty_str.
+
+PARAMETERS : p_input1 TYPE string,
+             p_input2 TYPE string.
+
+DATA(lv_len1) = strlen( p_input1 ).
+DATA(lv_len2) = strlen( p_input1 ).
+DATA : lv_x1 TYPE c,
+       lv_x2 TYPE c,
+       i     TYPE i.
+
+IF lv_len1 NE lv_len2.
+  WRITE 'Both the Strings Are Not Equal'COLOR 2.
+  RETURN.
+ENDIF.
+
+DO lv_len1 TIMES.
+  i = sy-index - 1.
+
+  lv_x1 = p_input1+i(1).
+  lv_x2 = p_input2+i(1).
+
+  READ TABLE lt_dict ASSIGNING <fs_dict> WITH KEY char = lv_x1.
+
+  IF sy-subrc IS NOT INITIAL.
+
+    CLEAR ls_dict.
+    ls_dict-char = lv_x1.
+    ls_dict-val = 1.
+    INSERT ls_dict INTO TABLE lt_dict.
+  ELSE.
+    <fs_dict>-val = <fs_dict>-val + 1.
+  ENDIF.
+
+  READ TABLE lt_dict ASSIGNING <fs_dict> WITH KEY char = lv_x2.
+
+  IF sy-subrc IS NOT INITIAL.
+
+    CLEAR ls_dict.
+    ls_dict-char = lv_x2.
+    ls_dict-val = -1.
+    INSERT ls_dict INTO TABLE lt_dict.
+  ELSE.
+    <fs_dict>-val = <fs_dict>-val + 1.
+  ENDIF.
+
+ENDDO.
+
+LOOP AT lt_dict ASSIGNING <fs_dict>.
+
+  IF <fs_dict>-val NE 0.
+    DATA(bool) = abap_true.
+    EXIT.
+  ENDIF.
+ENDLOOP.
+
+IF bool = abap_true.
+  WRITE :'not a valid Anagram'COLOR 5.
+ELSE.
+  WRITE :' valid Anagram'COLOR 2.
+ENDIF.

@@ -1,0 +1,126 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALVREPORT_AS_POPUP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_alvreport_as_popup_641.
+
+TYPES : BEGIN OF ty_output, "Creating Local Structure
+          name    TYPE char10,
+          address TYPE char10,
+          phone   TYPE char10,
+          email   TYPE char30,
+        END OF ty_output.
+
+DATA itab TYPE TABLE OF ty_output. "Declaring Internal-Table And Work Area.
+DATA wa TYPE  ty_output.
+DATA itab_fieldcat TYPE slis_t_fieldcat_alv. "Declaring the fieldcatalog.
+DATA wa_fieldcat TYPE slis_fieldcat_alv.
+
+"*Creating The Manual  Fieldcatalog.
+wa_fieldcat-col_pos = 1.
+wa_fieldcat-fieldname = 'NAME'.
+wa_fieldcat-seltext_m = 'Name'.
+APPEND wa_fieldcat TO itab_fieldcat.
+CLEAR wa_fieldcat.
+
+wa_fieldcat-col_pos = 2.
+wa_fieldcat-fieldname = 'ADDRESS'.
+wa_fieldcat-seltext_m = 'Address'.
+APPEND wa_fieldcat TO itab_fieldcat.
+CLEAR wa_fieldcat.
+
+wa_fieldcat-col_pos = 3.
+wa_fieldcat-fieldname = 'PHONE'.
+wa_fieldcat-seltext_m = 'Phone'.
+APPEND wa_fieldcat TO itab_fieldcat.
+CLEAR wa_fieldcat.
+
+wa_fieldcat-col_pos = 4.
+wa_fieldcat-fieldname = 'EMAIL'.
+wa_fieldcat-seltext_m = 'Email'.
+APPEND wa_fieldcat TO itab_fieldcat.
+CLEAR wa_fieldcat.
+
+"*Creating Output Table Creation.
+wa-name = 'Maruthi'.
+wa-address = 'Lokikere'.
+wa-phone = '9876543201'.
+wa-email = 'abc@gmail.com'.
+APPEND wa TO itab.
+CLEAR wa.
+
+wa-name = 'Teju'.
+wa-address = 'Airpot'.
+wa-phone = '9876543211'.
+wa-email = 'teju98@gmail.com'.
+APPEND wa TO itab.
+CLEAR wa.
+
+wa-name = 'Naveen'.
+wa-address = 'Halasuru'.
+wa-phone = '9876387621'.
+wa-email = 'naveen32@gmail.com'.
+APPEND wa TO itab.
+CLEAR wa.
+
+wa-name = 'Suresh'.
+wa-address = 'Davangere'.
+wa-phone = '8876432189'.
+wa-email = 'suresh12@gmail.com'.
+APPEND wa TO itab.
+CLEAR wa.
+
+wa-name = 'Vinod'.
+wa-address = 'Electonic City'.
+wa-phone = '9908652129'.
+wa-email = 'abc@gmail.com'.
+APPEND wa TO itab.
+CLEAR wa.
+
+CALL FUNCTION 'REUSE_ALV_POPUP_TO_SELECT'
+  EXPORTING
+    i_title               = 'ALV AS POPUP'
+    i_allow_no_selection  = 'X'
+    i_screen_start_column = 10
+    i_screen_start_line   = 5
+    i_screen_end_column   = 100
+    i_screen_end_line     = 10
+    i_tabname             = 'WA'
+    it_fieldcat           = itab_fieldcat
+    i_callback_program    = sy-repid
+* IMPORTING
+*   ES_SELFIELD           =
+*   E_EXIT                =
+  TABLES
+    t_outtab              = itab
+  EXCEPTIONS
+    program_error         = 1
+    OTHERS                = 2.
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+ENHANCEMENT-POINT ZDEMO_EXPLICIT_POINT SPOTS ZDEMO_EXPLICIT_POINT .
+*$*$-Start: ZDEMO_EXPLICIT_POINT----------------------------------------------------------------$*$*
+ENHANCEMENT 1  ZDEMO_EXPLICIT_POINT.    "active version
+WRITE : / 'This is Explicit Enhancement point creation' COLOR COL_NEGATIVE.
+ENDENHANCEMENT.
+*$*$-End:   ZDEMO_EXPLICIT_POINT----------------------------------------------------------------$*$*
+
+
+ENHANCEMENT-SECTION ZDEMO_EXPLICIT_SECTION SPOTS ZDEMO_EXPLICIT_POINT .
+WRITE : 'THIS IS THE EXPLICIT ENHANCEMENT WITH SECTION' COLOR COL_HEADING.
+WRITE : 'This is ALV as a Popup' COLOR COL_KEY.
+WRITE : 'This is ALV as a Popup' COLOR COL_TOTAL.
+WRITE : 'This is ALV as a Popup' COLOR COL_POSITIVE.
+END-ENHANCEMENT-SECTION.
+*$*$-Start: ZDEMO_EXPLICIT_SECTION--------------------------------------------------------------$*$*
+ENHANCEMENT 1  ZDEMO_EXPLICIT_SECTION.    "active version
+WRITE : 'THIS IS THE EXPLICIT ENHANCEMENT WITH SECTION' COLOR COL_HEADING.
+WRITE : 'This is ALV as a Popup' COLOR COL_KEY.
+WRITE : 'This is ALV as a Popup' COLOR COL_TOTAL.
+WRITE : 'This is ALV as a Popup' COLOR COL_POSITIVE.
+ENDENHANCEMENT.
+*$*$-End:   ZDEMO_EXPLICIT_SECTION--------------------------------------------------------------$*$*
+

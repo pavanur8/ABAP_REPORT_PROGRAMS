@@ -1,0 +1,12 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG13_CALLING_CONSTRUCTOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg13_calling_constructor_641.
+
+DATA(obj1) = NEW zconstructor1_641( im_plant = '1000').
+obj1->get_storage_details( ).
+SKIP 2.
+DATA(obj2) = NEW zconstructor1_641( im_plant = '0001').
+obj2->get_storage_details( ).

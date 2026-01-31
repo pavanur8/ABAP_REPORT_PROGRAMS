@@ -1,0 +1,174 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALVINTERACTIVE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_ALVINTERACTIVE.
+
+TYPE-POOLS: slis.
+
+" Vendor structure
+TYPES: BEGIN OF ty_vendor,
+         VENDER_ID        TYPE zvde_id,
+         VENDER_NAME      TYPE zdev_name,
+         VENDER_ACC       TYPE zde_accountnum,
+         VENDER_LOCATION  TYPE zvender_location,
+       END OF ty_vendor.
+
+" Sales structure
+TYPES: BEGIN OF ty_sales,
+         SALES_ID    TYPE zdesales_id,
+         VENDER_ID   TYPE zvde_id,
+         SALES_DATE  TYPE zdesales_date,
+         QUANTITY    TYPE zdesales_qnty,
+       END OF ty_sales.
+
+DATA: lt_vendor TYPE TABLE OF ty_vendor,
+      ls_vendor TYPE ty_vendor.
+
+DATA: lt_sales TYPE TABLE OF ty_sales,
+      ls_sales TYPE ty_sales.
+
+DATA: gt_fcat   TYPE slis_t_fieldcat_alv,
+      gs_fcat   TYPE slis_fieldcat_alv,
+      gs_layout TYPE slis_layout_alv.
+
+" Selection screen to filter vendors by ID (optional)
+SELECT-OPTIONS: s_ve_id FOR ls_vendor-VENDER_ID.
+
+START-OF-SELECTION.
+
+  " Fetch vendor data from database table zvender_1 based on selection
+  SELECT vender_id
+         vender_name
+         vender_account_number AS vender_acc
+
+    FROM zvender_1
+    INTO TABLE lt_vendor
+    WHERE vender_id IN s_ve_id.
+
+  PERFORM build_vendor_fieldcat.
+
+  gs_layout-zebra = 'X'. " Zebra pattern for readability
+
+  " Display vendor ALV grid with interactive double-click
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      i_callback_user_command = 'USER_COMMAND'
+      is_layout               = gs_layout
+      it_fieldcat             = gt_fcat
+    TABLES
+      t_outtab                = lt_vendor
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+
+  IF sy-subrc <> 0.
+    MESSAGE 'Error displaying vendor ALV' TYPE 'E'.
+  ENDIF.
+
+*----------------------------------------------------------------------
+* Form to build vendor ALV field catalog
+*----------------------------------------------------------------------
+FORM build_vendor_fieldcat .
+  CLEAR gt_fcat[].
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'VENDER_ID'.
+  gs_fcat-seltext_l = 'Vendor ID'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'VENDER_NAME'.
+  gs_fcat-seltext_l = 'Vendor Name'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'VENDER_ACC'.
+  gs_fcat-seltext_l = 'Account Number'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'VENDER_LOCATION'.
+  gs_fcat-seltext_l = 'Location'.
+  APPEND gs_fcat TO gt_fcat.
+ENDFORM.
+
+*----------------------------------------------------------------------
+* Form to build sales ALV field catalog
+*----------------------------------------------------------------------
+FORM build_sales_fieldcat .
+  CLEAR gt_fcat[].
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'SALES_ID'.
+  gs_fcat-seltext_l = 'Sales ID'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'VENDER_ID'.
+  gs_fcat-seltext_l = 'Vendor ID'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'SALES_DATE'.
+  gs_fcat-seltext_l = 'Sales Date'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUANTITY'.
+  gs_fcat-seltext_l = 'Quantity'.
+  APPEND gs_fcat TO gt_fcat.
+ENDFORM.
+
+*----------------------------------------------------------------------
+* User command handler for ALV events (like double-click)
+*----------------------------------------------------------------------
+FORM user_command USING r_ucomm LIKE sy-ucomm
+                         rs_selfield TYPE slis_selfield.
+
+  DATA lv_vender_id TYPE zvde_id.
+
+  IF r_ucomm = '&IC1'. " Double-click event
+    " Get the vendor data from the selected row
+    READ TABLE lt_vendor INDEX rs_selfield-tabindex INTO ls_vendor.
+    IF sy-subrc = 0.
+      lv_vender_id = ls_vendor-VENDER_ID.
+
+      " Fetch sales data for selected vendor
+      SELECT sales_id
+             vender_id
+             sales_date
+
+        FROM zsales_1
+        INTO TABLE lt_sales
+        WHERE vender_id = lv_vender_id.
+
+      IF lt_sales IS INITIAL.
+        MESSAGE 'No sales data found for selected vendor' TYPE 'I'.
+        RETURN.
+      ENDIF.
+
+      PERFORM build_sales_fieldcat.
+
+      " Display sales ALV grid
+      CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+        EXPORTING
+          i_callback_program = sy-repid
+          is_layout          = gs_layout
+          it_fieldcat        = gt_fcat
+          i_grid_title       = |Sales Data for Vendor { lv_vender_id }|
+        TABLES
+          t_outtab           = lt_sales
+        EXCEPTIONS
+          program_error      = 1
+          OTHERS             = 2.
+
+      IF sy-subrc <> 0.
+        MESSAGE 'Error displaying sales ALV' TYPE 'E'.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.

@@ -1,0 +1,50 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_SUPER_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_super_641.
+
+CLASS cl_super_class DEFINITION.
+  PUBLIC SECTION.
+    METHODS : constructor IMPORTING iv_val TYPE i,
+      display.
+  PROTECTED SECTION.
+    DATA mv_val TYPE i.
+ENDCLASS.
+
+CLASS cl_super_class IMPLEMENTATION.
+  METHOD constructor.
+    mv_val = iv_val.
+  ENDMETHOD.
+
+  METHOD display.
+    WRITE: / 'Superclass value:', mv_val.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS cl_sub_class DEFINITION INHERITING FROM cl_super_class.
+  PUBLIC SECTION.
+    METHODS: constructor IMPORTING iv_value TYPE i
+                                   iv_extra TYPE i,
+      display REDEFINITION.
+  PRIVATE SECTION.
+    DATA: mv_extra TYPE i.
+ENDCLASS.
+
+CLASS cl_sub_class IMPLEMENTATION.
+  METHOD constructor.
+    Super->constructor( iv_value ).
+    mv_extra = iv_extra.
+  ENDMETHOD.
+
+  METHOD display.
+    super->display( ).
+    WRITE: / 'Subclass extra:', mv_extra.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(obj) = NEW cl_sub_class( iv_value = 10 iv_extra = 20 ).
+  obj->display( ).

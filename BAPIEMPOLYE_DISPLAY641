@@ -1,0 +1,58 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_BAPIEMPOLYE_DISPLAY641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_bapiempolye_display641.
+
+DATA zre TYPE bapiret2.
+DATA lt_emp TYPE TABLE OF ZBAPI_EMPLOYEE_641.
+DATA wa_emp TYPE ZBAPI_EMPLOYEE_641.
+DATA emp_data TYPE ZBAPI_EMPLOYEE_641.
+
+PARAMETERS p_eid TYPE zeid_54.
+
+CALL FUNCTION 'ZBAPI_EMPLOYE_DISPLAY'
+  EXPORTING
+    pemp_id  = p_eid
+  IMPORTING
+    return   = zre
+  TABLES
+    emp_data = lt_emp.
+
+IF zre-type IS INITIAL OR zre-type = 'S'.
+  LOOP AT lt_emp INTO wa_emp.
+    WRITE: / 'Employee ID   :', wa_emp-emp_id,
+           / 'Employee Name :', wa_emp-emp_name,
+           / '----------------------------------'.
+  ENDLOOP.
+ELSE.
+  WRITE: / 'Error:', zre-message.
+ENDIF.
+*WRITE: / 'Message Type :', zre-type,
+*       / 'Message ID   :', zre-id,
+*       / 'Message No   :', zre-number,
+*       / 'Message Text :', zre-message,
+*       / 'Message Parameter :', zre-parameter,
+*       / 'Message Filed :', zre-field,
+*       / 'Message ROW :', zre-row.
+
+*IF zre-type IS INITIAL OR zre-type = 'S'.
+*
+*  LOOP AT lt_emp INTO wa_emp.
+*    WRITE: / 'Employee ID   :', wa_emp-emp_id,
+*           / 'Employee Name :', wa_emp-emp_name,
+*           / '------------------------------'.
+*  ENDLOOP.
+*
+*ELSE.
+*  WRITE: / 'Error:', zre-message.
+*ENDIF.
+*IF zre-type IS INITIAL OR zre-type = 'S'.
+*  LOOP AT lt_emp INTO wa_emp.
+*    WRITE: / 'ID:', wa_emp-emp_id,
+*           'Name:', wa_emp-emp_name.
+*  ENDLOOP.
+*ELSE.
+*  WRITE: / 'Error:', zre-message.
+*ENDIF.

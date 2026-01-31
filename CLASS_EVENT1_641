@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG9_CLASS_EVENT1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg9_class_event1_641.
+
+DATA lv_land TYPE land1_gp.
+DATA lv_name TYPE name1_gp.
+DATA lv_ort TYPE ort01_gp.
+DATA lv_pst TYPE pstlz.
+DATA lv_regio TYPE regio.
+
+PARAMETERS p_kunnr TYPE kunnr.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS display IMPORTING pkunnr TYPE kunnr
+                    EXPORTING pland1 TYPE land1_gp
+                              pname1 TYPE name1_gp
+                              port01 TYPE ort01_gp
+                              pPSTLZ TYPE pstlz
+                              pREGIO TYPE regio.
+    EVENTS : no_input.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD display.             "Triggering method
+    IF p_kunnr IS INITIAL.
+      RAISE EVENT no_input.
+    ELSE.
+      SELECT SINGLE land1 name1 ort01 pstlz regio
+      FROM kna1
+      INTO (  pland1,pname1,port01,ppstlz,pregio )
+      WHERE  kunnr = p_kunnr.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS class2 DEFINITION.
+  PUBLIC SECTION.
+    METHODS message  FOR EVENT no_input OF class1.
+ENDCLASS.
+
+CLASS class2 IMPLEMENTATION.
+  METHOD message.               "Event Handler Method
+    WRITE : 'please Enter Valid Input...'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA ob1 TYPE   REF TO class1.
+  DATA ob2 TYPE   REF TO class2.
+
+  CREATE OBJECT ob1.
+  CREATE OBJECT ob2.
+
+  SET HANDLER ob2->message FOR ob1. "Regestring the event handler method.
+
+  ob1->display( EXPORTING pkunnr = p_kunnr
+                IMPORTING pland1 = lv_land
+                pname1 = lv_name
+                port01 = lv_ort
+                ppstlz = lv_pst
+                pregio = lv_regio ).
+  WRITE : / lv_land,
+          /  lv_name ,
+          /  lv_ort ,
+          /  lv_pst ,
+          /  lv_regio.

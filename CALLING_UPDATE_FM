@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report ZCALLINGUPDATEFM
+*&---------------------------------------------------------------------*
+*&                    LT_641
+*&---------------------------------------------------------------------*
+REPORT ZCALLINGUPDATEFM.
+
+*DATA : lv_data TYPE ZACTIVACTION VALUE 'Exc'.
+*WRITE text-000.
+
+CALL FUNCTION 'ZUPDATE_FUN1' IN UPDATE TASK
+  EXPORTING
+    ivuserid       = sy-uname
+    ivaction       = 'LT'
+    ivreport       = sy-repid.
+
+COMMIT WORK.
+
+*if sy-subrc eq 0.
+*  COMMIT WORK.
+*  else.
+*    ROLLBACK WORK.
+*  endif.
+
+IF sy-subrc = 0.
+WRITE : text-002.
+ENDIF.

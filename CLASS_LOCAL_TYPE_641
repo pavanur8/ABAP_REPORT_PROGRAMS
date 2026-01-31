@@ -1,0 +1,113 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_LOCAL_TYPE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_local_type_641.
+
+TABLES vbak.
+
+TYPES : BEGIN OF lsdd,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+          vbtyp TYPE vbtypl,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+        END OF lsdd.
+
+DATA itab TYPE TABLE OF lsdd.
+DATA wa TYPE  lsdd.
+
+SELECT-OPTIONS svbeln FOR vbak-vbeln.
+
+
+CLASS clas DEFINITION.
+  PUBLIC SECTION.
+    TYPES : BEGIN OF lt,
+              sign   TYPE char1,
+              option TYPE char2,
+              low    TYPE vbeln_va,
+              high   TYPE vbeln_va,
+            END OF lt.
+    TYPES ltty_vbeln TYPE TABLE OF lt.
+    TYPES : BEGIN OF lsdd,
+              vbeln TYPE vbeln_va,
+              erdat TYPE erdat,
+              erzet TYPE erzet,
+              ernam TYPE ernam,
+              vbtyp TYPE vbtypl,
+              posnr TYPE posnr_va,
+              matnr TYPE matnr,
+            END OF lsdd.
+
+    TYPES:
+      BEGIN OF ls,
+        vbeln TYPE vbeln_va,
+        erdat TYPE erdat,
+        erzet TYPE erzet,
+        ernam TYPE ernam,
+        vbtyp TYPE vbtypl,
+      END OF ls .
+
+    TYPES : BEGIN OF ld,
+              vbeln TYPE vbeln_va,
+              posnr TYPE posnr_va,
+              matnr TYPE matnr,
+            END OF ld.
+
+    TYPES lt_output TYPE TABLE OF lsdd.
+    METHODS get_data IMPORTING pvbeln  TYPE ltty_vbeln
+                     EXPORTING toutput TYPE lt_output.
+ENDCLASS.
+
+CLASS clas IMPLEMENTATION.
+  METHOD get_data.
+    DATA itab_vbak TYPE TABLE OF ls.
+    DATA wa_vbak TYPE ls.
+    DATA itab_vbap TYPE TABLE OF ld.
+    DATA wa_vbap TYPE ld.
+    DATA wa_final TYPE lsdd.
+
+    SELECT vbeln erdat erzet ernam vbtyp
+    FROM vbak
+    INTO TABLE itab_vbak
+    WHERE vbeln IN pvbeln.
+
+    IF itab_vbak IS NOT INITIAL.
+      SELECT vbeln posnr matnr
+      FROM vbap
+      INTO TABLE itab_vbap
+      FOR ALL ENTRIES IN itab_vbak
+      WHERE vbeln = itab_vbak-vbeln.
+    ENDIF.
+
+    LOOP AT itab_vbak INTO wa_vbak.
+      LOOP AT itab_vbap INTO wa_vbap WHERE vbeln = wa_vbak-vbeln.
+        wa_final-vbeln = wa_vbak-vbeln.
+        wa_final-erdat = wa_vbak-erdat.
+        wa_final-erzet = wa_vbak-erzet.
+        wa_final-ernam = wa_vbak-ernam.
+        wa_final-vbtyp = wa_vbak-vbtyp.
+        wa_final-posnr = wa_vbap-posnr.
+        wa_final-matnr = wa_vbap-matnr.
+        APPEND wa_final TO toutput.
+        CLEAR wa_final.
+      ENDLOOP.
+    ENDLOOP.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA lo_object TYPE REF TO clas.
+  CREATE OBJECT lo_object.
+  lo_object->get_data( EXPORTING pvbeln  = svbeln[]
+                       IMPORTING toutput = itab ).
+
+  LOOP AT itab INTO wa.
+    WRITE : / wa-vbeln,wa-erdat,wa-erzet,wa-ernam,wa-vbtyp,wa-posnr,wa-matnr.
+  ENDLOOP.
+
+  cl_demo_output=>display( itab ).

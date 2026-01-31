@@ -1,0 +1,38 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_GARBAGE_COLLECTOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_garbage_collector_641.
+
+CLASS zcl_demo DEFINITION.
+  PUBLIC SECTION.
+    METHODS constructor.
+*    METHODS destructor.
+ENDCLASS.
+
+CLASS zcl_demo IMPLEMENTATION.
+  METHOD constructor.
+    WRITE: / 'Object Created (Constructor)'.
+  ENDMETHOD.
+
+*  METHOD destructor.
+**    WRITE: / 'Object Destroyed (Destructor)'.
+*  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lo_obj1) = NEW zcl_demo( ).
+
+  " Assign another reference to the same object
+  DATA(lo_obj2) = lo_obj1.
+
+  " Remove one reference
+  CLEAR lo_obj1.
+
+  " At this point, lo_obj2 still points to the object -> object is ALIVE
+
+  " Now clear the last reference
+  CLEAR lo_obj2.
+
+  " No reference points to the object anymore -> GC will destroy it

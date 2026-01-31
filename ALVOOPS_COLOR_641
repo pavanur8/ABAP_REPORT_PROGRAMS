@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO11_ALVOOPS_COLOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro11_alvoops_color_641.
+
+DATA it_makt TYPE STANDARD TABLE OF makt.
+DATA lo_alv TYPE REF TO cl_salv_table.
+DATA lo_cloumns TYPE REF TO cl_salv_columns_table.
+DATA lo_cloumn TYPE REF TO cl_salv_column_table.
+DATA wa_color TYPE  lvc_s_colo.
+
+START-OF-SELECTION.
+
+  SELECT *
+  FROM makt
+  INTO TABLE it_makt UP TO 100 ROWS.
+
+  TRY.
+      CALL METHOD cl_salv_table=>factory
+        IMPORTING
+          r_salv_table = lo_alv
+        CHANGING
+          t_table      = it_makt.
+    CATCH cx_salv_msg.
+  ENDTRY.
+
+  wa_color-col = '6'.
+  wa_color-int = '1'.
+  lo_cloumns = lo_alv->get_columns( ).
+  lo_cloumn ?=  lo_cloumns->get_column('MAKTX').
+  lo_cloumn->set_color( wa_color ).
+  lo_alv->display( ).

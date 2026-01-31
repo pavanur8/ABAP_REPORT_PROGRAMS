@@ -1,0 +1,24 @@
+*&---------------------------------------------------------------------*
+*& Report ZCL_GUI_ALV_GRID_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcl_gui_alv_grid_641.
+
+SELECT * FROM sbook INTO TABLE @DATA(bookings).
+
+TRY.
+    DATA(lo_grid) =
+      NEW cl_gui_alv_grid(
+          i_parent = cl_gui_container=>default_screen ).
+
+    lo_grid->set_table_for_first_display(
+                    EXPORTING i_structure_name = 'SBOOK'
+                    CHANGING  it_outtab        = bookings ).
+    CALL SCREEN 100.
+
+  CATCH cx_root.
+    MESSAGE 'Error in ALV creation' TYPE 'E'.
+ENDTRY.
+
+INCLUDE zcl_gui_alv_grid_641_statuso01.

@@ -1,0 +1,215 @@
+*&---------------------------------------------------------------------*
+*& Report ZALV_CHECK_POP_UP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZALV_CHECK_POP_UP_641.
+
+
+TYPES : BEGIN OF ty_fcat,
+          fieldname TYPE slis_fieldcat_alv-fieldname,
+          col_pos   TYPE slis_fieldcat_alv-col_pos,
+          checkbox  TYPE slis_fieldcat_alv-checkbox,
+          edit      TYPE slis_fieldcat_alv-edit,
+          seltext_l TYPE slis_fieldcat_alv-seltext_l,
+        END OF ty_fcat.
+
+TYPES : tt_fcat TYPE STANDARD TABLE OF  ty_fcat WITH EMPTY KEY.
+
+
+TYPES : BEGIN OF ty_struc,
+          check(1) TYPE c,
+          custidd  TYPE  zcustidd,
+          bookkid  TYPE  zbookkid,
+          custpre	 TYPE zcustpre,
+          custname TYPE	zcustname,
+          custadd  TYPE  zcustadd,
+          custphno TYPE	zcustphno,
+          custpin  TYPE  zcustpin,
+        END OF ty_struc.
+
+TYPES : BEGIN OF ty_struc1,
+          custidd  TYPE  zcustidd,
+          bookkid  TYPE  zbookkid,
+          custpre	 TYPE zcustpre,
+          custname TYPE	zcustname,
+          custadd  TYPE  zcustadd,
+          custphno TYPE	zcustphno,
+          custpin  TYPE  zcustpin,
+        END OF ty_struc1.
+
+
+
+DATA : gt_final TYPE TABLE OF ty_struc,
+       gs_final TYPE ty_struc.
+
+DATA : gt_last TYPE TABLE OF zbook_shop,
+       gs_last TYPE zbook_shop.
+DATA : lt_fcat2 TYPE slis_t_fieldcat_alv.
+DATA : ls_fcat2 TYPE slis_fieldcat_alv.
+
+DATA : lt_fcat3 TYPE slis_t_fieldcat_alv.
+DATA : ls_fcat3 TYPE slis_fieldcat_alv.
+
+DATA : gt_next TYPE TABLE OF ty_struc1,
+       gs_next TYPE ty_struc1.
+
+START-OF-SELECTION .
+
+  SELECT *  FROM zbook_shop INTO CORRESPONDING FIELDS OF TABLE gt_final.
+
+
+  DATA(lt_fcat) = VALUE tt_fcat(
+                               ( fieldname = 'CHECK'    col_pos = '1' checkbox = 'X' edit = 'X'  seltext_l = 'Checkbox' )
+                               ( fieldname = 'BOOKKID'  col_pos = '2' checkbox = ' ' edit = ' '  seltext_l = 'BOOK ID'  )
+                               ( fieldname = 'CUSTPRE'  col_pos = '3' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PREFIX' )
+                               ( fieldname = 'CUSTNAME' col_pos = '4' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER NAME' )
+                               ( fieldname = 'CUSTADD'  col_pos = '5' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER ADD' )
+                               ( fieldname = 'CUSTPHNO' col_pos = '6' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PHONE NUMNER')
+                               ( fieldname = 'CUSTPIN'  col_pos = '7' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PINCODE') ).
+
+  DATA(gt_fcat) = VALUE tt_fcat(
+                               ( fieldname = 'BOOKKID'  col_pos = '2' checkbox = ' ' edit = ' '  seltext_l = 'BOOK ID'  )
+                               ( fieldname = 'CUSTPRE'  col_pos = '3' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PREFIX' )
+                               ( fieldname = 'CUSTNAME' col_pos = '4' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER NAME' )
+                               ( fieldname = 'CUSTADD'  col_pos = '5' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER ADD' )
+                               ( fieldname = 'CUSTPHNO' col_pos = '6' checkbox = ' ' edit = 'X'  seltext_l = 'CUSTOMER PHONE NUMNER')
+                               ( fieldname = 'CUSTPIN'  col_pos = '7' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PINCODE') ).
+
+
+  DATA(gt_fcat2) = VALUE tt_fcat(
+                               ( fieldname = 'BOOKKID'  col_pos = '2' checkbox = ' ' edit = ' '  seltext_l = 'BOOK ID'  )
+                               ( fieldname = 'CUSTPRE'  col_pos = '3' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PREFIX' )
+                               ( fieldname = 'CUSTNAME' col_pos = '4' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER NAME' )
+                               ( fieldname = 'CUSTADD'  col_pos = '5' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER ADD' )
+                               ( fieldname = 'CUSTPHNO' col_pos = '6' checkbox = ' ' edit = 'X'  seltext_l = 'CUSTOMER PHONE NUMNER')
+                               ( fieldname = 'CUSTPIN'  col_pos = '7' checkbox = ' ' edit = ' '  seltext_l = 'CUSTOMER PINCODE') ).
+
+  PERFORM display_alv.
+FORM User_command USING r1_ucomm LIKE sy-ucomm
+                        r1_selfield TYPE slis_Selfield.
+
+  CASE r1_ucomm.
+    WHEN '&DATA_SAVE'.
+      IF gt_next IS NOT INITIAL.
+        LOOP AT gt_next INTO DATA(gs_next).
+          MOVE-CORRESPONDING gs_next TO gs_last.
+          gs_last-mandt = sy-mandt.
+          APPEND gs_last TO gt_last.
+        ENDLOOP.
+        MODIFY zbook_shop FROM TABLE gt_last.
+        IF sy-subrc EQ 0.
+          COMMIT WORK.
+          SELECT * FROM zbook_shop INTO TABLE @DATA(gt_upd).
+
+          CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+            EXPORTING
+              i_callback_program = sy-repid
+              it_fieldcat        = lt_fcat3
+            TABLES
+              t_outtab           = gt_upd.
+        ENDIF.
+      ENDIF.
+
+  ENDCASE.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form display_alv
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_alv .
+  LOOP AT lt_fcat INTO DATA(ls_fcat).
+    ls_fcat2-fieldname = ls_fcat-fieldname.
+    ls_fcat2-col_pos   = ls_fcat-col_pos.
+    ls_fcat2-checkbox  = ls_fcat-checkbox.
+    ls_fcat2-edit      = ls_fcat-edit.
+    ls_fcat2-seltext_l = ls_fcat-seltext_l.
+    APPEND ls_fcat2 TO lt_fcat2.
+    CLEAR ls_fcat2 .
+  ENDLOOP.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      it_fieldcat             = lt_fcat2
+      i_callback_user_command = 'USER_COMM'
+*     i_callback_top_of_page  = 'TOP_OF_PAGE'
+    TABLES
+      t_outtab                = gt_final.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form user_comm
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM user_comm USING r_ucomm LIKE sy-ucomm
+                     rs_selfield TYPE slis_selfield .
+
+  CASE r_ucomm.
+    WHEN '&IC1'.
+      CLEAR : lt_fcat3,gt_next.
+      LOOP AT gt_final ASSIGNING FIELD-SYMBOL(<fs_final>) WHERE check = 'X'.
+        MOVE-CORRESPONDING <fs_final> TO gs_next.
+        APPEND gs_next TO gt_next.
+      ENDLOOP.
+
+      IF gt_next IS INITIAL.
+        MESSAGE : 'Please Click the Checkbox' TYPE 'E' DISPLAY LIKE 'S'.
+      ENDIF.
+      LOOP AT gt_fcat INTO DATA(gs_fcat).
+        ls_fcat3-fieldname = gs_fcat-fieldname.
+        ls_fcat3-col_pos   = gs_fcat-col_pos.
+        ls_fcat3-edit      = gs_fcat-edit.
+        ls_fcat3-seltext_l = gs_fcat-seltext_l.
+        APPEND ls_fcat3 TO lt_fcat3.
+        CLEAR : ls_fcat2 , gs_fcat.
+      ENDLOOP.
+
+******************************************
+      DATA: ivals  TYPE TABLE OF sval.
+      DATA: xvals  TYPE sval.
+
+      xvals-tabname   = 'ZBOOK_SHOP'.
+      xvals-fieldname = 'CUSTPHNO'.
+      APPEND xvals TO ivals.
+
+      CALL FUNCTION 'POPUP_GET_VALUES'
+        EXPORTING
+          popup_title     = 'EDIT'
+        TABLES
+          fields          = ivals
+        EXCEPTIONS
+          error_in_fields = 1
+          OTHERS          = 2.
+
+      READ TABLE ivals INTO xvals WITH KEY fieldname = 'CUSTPHNO'.
+      IF sy-subrc  = 0.
+        <fs_final>-custphno = xvals-value.
+      ENDIF.
+
+      CLEAR : gt_next.
+      LOOP AT gt_final ASSIGNING <fs_final> WHERE check = 'X'.
+        MOVE-CORRESPONDING <fs_final> TO gs_next.
+        <fs_final>-custphno = xvals-value.
+        APPEND gs_next TO gt_next.
+      ENDLOOP.
+
+*****************************************
+      CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+        EXPORTING
+          i_callback_program      = sy-repid
+          it_fieldcat             = lt_fcat3
+          i_callback_user_command = 'USER_COMMAND'
+        TABLES
+          t_outtab                = gt_next.
+
+  ENDCASE.
+ENDFORM.

@@ -1,0 +1,117 @@
+REPORT zcl_send_oo_email_641.
+
+CLASS zcl_send_oo_email DEFINITION FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    CLASS-METHODS send_email.
+ENDCLASS.
+
+CLASS zcl_itab_to_excel DEFINITION FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    METHODS:
+      itab_to_xstring
+        IMPORTING ir_data_ref       TYPE REF TO data
+        RETURNING VALUE(rv_xstring) TYPE xstring.
+ENDCLASS.
+
+CLASS zcl_send_oo_email IMPLEMENTATION.
+  METHOD send_email.
+
+    "Fetch Data
+    SELECT * FROM sflight INTO TABLE @DATA(lt_data).
+    GET REFERENCE OF lt_data INTO DATA(lo_data_ref).
+    DATA(lv_xstring) = NEW zcl_itab_to_excel( )->itab_to_xstring( lo_data_ref ).
+
+    TRY.
+        "Create send request
+        DATA(lo_send_request) = cl_bcs=>create_persistent( ).
+
+        "Create mail body
+        DATA(lt_body) = VALUE bcsy_text(
+                          ( line = 'Dear Recipient,' )
+                          ( line = '' )
+                          ( line = 'PFA flight details file.' )
+                          ( line = '' )
+                          ( line = 'Thank You' )
+                        ).
+
+        "Create document
+        DATA(lo_document) = cl_document_bcs=>create_document(
+                              i_type    = 'RAW'
+                              i_text    = lt_body
+                              i_subject = 'Flight Details' ).
+
+        "Add Excel attachment
+        lo_document->add_attachment(
+          i_attachment_type    = 'BIN'
+          i_attachment_subject = 'Flight_Details'
+          i_att_content_hex    = cl_bcs_convert=>xstring_to_solix( lv_xstring )
+        ).
+
+        lo_send_request->set_document( lo_document ).
+
+        "Set sender
+        lo_send_request->set_sender(
+          cl_cam_address_bcs=>create_internet_address( 'sender@dummy.com' )
+        ).
+
+        "Add recipient
+        lo_send_request->add_recipient(
+          i_recipient = cl_cam_address_bcs=>create_internet_address( 'recipient@dummy.com' )
+          i_express   = abap_true ).
+
+        "Send email
+        DATA(lv_sent_to_all) = lo_send_request->send( ).
+        COMMIT WORK.
+
+        IF lv_sent_to_all = abap_true.
+          WRITE: / 'Email sent successfully.'.
+        ELSE.
+          WRITE: / 'Email sending failed.'.
+        ENDIF.
+
+      CATCH cx_bcs INTO DATA(lx_bcs).
+        WRITE: / 'Error:', lx_bcs->get_text( ).
+    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS zcl_itab_to_excel IMPLEMENTATION.
+  METHOD itab_to_xstring.
+
+    FIELD-SYMBOLS: <fs_data> TYPE ANY TABLE.
+    CLEAR rv_xstring.
+    ASSIGN ir_data_ref->* TO <fs_data>.
+
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING r_salv_table = DATA(lo_table)
+          CHANGING  t_table      = <fs_data> ).
+
+        DATA(lt_fcat) =
+          cl_salv_controller_metadata=>get_lvc_fieldcatalog(
+            r_columns      = lo_table->get_columns( )
+            r_aggregations = lo_table->get_aggregations( ) ).
+
+        DATA(lo_result) =
+          cl_salv_ex_util=>factory_result_data_table(
+            r_data         = ir_data_ref
+            t_fieldcatalog = lt_fcat ).
+
+        cl_salv_bs_tt_util=>if_salv_bs_tt_util~transform(
+          EXPORTING
+            xml_type      = if_salv_bs_xml=>c_type_xlsx
+            xml_version   = cl_salv_bs_a_xml_base=>get_version( )
+            r_result_data = lo_result
+            xml_flavour   = if_salv_bs_c_tt=>c_tt_xml_flavour_export
+            gui_type      = if_salv_bs_xml=>c_gui_type_gui
+          IMPORTING
+            xml           = rv_xstring ).
+
+      CATCH cx_root INTO DATA(lx_root).
+        CLEAR rv_xstring.
+        WRITE: / 'Excel conversion failed:', lx_root->get_text( ).
+    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG15_CLASS_RETURINGPARA_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg15_class_returingpara_641.
+
+CLASS clas1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS m1 IMPORTING i_kunnr        TYPE kna1-kunnr
+               RETURNING VALUE(e_land1) TYPE kna1-kunnr.
+ENDCLASS.
+
+CLASS clas1 IMPLEMENTATION.
+  METHOD m1.
+    SELECT SINGLE land1 INTO e_land1
+    FROM kna1
+    WHERE kunnr = i_kunnr.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(obj) = NEW clas1( ).
+  DATA lv_land1 TYPE kna1-land1.
+
+  PARAMETERS p_kunnr TYPE kna1-kunnr.
+
+  CALL METHOD obj->m1
+    EXPORTING
+      i_kunnr = p_kunnr
+    RECEIVING
+      e_land1 = lv_land1.
+
+  WRITE :/ 'Customer country is ',lv_land1.
+
+  ULINE.
+  CLEAR lv_land1.
+  lv_land1 =  obj->m1( i_kunnr = p_kunnr ).
+  WRITE :/ 'Customer country is ',lv_land1.

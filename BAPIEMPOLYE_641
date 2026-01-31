@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_BAPIEMPOLYE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_bapiempolye_641.
+
+DATA zre TYPE bapiret2.
+DATA itab TYPE zbapi_employee_641.
+
+PARAMETERS p_id TYPE zbapi_employee_641-emp_id.
+PARAMETERS p_name TYPE zbapi_employee_641-emp_name.
+
+itab-emp_id   = p_id.
+itab-emp_name = p_name.
+
+CALL FUNCTION 'ZBAPI_EMPLOYE_CREATE'
+  EXPORTING
+    pemployee = itab
+  IMPORTING
+    return    = zre.
+
+* Check BAPI result and commit
+IF zre-type IS INITIAL OR zre-type = 'S'.
+  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+    EXPORTING
+      wait = 'X'.
+
+  MESSAGE s010(zmessge_1).
+ELSE.
+  CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'
+*   IMPORTING
+*     RETURN        =
+    .
+
+  MESSAGE e011(zmessge_1) DISPLAY LIKE 'I'. "WITH zre-message.
+ENDIF.

@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report ZCL_CLASS_CONSTRUCT_DEMO
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcl_class_construct_demo.
+
+CLASS lcl_static_demo DEFINITION.
+  PUBLIC SECTION.
+    CLASS-DATA gv_counter TYPE i.
+    CLASS-METHODS: show_counter.
+*  PRIVATE SECTION.
+    CLASS-METHODS: class_constructor.
+ENDCLASS.
+
+CLASS lcl_static_demo IMPLEMENTATION.
+  METHOD class_constructor.
+    gv_counter = 100.   "Initialized only once
+  ENDMETHOD.
+
+  METHOD show_counter.
+    gv_counter = gv_counter + 1.
+    WRITE: / 'Counter:', gv_counter.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  lcl_static_demo=>show_counter( ).  " First call # triggers CLASS_CONSTRUCTOR
+  lcl_static_demo=>show_counter( ).
+  lcl_static_demo=>show_counter( ).

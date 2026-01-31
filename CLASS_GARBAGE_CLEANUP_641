@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_GARBAGE_CLEANUP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_garbage_cleanup_641.
+
+CLASS zcl_demo DEFINITION.
+  PUBLIC SECTION.
+    METHODS constructor.
+    METHODS cleanup. "instead of destructor
+ENDCLASS.
+
+CLASS zcl_demo IMPLEMENTATION.
+  METHOD constructor.
+    WRITE: / 'Object created'.
+  ENDMETHOD.
+
+  METHOD cleanup.
+    WRITE: / 'Cleanup done before object goes out of scope'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lo_demo) = NEW zcl_demo( ).
+  lo_demo->cleanup( ).

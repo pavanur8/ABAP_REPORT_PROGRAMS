@@ -1,0 +1,354 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_EDITSAVE_ALVOOPS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_editsave_alvoops_641.
+
+TYPE-POOLS : icon.
+
+TYPES  : BEGIN OF tab,
+
+           carrid    TYPE spfli-carrid,
+
+           connid    TYPE spfli-connid,
+
+           countryfr TYPE spfli-countryfr,
+
+           cityfrom  TYPE spfli-cityfrom,
+
+           airpfrom  TYPE spfli-airpfrom,
+
+           countryto TYPE spfli-countryto,
+
+           cityto    TYPE spfli-cityto,
+
+           airpto    TYPE spfli-airpto,
+
+         END OF tab.
+
+DATA  : it_spfli     TYPE TABLE OF tab,
+
+        it_spfli_old TYPE TABLE OF tab,
+
+        it_spfli_new TYPE TABLE OF spfli,
+
+        wa_spfli_new TYPE spfli,
+
+        wa_spfli     TYPE tab,
+
+        ok_code      TYPE sy-ucomm,
+
+        o_cust       TYPE REF TO cl_gui_custom_container,
+
+        o_alv        TYPE REF TO cl_gui_alv_grid,
+
+        it_fcat      TYPE lvc_t_fcat,
+
+        is_fcat      TYPE lvc_s_fcat,
+
+        is_layo      TYPE lvc_s_layo,
+
+        check.
+DATA pcarrid TYPE spfli-carrid.
+
+
+CLASS  handle_event DEFINITION.
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS : handle_toolbar
+
+      FOR EVENT toolbar OF cl_gui_alv_grid
+
+      IMPORTING e_object
+
+                e_interactive.
+
+    CLASS-METHODS : handle_user_command
+
+      FOR EVENT user_command OF cl_gui_alv_grid
+
+      IMPORTING e_ucomm.
+
+ENDCLASS.
+
+
+
+CLASS  handle_event IMPLEMENTATION.
+
+  METHOD handle_toolbar.
+
+*    *ADDING A SAVE BUTTONN TO THE ALV TOOLBAR *
+
+    DATA : is_btn TYPE stb_button.
+
+    is_btn-function = 'SAVE'.
+
+    is_btn-icon = icon_system_save.
+
+    is_btn-text = 'SAVE'.
+
+    is_btn-quickinfo = 'SAVE'.
+
+    is_btn-disabled = ' '.
+
+    APPEND is_btn TO e_object->mt_toolbar.
+
+  ENDMETHOD.
+
+
+  METHOD handle_user_command .
+
+    CASE e_ucomm.
+
+      WHEN 'SAVE'.
+        "will trigger when click on alv toolbar ‘save’ button
+
+        PERFORM update_data_base.
+
+    ENDCASE.
+
+  ENDMETHOD.
+  "handle_user_command
+
+ENDCLASS.                    "handle_event implementation
+
+START-OF-SELECTION.
+
+  PERFORM data_fetch.
+
+  PERFORM buld_fieldcat.
+
+  PERFORM buld_layout.
+
+END-OF-SELECTION.
+
+  CALL SCREEN 100.
+
+*————————————————————-*
+
+FORM  data_fetch .
+
+  SELECT carrid connid countryfr cityfrom airpfrom countryto cityto airpto
+    FROM spfli
+    INTO TABLE it_spfli
+    WHERE carrid = pcarrid.
+
+  SORT it_spfli BY carrid connid.
+
+  it_spfli_old = it_spfli.
+
+ENDFORM.
+"data_fetch
+
+
+MODULE  display_alv OUTPUT.
+
+  IF o_cust IS NOT BOUND.
+
+    CREATE OBJECT o_cust
+      EXPORTING
+        container_name = 'COT'.
+
+  ENDIF.
+
+  IF o_alv IS NOT BOUND.
+
+    CREATE OBJECT o_alv
+      EXPORTING
+        i_parent = o_cust.
+
+    SET HANDLER  handle_event=>handle_toolbar FOR o_alv.
+
+    SET HANDLER  handle_event=>handle_user_command FOR o_alv.
+
+    CALL METHOD o_alv->set_table_for_first_display
+      EXPORTING
+        is_layout       = is_layo
+      CHANGING
+        it_outtab       = it_spfli
+        it_fieldcatalog = it_fcat.
+
+    CALL METHOD o_alv->set_toolbar_interactive.
+
+  ENDIF.
+
+  CALL METHOD o_alv->refresh_table_display.
+ENDMODULE.
+"display_alv  output
+
+FORM  buld_fieldcat .
+
+  is_fcat-col_pos = 1 .
+
+  is_fcat-fieldname = 'CARRID'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Carrer No.'.
+
+  is_fcat-key = 'X'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 2 .
+
+  is_fcat-fieldname = 'CONNID'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Conn No.'.
+
+  is_fcat-key = 'X'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 3 .
+
+  is_fcat-fieldname = 'COUNTRYFR'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Country From'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 4 .
+
+  is_fcat-fieldname = 'CITYFROM'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'City From'.
+
+  is_fcat-edit = 'X'.  "makes only this field as editable
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 5 .
+
+  is_fcat-fieldname = 'AIRPFROM'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Airp From'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 6.
+
+  is_fcat-fieldname = 'COUNTRYTO'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Country To'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 7 .
+
+  is_fcat-fieldname = 'CITYTO'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'City To'.
+
+  is_fcat-edit = 'X'.  "makes only this field as editable
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+  is_fcat-col_pos = 8 .
+
+  is_fcat-fieldname = 'AIRPTO'.
+
+  is_fcat-tabname = 'IT_SPFLI'.
+
+  is_fcat-scrtext_l = 'Airport To'.
+
+  APPEND  is_fcat TO it_fcat.
+
+  CLEAR is_fcat.
+
+ENDFORM.
+
+"buld_fieldcat
+
+FORM  buld_layout .
+
+  is_layo-col_opt = 'X'.
+
+*  is_layo-edit = ‘X’. ” ALL FIELDS ARE EDITABLE
+
+ENDFORM.                    "buld_layout
+
+*————————————————————–*
+
+MODULE  status_0100 OUTPUT.
+
+  SET PF-STATUS 'STATUS'.
+
+ENDMODULE.                  "status_0100  output
+
+*———————————————————–*
+
+MODULE  user_command_0100 INPUT.
+
+  CASE  ok_code.
+
+    WHEN 'SAVE'.
+      "will trigger when click on standard toolbar save button
+
+      PERFORM update_data_base.
+
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+
+      LEAVE TO SCREEN 0.
+
+  ENDCASE.
+
+ENDMODULE.
+"user_command_0100  input
+
+FORM  update_data_base .
+
+  CALL METHOD o_alv->check_changed_data
+    IMPORTING
+      e_valid = check.
+
+  IF it_spfli NE it_spfli_old.
+
+    LOOP AT it_spfli INTO wa_spfli.
+
+      MOVE-CORRESPONDING wa_spfli TO wa_spfli_new.
+
+      APPEND wa_spfli_new TO it_spfli_new.
+
+    ENDLOOP.
+
+    MODIFY spfli FROM TABLE it_spfli_new.
+
+    IF  sy-subrc = 0.
+
+      MESSAGE 'database TABLE spfli updated' TYPE 'S'.
+
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+"update_data_ba

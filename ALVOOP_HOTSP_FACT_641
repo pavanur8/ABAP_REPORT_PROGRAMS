@@ -1,0 +1,80 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO11_ALVOOP_HOTSP_FACT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report ZPRO11_ALVOOP_HOTSP_FACT_641.
+
+types : begin of LSP,
+          CARRID    type S_CARR_ID,
+          CONNID    type S_CONN_ID,
+          COUNTRYFR type LAND1,
+          CITYFROM  type S_FROM_CIT,
+          CITYTO    type S_TO_CITY,
+          AIRPTO    type S_TOAIRP,
+        end of LSP.
+
+types : begin of LSF,
+          CARRID    type S_CARR_ID,
+          FLDATE    type S_DATE,
+          PRICE     type S_PRICE,
+          CURRENCY  type S_CURRCODE,
+          PLANETYPE type S_PLANETYE,
+        end of LSF.
+
+data ITAB type table of LSP.
+data WA type LSP.
+data ITABF type table of LSF.
+data WAF type LSF.
+data LV_CARRID type S_CARR_ID.
+data LO_ALV1 type ref to CL_SALV_TABLE.
+data LO_ALV2 type ref to CL_SALV_TABLE.
+data LO_EVENT type ref to CL_SALV_EVENTS_TABLE.
+
+select-options SCARRID for LV_CARRID.
+
+class CLAS definition.
+  public section.
+    methods HANDLE for event ADDED_FUNCTION of CL_SALV_EVENTS_TABLE.
+endclass.
+
+class CLAS implementation.
+  method HANDLE.
+  endmethod.
+endclass.
+
+start-of-selection.
+
+  set pf-status 'ORD'.
+
+  select CARRID CONNID COUNTRYFR CITYFROM CITYTO  AIRPTO
+  from SPFLI
+  into table ITAB
+  where CARRID in SCARRID.
+
+  try.
+      call method CL_SALV_TABLE=>FACTORY
+*  exporting
+*    LIST_DISPLAY   = IF_SALV_C_BOOL_SAP=>FALSE
+*    R_CONTAINER    =
+*    CONTAINER_NAME =
+        importing
+          R_SALV_TABLE = LO_ALV1
+        changing
+          T_TABLE      = ITAB.
+    catch CX_SALV_MSG.
+  endtry.
+
+  call method LO_ALV1->IF_SALV_GUI_OM_TABLE_INFO~SET_SCREEN_STATUS
+    exporting
+      REPORT   = SY-REPID
+      PFSTATUS = 'ORD'
+*     SET_FUNCTIONS = CL_SALV_MODEL_BASE=>C_FUNCTIONS_NONE
+    .
+  call method LO_ALV1->IF_SALV_GUI_OM_TABLE_INFO~GET_EVENT
+    receiving
+      VALUE = LO_EVENT.
+
+  data(OBJ) = new CLAS( ).
+
+  call method LO_ALV1->IF_SALV_GUI_OM_TABLE_ACTION~DISPLAY.

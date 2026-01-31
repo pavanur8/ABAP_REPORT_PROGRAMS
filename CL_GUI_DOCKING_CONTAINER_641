@@ -1,0 +1,17 @@
+*&---------------------------------------------------------------------*
+*& Report ZCL_GUI_DOCKING_CONTAINER_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcl_gui_docking_container_641.
+
+DATA obj_dock TYPE REF TO cl_gui_docking_container.
+DATA : obj_grid TYPE REF TO cl_gui_alv_grid.
+DATA : ok_code TYPE sy-ucomm.
+SELECT * FROM vbak INTO TABLE @DATA(lt_vbak) UP TO 18 ROWS.
+
+CALL SCREEN 4000.
+
+INCLUDE zcl_gui_docking_container_6o01.
+
+INCLUDE zcl_gui_docking_container_6i01.
