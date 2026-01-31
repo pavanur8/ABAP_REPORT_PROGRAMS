@@ -1,0 +1,141 @@
+REPORT zoop_alv_grouping_field2_641.
+
+* Define types for combined VBAK and VBAP data
+TYPES: BEGIN OF ty_order,
+         vbeln  TYPE vbak-vbeln,
+         erdat  TYPE vbak-erdat,
+         erzet  TYPE vbak-erzet,
+         ernam  TYPE vbak-ernam,
+         auart  TYPE vbak-auart,
+         netwr  TYPE vbak-netwr,
+         waerk  TYPE vbak-waerk,
+         kunnr  TYPE vbak-kunnr,
+         posnr  TYPE vbap-posnr,
+         matnr  TYPE vbap-matnr,
+         matkl  TYPE vbap-matkl,
+         arktx  TYPE vbap-arktx,
+         kwmeng TYPE vbap-kwmeng,
+         vrkme  TYPE vbap-vrkme,
+       END OF ty_order.
+
+* Data declarations
+DATA: gt_orders    TYPE TABLE OF ty_order,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_container TYPE REF TO cl_gui_custom_container,
+      gt_fieldcat  TYPE lvc_t_fcat,
+      gt_groups    TYPE lvc_t_sgrp,
+      gs_layout    TYPE lvc_s_layo.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  PERFORM build_field_catalog_and_groups.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+    WHEN 'REFRESH'.  " Custom function code for dynamic refresh
+      PERFORM dynamic_group_update.
+      CALL METHOD go_alv->refresh_table_display.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch data from VBAK and VBAP
+FORM fetch_data.
+  SELECT a~vbeln, a~erdat, a~erzet, a~ernam, a~auart, a~netwr, a~waerk, a~kunnr,
+         b~posnr, b~matnr, b~matkl, b~arktx, b~kwmeng, b~vrkme
+    FROM vbak AS a
+    INNER JOIN vbap AS b ON a~vbeln = b~vbeln
+    INTO TABLE @gt_orders
+    UP TO 50 ROWS.
+ENDFORM.
+
+* Form to build field catalog and define groups
+FORM build_field_catalog_and_groups.
+  DATA: ls_fcat  TYPE lvc_s_fcat,
+        ls_group TYPE lvc_s_sgrp.
+
+  " Clear previous
+  CLEAR: gt_fieldcat, gt_groups.
+
+  " Group 1: Order Header Info
+  ls_fcat-fieldname = 'VBELN'. ls_fcat-coltext = 'Sales Doc'. ls_fcat-sp_group = 'HDR'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'ERDAT'. ls_fcat-coltext = 'Created Date'. ls_fcat-sp_group = 'HDR'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'ERZET'. ls_fcat-coltext = 'Created Time'. ls_fcat-sp_group = 'HDR'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'ERNAM'. ls_fcat-coltext = 'Created By'. ls_fcat-sp_group = 'HDR'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'AUART'. ls_fcat-coltext = 'Order Type'. ls_fcat-sp_group = 'HDR'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 2: Financial Info
+  ls_fcat-fieldname = 'NETWR'. ls_fcat-coltext = 'Net Value'. ls_fcat-sp_group = 'FIN'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'WAERK'. ls_fcat-coltext = 'Currency'. ls_fcat-sp_group = 'FIN'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 3: Customer Info
+  ls_fcat-fieldname = 'KUNNR'. ls_fcat-coltext = 'Customer'. ls_fcat-sp_group = 'CUS'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 4: Item Info
+  ls_fcat-fieldname = 'POSNR'. ls_fcat-coltext = 'Item No'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'MATNR'. ls_fcat-coltext = 'Material'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'MATKL'. ls_fcat-coltext = 'Material Grp'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'ARKTX'. ls_fcat-coltext = 'Description'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'KWMENG'. ls_fcat-coltext = 'Quantity'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'VRKME'. ls_fcat-coltext = 'UOM'. ls_fcat-sp_group = 'ITM'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Define group texts
+  ls_group-sp_group = 'HDR'. ls_group-text = 'Header Info'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'FIN'. ls_group-text = 'Financial Info'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'CUS'. ls_group-text = 'Customer Info'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'ITM'. ls_group-text = 'Item Info'. APPEND ls_group TO gt_groups.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  CLEAR gs_layout.
+
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout         = gs_layout
+      it_special_groups = gt_groups
+    CHANGING
+      it_outtab         = gt_orders
+      it_fieldcatalog   = gt_fieldcat.
+
+  CALL METHOD cl_gui_cfw=>flush.
+ENDFORM.
+
+* Form for dynamic group update (advanced example: add a new group on refresh)
+FORM dynamic_group_update.
+  DATA: ls_fcat  TYPE lvc_s_fcat,
+        ls_group TYPE lvc_s_sgrp.
+
+  " Example: Dynamically add a new field to a new group
+  ls_fcat-fieldname = 'DYNAMIC_FIELD'. ls_fcat-coltext = 'Dynamic Field'. ls_fcat-sp_group = 'DYN'. APPEND ls_fcat TO gt_fieldcat.
+
+  ls_group-sp_group = 'DYN'. ls_group-text = 'Dynamic Group'. APPEND ls_group TO gt_groups.
+
+  " Update field catalog
+  CALL METHOD go_alv->set_frontend_fieldcatalog( gt_fieldcat ).
+
+  " To update groups, refresh the ALV with new groups (set_special_groups is protected, so recreate or refresh fully)
+  CALL METHOD go_alv->refresh_table_display.
+ENDFORM.

@@ -1,0 +1,104 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_SET_VISIBLE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_set_visible_641.
+
+
+* Global data declarations
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_textedit  TYPE REF TO cl_gui_textedit.
+
+* Screen 100 PBO module
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  TRY.
+      " Create custom container (assuming 'CUSTOM_CONTROL' is the name of the custom control on screen 100)
+      IF go_container IS INITIAL.
+        CREATE OBJECT go_container
+          EXPORTING
+            container_name              = 'CUSTOM_CONTROL'
+          EXCEPTIONS
+            cntl_error                  = 1
+            cntl_system_error           = 2
+            create_error                = 3
+            lifetime_error              = 4
+            lifetime_dynpro_dynpro_link = 5.
+        IF sy-subrc <> 0.
+          MESSAGE 'Error creating container' TYPE 'E'.
+        ENDIF.
+      ENDIF.
+
+      " Create textedit control inside the container
+      IF go_textedit IS INITIAL.
+        CREATE OBJECT go_textedit
+          EXPORTING
+            parent                 = go_container
+          EXCEPTIONS
+            error_cntl_create      = 1
+            error_cntl_init        = 2
+            error_cntl_link        = 3
+            error_dp_create        = 4
+            gui_type_not_supported = 5.
+        IF sy-subrc <> 0.
+          MESSAGE 'Error creating textedit control' TYPE 'E'.
+        ENDIF.
+      ENDIF.
+
+      " Set position of the textedit control within the container
+      CALL METHOD go_textedit->set_position
+        EXPORTING
+          height            = 200  " Height in pixels
+          left              = 10   " Left position in pixels
+          top               = 10   " Top position in pixels
+          width             = 300  " Width in pixels
+        EXCEPTIONS
+          cntl_error        = 1
+          cntl_system_error = 2.
+      IF sy-subrc <> 0.
+        CASE sy-subrc.
+          WHEN 1.
+            MESSAGE 'Control error during positioning' TYPE 'E'.
+          WHEN 2.
+            MESSAGE 'System error during positioning' TYPE 'E'.
+        ENDCASE.
+      ENDIF.
+
+      " Flush to synchronize GUI
+      CALL METHOD cl_gui_cfw=>flush
+        EXCEPTIONS
+          cntl_system_error = 1
+          cntl_error        = 2.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error flushing GUI controls' TYPE 'E'.
+      ENDIF.
+
+    CATCH cx_root INTO DATA(lx_error).
+      MESSAGE lx_error->get_text( ) TYPE 'E'.
+  ENDTRY.
+
+ENDMODULE.
+
+* Screen 100 PAI module (basic, for completeness)
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      " Clean up objects before leaving
+      IF go_textedit IS BOUND.
+        CALL METHOD go_textedit->free.
+        FREE go_textedit.
+      ENDIF.
+      IF go_container IS BOUND.
+        CALL METHOD go_container->free.
+        FREE go_container.
+      ENDIF.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Start the program
+START-OF-SELECTION.
+  CALL SCREEN 100.

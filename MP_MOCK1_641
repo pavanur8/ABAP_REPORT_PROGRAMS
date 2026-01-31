@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZMP_MOCK1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM zmp_mock1_641.
+
+TABLES  ZEMPLOYE_641.
+
+INCLUDE zwadeclarationmp.
+
+CONTROLS main_tab TYPE TABSTRIP.
+
+
+INCLUDE zmp_mock1_641_user_command_i01.
+
+INCLUDE zmp_mock1_641_status_0101o01.
+
+INCLUDE zmp_mock1_641_user_command_i02.
+
+INCLUDE zmp_mock1_641_status_0102o01.
+
+INCLUDE zmp_mock1_641_user_command_i03.
+
+INCLUDE zmp_mock1_641_user_command_i04.
+
+INCLUDE zmp_mock1_641_field_validati01.
+
+INCLUDE zmp_mock1_641_status_0100o01.

@@ -1,0 +1,175 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_EDITABLE_ALV_641
+*&---------------------------------------------------------------------*
+REPORT zoop_editable_alv_641.
+
+" Data declarations
+DATA: lt_mapping  TYPE STANDARD TABLE OF zorder_hea5,
+      lt_fieldcat TYPE lvc_t_fcat,
+      ls_fieldcat TYPE lvc_s_fcat,
+      lw_layout   TYPE lvc_s_layo.
+
+" GUI objects
+DATA: r_container TYPE REF TO cl_gui_custom_container,
+      r_grid      TYPE REF TO cl_gui_alv_grid.
+
+" local tables for row selection
+DATA: lt_t_row TYPE lvc_t_row,
+      ls_t_row TYPE lvc_s_row.
+
+FIELD-SYMBOLS: <fs_changed_data> LIKE LINE OF lt_mapping.
+
+" --------------------------------------------------------------------
+" Start-of-selection: fetch data and call screen 200 (PBO will build ALV)
+" --------------------------------------------------------------------
+
+START-OF-SELECTION.
+  " fetch up to 20 rows for demo
+  SELECT *
+    FROM zorder_hea5
+    INTO TABLE lt_mapping
+  UP TO 20 ROWS.
+
+  CALL SCREEN 200.
+
+  " --------------------------------------------------------------------
+  " PBO Module for screen 200: create ALV grid and populate
+  " --------------------------------------------------------------------
+MODULE status_0200 OUTPUT.
+  " set GUI status / title (PF-STATUS must exist in the screen)
+  SET PF-STATUS 'PF-STATUS'.
+  SET TITLEBAR 'TITLE'.
+
+  " Create container and grid only once (to avoid multiple creations)
+  IF r_container IS INITIAL.
+    CREATE OBJECT r_container
+      EXPORTING
+        container_name = 'CUSTOM_1'. " must match custom control name on screen 200
+  ENDIF.
+
+  IF r_grid IS INITIAL.
+    CREATE OBJECT r_grid
+      EXPORTING
+        i_parent = r_container.
+  ENDIF.
+
+  " --- Build Field Catalog (map to ZORDER_HEA5 structure fields) ---
+  CLEAR ls_fieldcat.
+  ls_fieldcat-fieldname = 'ORDER_NUMBER'.
+  ls_fieldcat-tabname   = 'ZORDER_HEA5'.
+  ls_fieldcat-seltext   = 'Order Number'.
+  ls_fieldcat-edit      = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  CLEAR ls_fieldcat.
+  ls_fieldcat-fieldname = 'ORDER_ODATE'.
+  ls_fieldcat-tabname   = 'ZORDER_HEA5'.
+  ls_fieldcat-seltext   = 'Order Date'.
+  ls_fieldcat-edit      = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  CLEAR ls_fieldcat.
+  ls_fieldcat-fieldname = 'PAYMENT_MODE'.
+  ls_fieldcat-tabname   = 'ZORDER_HEA5'.
+  ls_fieldcat-seltext   = 'Payment Mode'.
+  ls_fieldcat-edit      = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  CLEAR ls_fieldcat.
+  ls_fieldcat-fieldname = 'TOTAL_AMOUNT'.
+  ls_fieldcat-tabname   = 'ZORDER_HEA5'.
+  ls_fieldcat-seltext   = 'Total Amount'.
+  ls_fieldcat-edit      = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  CLEAR ls_fieldcat.
+  ls_fieldcat-fieldname = 'CURRENCY'.
+  ls_fieldcat-tabname   = 'ZORDER_HEA5'.
+  ls_fieldcat-seltext   = 'Currency'.
+  ls_fieldcat-edit      = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  " Optional: layout defaults
+  lw_layout-zebra      = abap_true.
+  lw_layout-cwidth_opt = abap_true.
+
+  " Display the ALV (first display). Use CHANGING it_outtab so edits are visible in lt_mapping
+  CALL METHOD r_grid->set_table_for_first_display
+    EXPORTING
+      i_structure_name              = 'ZORDER_HEA5'
+      i_save                        = 'A'
+      i_default                     = abap_true
+      is_layout                     = lw_layout
+    CHANGING
+      it_outtab                     = lt_mapping
+      it_fieldcatalog               = lt_fieldcat
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+ENDMODULE.
+
+" --------------------------------------------------------------------
+" User command processing for screen 200 (SAVE / BACK / EXIT / CANCEL)
+" --------------------------------------------------------------------
+MODULE user_command_0200 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      " Leave program safely
+      LEAVE PROGRAM.
+
+    WHEN 'SAVE'.
+      " Ensure any pending cell changes are transferred
+      CALL METHOD r_grid->check_changed_data.
+
+      " Get selected rows (indexes in ALV). If user wants to save only selected rows.
+      CLEAR lt_t_row.
+      CALL METHOD r_grid->get_selected_rows
+        IMPORTING
+          et_index_rows = lt_t_row.
+
+      " If no rows selected, save all rows (alternate behaviour)
+      IF lt_t_row IS INITIAL.
+        " Save all rows from lt_mapping to DB table
+        LOOP AT lt_mapping ASSIGNING <fs_changed_data>.
+          MODIFY zorder_hea5 FROM <fs_changed_data>.
+        ENDLOOP.
+      ELSE.
+        " Save only selected rows
+        LOOP AT lt_t_row INTO ls_t_row.
+          " The structure lvc_s_row has the field INDEX (row index)
+          READ TABLE lt_mapping ASSIGNING <fs_changed_data> INDEX ls_t_row-index.
+          IF sy-subrc = 0.
+            MODIFY zorder_hea5 FROM <fs_changed_data>.
+          ENDIF.
+        ENDLOOP.
+      ENDIF.
+
+      " Feedback
+      COMMIT WORK.
+      MESSAGE 'Selected records saved.' TYPE 'S'.
+
+    WHEN OTHERS.
+      " Other PF-STATUS actions can be handled here
+  ENDCASE.
+ENDMODULE.
+
+" --------------------------------------------------------------------
+" Optional: free GUI objects when leaving screen
+" --------------------------------------------------------------------
+MODULE cleanup_0200 OUTPUT.
+  IF sy-ucomm = 'EXIT' OR sy-ucomm = 'BACK' OR sy-ucomm = 'CANCEL'.
+    IF r_grid IS BOUND.
+      FREE r_grid.
+    ENDIF.
+    IF r_container IS BOUND.
+      FREE r_container.
+    ENDIF.
+  ENDIF.
+ENDMODULE.

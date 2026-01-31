@@ -1,0 +1,89 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_MVC_DEMO1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_mvc_demo1_641.
+
+
+"MODEL CLASS - Data Handling (DB Access)
+
+CLASS lcl_model DEFINITION.
+  PUBLIC SECTION.
+    TYPES: BEGIN OF ty_employee,
+             emp_id        TYPE zemp_id_t,
+             emp_name      TYPE zemp_name_t,
+             emp_mobilenum TYPE zemp_mobile_no,
+             emp_salary    TYPE zemp_salary641,
+             emp_join_date TYPE zempjoining_date,
+           END OF ty_employee.
+
+    TYPES: tt_employee TYPE STANDARD TABLE OF ty_employee WITH DEFAULT KEY.
+
+    METHODS:
+      get_employees
+        RETURNING VALUE(rt_employees) TYPE tt_employee.
+ENDCLASS.
+
+CLASS lcl_model IMPLEMENTATION.
+  METHOD get_employees.
+    SELECT emp_id,
+           emp_name,
+           emp_mobilenum,
+           emp_salary,
+           emp_join_date
+      FROM zemp_salary18
+      INTO TABLE @rt_employees.
+  ENDMETHOD.
+ENDCLASS.
+
+
+"VIEW CLASS - Display Handling
+
+CLASS lcl_view DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+      display_alv CHANGING ct_employees TYPE lcl_model=>tt_employee.
+ENDCLASS.
+
+CLASS lcl_view IMPLEMENTATION.
+  METHOD display_alv.
+    DATA: lo_alv TYPE REF TO cl_salv_table.
+
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING r_salv_table = lo_alv
+          CHANGING  t_table      = ct_employees ).
+
+        lo_alv->display( ).
+      CATCH cx_salv_msg INTO DATA(lx_msg).
+        MESSAGE lx_msg->get_text( ) TYPE 'E'.
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
+
+
+"CONTROLLER CLASS - Business Flow
+
+CLASS lcl_controller DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+      run.
+  PRIVATE SECTION.
+    DATA: lo_model TYPE REF TO lcl_model,
+          lo_view  TYPE REF TO lcl_view.
+ENDCLASS.
+
+CLASS lcl_controller IMPLEMENTATION.
+  METHOD run.
+    lo_model = NEW lcl_model( ).
+    lo_view  = NEW lcl_view( ).
+
+    DATA(lt_employees) = lo_model->get_employees( ).
+    lo_view->display_alv( CHANGING ct_employees = lt_employees ).
+  ENDMETHOD.
+ENDCLASS.
+
+
+START-OF-SELECTION.
+  NEW lcl_controller( )->run( ).

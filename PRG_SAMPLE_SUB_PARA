@@ -1,0 +1,16 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SAMPLE_SUB_PARA
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_SAMPLE_SUB_PARA.
+
+DATA : lo TYPE numc3.
+PARAMETERS : lv1 TYPE numc3.
+PARAMETERS : lv2 TYPE numc3.
+PERFORM sum USING lv1 lv2 CHANGING lo.
+WRITE lo.
+*INCLUDE yg_sample_sub_para_sumf01.
+FORM sum USING lv1 lv2 CHANGING lo.
+  lo = lv1 + lv2.
+ENDFORM.

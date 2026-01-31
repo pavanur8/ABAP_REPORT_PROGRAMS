@@ -1,0 +1,124 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_GROUPING_FIELDS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_grouping_fields_641.
+
+* Define types for output table with multiple fields
+TYPES: BEGIN OF ty_data,
+         field1  TYPE char10,
+         field2  TYPE char10,
+         field3  TYPE char10,
+         field4  TYPE char10,
+         field5  TYPE char10,
+         field6  TYPE char10,
+         field7  TYPE char10,
+         field8  TYPE char10,
+         field9  TYPE char10,
+         field10 TYPE char10,
+       END OF ty_data.
+
+* Data declarations
+DATA: gt_data      TYPE TABLE OF ty_data,
+      gs_data      TYPE ty_data,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_container TYPE REF TO cl_gui_custom_container,
+      gt_fieldcat  TYPE lvc_t_fcat,
+      gt_groups    TYPE lvc_t_sgrp,
+      gs_layout    TYPE lvc_s_layo.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fill_data.
+  PERFORM build_field_catalog.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fill sample data
+FORM fill_data.
+  DO 10 TIMES.
+    CLEAR gs_data.
+    gs_data-field1 = |F1_{ sy-index }|.
+    gs_data-field2 = |F2_{ sy-index }|.
+    gs_data-field3 = |F3_{ sy-index }|.
+    gs_data-field4 = |F4_{ sy-index }|.
+    gs_data-field5 = |F5_{ sy-index }|.
+    gs_data-field6 = |F6_{ sy-index }|.
+    gs_data-field7 = |F7_{ sy-index }|.
+    gs_data-field8 = |F8_{ sy-index }|.
+    gs_data-field9 = |F9_{ sy-index }|.
+    gs_data-field10 = |F10_{ sy-index }|.
+    APPEND gs_data TO gt_data.
+  ENDDO.
+ENDFORM.
+
+* Form to build field catalog and groups
+FORM build_field_catalog.
+  DATA: ls_fcat  TYPE lvc_s_fcat,
+        ls_group TYPE lvc_s_sgrp.
+
+  " Group 1: Fields 1-3
+  ls_fcat-fieldname = 'FIELD1'. ls_fcat-coltext = 'Field 1'. ls_fcat-sp_group = 'GRP1'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD2'. ls_fcat-coltext = 'Field 2'. ls_fcat-sp_group = 'GRP1'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD3'. ls_fcat-coltext = 'Field 3'. ls_fcat-sp_group = 'GRP1'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 2: Fields 4-6
+  ls_fcat-fieldname = 'FIELD4'. ls_fcat-coltext = 'Field 4'. ls_fcat-sp_group = 'GRP2'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD5'. ls_fcat-coltext = 'Field 5'. ls_fcat-sp_group = 'GRP2'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD6'. ls_fcat-coltext = 'Field 6'. ls_fcat-sp_group = 'GRP2'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 3: Fields 7-9
+  ls_fcat-fieldname = 'FIELD7'. ls_fcat-coltext = 'Field 7'. ls_fcat-sp_group = 'GRP3'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD8'. ls_fcat-coltext = 'Field 8'. ls_fcat-sp_group = 'GRP3'. APPEND ls_fcat TO gt_fieldcat.
+  ls_fcat-fieldname = 'FIELD9'. ls_fcat-coltext = 'Field 9'. ls_fcat-sp_group = 'GRP3'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Group 4: Field 10
+  ls_fcat-fieldname = 'FIELD10'. ls_fcat-coltext = 'Field 10'. ls_fcat-sp_group = 'GRP4'. APPEND ls_fcat TO gt_fieldcat.
+
+  " Define group texts
+  ls_group-sp_group = 'GRP1'. ls_group-text = 'Group 1'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'GRP2'. ls_group-text = 'Group 2'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'GRP3'. ls_group-text = 'Group 3'. APPEND ls_group TO gt_groups.
+  ls_group-sp_group = 'GRP4'. ls_group-text = 'Group 4'. APPEND ls_group TO gt_groups.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  CLEAR gs_layout.
+
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout         = gs_layout
+      it_special_groups = gt_groups  " Pass groups for field selection
+    CHANGING
+      it_outtab         = gt_data
+      it_fieldcatalog   = gt_fieldcat.
+
+  CALL METHOD cl_gui_cfw=>flush.
+ENDFORM.

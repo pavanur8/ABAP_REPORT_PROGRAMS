@@ -1,0 +1,45 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_CHANGING_ICON_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_changing_icon_641.
+
+DATA answer.
+
+DO 5 TIMES.
+
+  DATA(pop_type) = SWITCH icon-name( sy-index
+                                    WHEN 1 THEN 'ICON_MESSAGE_INFORMATION'
+                                    WHEN 2 THEN 'ICON_MESSAGE_WARNING'
+                                    WHEN 3 THEN 'ICON_MESSAGE_ERROR'
+                                    WHEN 4 THEN 'ICON_MESSAGE_QUESTION'
+                                    WHEN 5 THEN 'ICON_MESSAGE_CRITICAL' ).
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+*     TITLEBAR       = ' '
+*     DIAGNOSE_OBJECT             = ' '
+      text_question  = pop_type
+*     TEXT_BUTTON_1  = 'Ja'(001)
+*     ICON_BUTTON_1  = ' '
+*     TEXT_BUTTON_2  = 'Nein'(002)
+*     ICON_BUTTON_2  = ' '
+*     DEFAULT_BUTTON = '1'
+*     DISPLAY_CANCEL_BUTTON       = 'X'
+*     USERDEFINED_F1_HELP         = ' '
+*     START_COLUMN   = 25
+*     START_ROW      = 6
+      popup_type     = pop_type
+    IMPORTING
+      answer         = answer
+*   TABLES
+*     PARAMETER      =
+    EXCEPTIONS
+      text_not_found = 1
+      OTHERS         = 2.
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+
+ENDDO.

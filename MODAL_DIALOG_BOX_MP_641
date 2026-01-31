@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZMODAL_DIALOG_BOX_MP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM zmodal_dialog_box_mp_641.
+TABLES spfli.
+DATA p_car TYPE spfli-carrid.
+
+INCLUDE zmodal_dialog_box_mp_641_usi01.
+
+INCLUDE zmodal_dialog_box_mp_641_usi02.
+
+INCLUDE zmodal_dialog_box_mp_641_sto01.

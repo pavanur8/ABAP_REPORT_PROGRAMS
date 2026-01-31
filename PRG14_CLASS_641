@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG14_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg14_class_641.
+
+DATA(p_output_add) = 0.
+DATA(p_output_sub) = 0.
+DATA(p_output_mul) = 0.
+DATA(p_output_div) = 0.
+DATA(lo_object) = NEW zclass1_641( ).
+
+PARAMETERS p_input1 TYPE int4.
+PARAMETERS p_input2 TYPE int4.
+
+
+CALL METHOD lo_object->airthmetic
+  EXPORTING
+    pinput1      = p_input1
+    pinput2      = p_input2
+  IMPORTING
+    poutput_add  = p_output_add
+    poutput_sub  = p_output_sub
+    poutput_mul  = p_output_mul
+    poutput_divi = p_output_div
+  EXCEPTIONS
+    input_error  = 1
+    OTHERS       = 2.
+IF sy-subrc <> 0.
+  MESSAGE 'Please Enter 1 to 9 Numbers Not "0" ' TYPE 'E'.
+ELSE.
+  WRITE : / 'Addition :', p_output_add,
+          / 'Subtraction :', p_output_sub,
+          / 'Multiplication :',p_output_mul,
+          / 'Division :',p_output_div.
+ENDIF.

@@ -1,0 +1,133 @@
+REPORT zoop_alv_buttonclick_event_641.
+
+* Local class for event handling (define before referencing)
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: on_button_click FOR EVENT button_click OF cl_gui_alv_grid
+               IMPORTING es_col_id es_row_no.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_button_click.
+    " Handle the button click event
+    MESSAGE |Button clicked in column { es_col_id-fieldname } and row { es_row_no-row_id }| TYPE 'I'.
+  ENDMETHOD.
+ENDCLASS.
+
+* Define types for output table with style field for cell buttons
+TYPES: BEGIN OF ty_sflight,
+         carrid    TYPE sflight-carrid,
+         connid    TYPE sflight-connid,
+         fldate    TYPE sflight-fldate,
+         price     TYPE sflight-price,
+         currency  TYPE sflight-currency,
+         cellstyle TYPE lvc_t_styl,  " Field for cell styles (e.g., buttons)
+       END OF ty_sflight.
+
+* Data declarations
+DATA: gt_sflight       TYPE TABLE OF ty_sflight,
+      gs_sflight       TYPE ty_sflight,
+      go_alv           TYPE REF TO cl_gui_alv_grid,
+      go_container     TYPE REF TO cl_gui_custom_container,
+      go_event_handler TYPE REF TO lcl_event_handler.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch sample data and set cell styles
+FORM fetch_data.
+  DATA: lt_style TYPE lvc_t_styl,
+        ls_style TYPE lvc_s_styl.
+
+  SELECT carrid, connid, fldate, price, currency
+    FROM sflight
+    INTO CORRESPONDING FIELDS OF TABLE @gt_sflight
+    UP TO 30 ROWS.
+
+  " Set PRICE field as pushbutton for each row
+  LOOP AT gt_sflight ASSIGNING FIELD-SYMBOL(<fs_sflight>).
+    CLEAR lt_style.
+    ls_style-fieldname = 'PRICE'.
+    ls_style-style = cl_gui_alv_grid=>mc_style_button.
+    INSERT ls_style INTO TABLE lt_style.
+    <fs_sflight>-cellstyle = lt_style.
+  ENDLOOP.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  DATA: lt_fieldcat TYPE lvc_t_fcat,
+        ls_fieldcat TYPE lvc_s_fcat,
+        ls_layout   TYPE lvc_s_layo.
+
+  " Build field catalog manually to match ty_sflight (avoid mismatch with full SFLIGHT)
+  CLEAR lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'CARRID'.
+  ls_fieldcat-scrtext_m = 'Carrier ID'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'CONNID'.
+  ls_fieldcat-scrtext_m = 'Connection ID'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'FLDATE'.
+  ls_fieldcat-scrtext_m = 'Flight Date'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'PRICE'.
+  ls_fieldcat-scrtext_m = 'Price'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'CURRENCY'.
+  ls_fieldcat-scrtext_m = 'Currency'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  " Add cellstyle field to field catalog (hidden/technical)
+  ls_fieldcat-fieldname = 'CELLSTYLE'.
+  ls_fieldcat-tech = 'X'.  " Technical field, hidden
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  " Set layout to enable cell styles
+  ls_layout-stylefname = 'CELLSTYLE'.  " Crucial for cell-specific styles like buttons
+
+  " Display ALV with styles enabled
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = ls_layout
+    CHANGING
+      it_outtab       = gt_sflight
+      it_fieldcatalog = lt_fieldcat.
+
+  " Register event handler
+  CREATE OBJECT go_event_handler.
+  SET HANDLER go_event_handler->on_button_click FOR go_alv.
+ENDFORM.

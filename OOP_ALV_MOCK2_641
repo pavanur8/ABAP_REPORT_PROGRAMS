@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_OOP_ALV_MOCK2_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zreport_oop_alv_mock2_641.
+
+INCLUDE zdatadeclare. "Strutcure and Data Declarartion ..
+
+INCLUDE zclass_defimplemntation. "Class and Event Implementation..
+
+START-OF-SELECTION.
+
+INCLUDE zvbakdisp."Creating Object and Handling the Event..

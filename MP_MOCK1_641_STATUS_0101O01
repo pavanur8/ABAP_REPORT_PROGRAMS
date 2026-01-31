@@ -1,0 +1,47 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZMP_MOCK1_641_STATUS_0101O01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0101 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0101 OUTPUT.
+* SET PF-STATUS 'MP'.
+* SET TITLEBA,R 'xxx'.
+*  SELECT MAX( empid )
+*    INTO @DATA(lv_max_empid)
+*    FROM zemploye_641.
+*
+*  IF sy-subrc <> 0.
+*    DATA(lv_next_empid) = 1000.
+*  ELSE.
+*    lv_next_empid = lv_max_empid + 1.
+*  ENDIF.
+*  DATA genedated_id TYPE string.
+*  SELECT MAX( empid ) INTO @DATA(eid) FROM zemploye_641.
+*  IF sy-subrc = 0.
+*    lv_max_id = eid+2(4).
+*    lv_max_id = lv_max_id + 1.
+*    genedated_id = |LT{ lv_max_id }|.
+  SELECT MAX( empid )
+    INTO @DATA(lv_max_empid)
+    FROM zemploye_641.
+
+  IF sy-subrc <> 0.
+    DATA(lv_next_empid) = 1000.
+  ELSE.
+    lv_next_empid = lv_max_empid + 1.
+  ENDIF.
+
+  lv_max_id = lv_next_empid.
+
+
+*LOOP AT SCREEN.
+*  IF screen-name = 'WA-PHONENO'.
+*    screen-input = 1.   " makes field grey/non-editable
+*    MODIFY SCREEN.
+*  ENDIF.
+*ENDLOOP.
+
+ENDMODULE.

@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALV_TASK1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_alv_task108_lt.
+
+INCLUDE yinitial1.
+
+AT SELECTION-SCREEN OUTPUT.
+  IF c_region = '' AND p_land1 IS NOT INITIAL.
+    MESSAGE 'Please check Region checkbox to use Region Key' TYPE 'E'.
+  ENDIF.
+
+  LOOP AT SCREEN.
+    IF c_region = 'X'.
+      screen-invisible = 1.
+      screen-input     = 0.
+    ENDIF.
+    MODIFY SCREEN.
+
+ENDLOOP.
+INCLUDE yavrg9.
+
+INCLUDE yprgcall2.

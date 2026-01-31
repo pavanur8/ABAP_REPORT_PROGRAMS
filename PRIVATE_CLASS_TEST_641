@@ -1,0 +1,56 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRIVATE_CLASS_TEST_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprivate_class_test_641.
+
+CLASS a DEFINITION CREATE PRIVATE.
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS:
+
+      get_instance RETURNING VALUE(re_ref) TYPE REF TO a.
+
+  PRIVATE SECTION.
+
+    CLASS-DATA:
+
+    a_ref TYPE REF TO a.
+
+ENDCLASS. "a DEFINITION
+
+CLASS a IMPLEMENTATION.
+
+  METHOD get_instance.
+
+    IF a_ref IS NOT BOUND.
+
+      CREATE OBJECT a_ref.
+
+    ENDIF.
+
+    re_ref = a_ref.
+
+  ENDMETHOD. "get_instance
+
+ENDCLASS. "a IMPLEMENTATION
+
+START-OF-SELECTION.
+
+  DATA: a1 TYPE REF TO a.
+
+*  DATA: a1 TYPE REF TO a,
+
+  DATA  a2 TYPE REF TO a.
+
+  a1 = a=>get_instance( ).
+
+  a2 = a=>get_instance( ).
+
+  IF a1 = a2 .
+
+    WRITE: / 'Both instances are similar.'.
+
+  ENDIF.

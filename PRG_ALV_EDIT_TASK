@@ -1,0 +1,116 @@
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALV_EDIT_TASK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_ALV_EDIT_TASK.
+
+TABLES: zorder_head18.
+
+TYPES: BEGIN OF ty_order,
+         order_number TYPE zorder_ono,
+         order_odate  TYPE zorder_od,
+         payment_mode TYPE zorder_pm,
+         total_amount TYPE zorder_ta,
+         currency     TYPE zorder_cu,
+       END OF ty_order.
+
+DATA: gt_data     TYPE TABLE OF ty_order,
+      gs_data     TYPE ty_order,
+      gt_fcat     TYPE lvc_t_fcat,
+      gs_fcat     TYPE lvc_s_fcat,
+      gs_layout   TYPE lvc_s_layo.
+
+SELECT-OPTIONS: s_ono FOR gs_data-order_number.
+
+
+DATA: gv_save_triggered TYPE abap_bool VALUE abap_false.
+
+START-OF-SELECTION.
+
+  SELECT order_number order_odate payment_mode total_amount currency
+    FROM zorder_head18
+    INTO TABLE gt_data
+    WHERE order_number IN s_ono.
+
+
+  PERFORM build_fcat.
+
+
+  gs_layout-zebra = 'X'.
+  gs_layout-edit = 'X'.
+
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY_LVC'
+    EXPORTING
+      i_callback_program       = sy-repid
+      i_callback_pf_status_set = 'SET_PF_STATUS'
+      i_callback_user_command  = 'USER_COMMAND'
+      is_layout_lvc            = gs_layout
+      it_fieldcat_lvc          = gt_fcat
+    TABLES
+      t_outtab                 = gt_data
+    EXCEPTIONS
+      program_error            = 1
+      OTHERS                   = 2.
+
+* Save edited data to DB if Save button was triggered
+  IF gv_save_triggered = abap_true.
+    PERFORM update_database.
+  ENDIF.
+
+
+FORM build_fcat.
+  CLEAR gt_fcat.
+
+  DEFINE add_field.
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = &1.
+    gs_fcat-coltext   = &2.
+    gs_fcat-edit      = 'X'.
+    APPEND gs_fcat TO gt_fcat.
+  END-OF-DEFINITION.
+
+  add_field 'ORDER_NUMBER' 'Order Number'.
+  add_field 'ORDER_ODATE'  'Order Date'.
+  add_field 'PAYMENT_MODE' 'Payment Mode'.
+  add_field 'TOTAL_AMOUNT' 'Total Amount'.
+  add_field 'CURRENCY'     'Currency'.
+ENDFORM.
+
+FORM set_pf_status USING rt_extab TYPE slis_t_extab.
+  SET PF-STATUS 'ZSTANDARD'.
+ENDFORM.
+
+
+FORM user_command USING r_ucomm     TYPE sy-ucomm
+                        rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN 'SAVE'.
+      gv_save_triggered = abap_true.
+      rs_selfield-refresh = 'X'.
+  ENDCASE.
+
+ENDFORM.
+
+
+FORM update_database.
+
+  DATA: ls_db TYPE zorder_head18.
+
+  LOOP AT gt_data INTO gs_data.
+
+    MOVE-CORRESPONDING gs_data TO ls_db.
+
+    UPDATE zorder_head18 FROM ls_db.
+    IF sy-subrc = 0.
+      WRITE: / 'Updated:', ls_db-order_number.
+    ELSE.
+      WRITE: / 'Failed to update:', ls_db-order_number.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDFORM.

@@ -1,0 +1,32 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_INLINE_DECLARE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_inline_declare_641.
+
+TABLES: vbak ,vbap.
+
+SELECT-OPTIONS : s_vbeln  FOR  vbak-vbeln.
+
+SELECT  vbeln  , erdat , erzet , ernam
+     FROM vbak
+     INTO TABLE @DATA(lt_vbak)
+     WHERE vbeln IN @s_vbeln.
+
+
+SELECT vbeln,matnr, charg,matkl FROM vbap INTO TABLE @DATA(lt_vbap)
+*UP TO 10 ROWS
+  FOR ALL ENTRIES IN @lt_vbak
+  WHERE vbeln = @lt_vbak-vbeln.
+
+IF  sy-subrc EQ 0.
+  WRITE: ' Inline declarattion'.
+ENDIF.
+*cl_demo_output=>display( lt_vbak ).
+LOOP AT lt_vbak INTO DATA(ls_vbak).
+  LOOP AT lt_vbap INTO DATA(ls_vbap) WHERE vbeln = ls_vbak-vbeln.
+    WRITE:/ ls_vbak-vbeln COLOR 1,ls_vbak-erdat COLOR 2,ls_vbak-erzet COLOR 2,ls_vbak-ernam COLOR 1,
+             ls_vbap-matnr COLOR 3,ls_vbap-matkl COLOR 7,ls_vbap-charg COLOR 4.
+  ENDLOOP.
+ENDLOOP.

@@ -1,0 +1,268 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_EASY_SPLTR_CONTAINER641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_easy_spltr_container641.
+
+
+TABLES vbak.
+SELECT-OPTIONS s_vbeln FOR vbak-vbeln.
+
+DATA : obj_custome    TYPE REF TO cl_gui_custom_container,
+       obj_splitter   TYPE REF TO cl_gui_easy_splitter_container,
+       obj_container1 TYPE REF TO cl_gui_container,
+       obj_container2 TYPE REF TO cl_gui_container,
+*       obj_container3 TYPE REF TO cl_gui_container,
+       obj_grid1      TYPE REF TO cl_gui_alv_grid,
+       obj_grid2      TYPE REF TO cl_gui_alv_grid.
+*       obj_grid3      TYPE REF TO cl_gui_alv_grid.
+
+DATA: o_alv TYPE REF TO cl_salv_table.
+
+
+DATA : lt_vbak  TYPE TABLE OF vbak,
+       lt_vbap  TYPE TABLE OF vbap,
+       lt_fcat  TYPE lvc_t_fcat,
+       lt_fcat1 TYPE lvc_t_fcat.
+
+
+SET PF-STATUS 'ALV_STATUS'.
+CLASS lcl_splitter_container DEFINITION.
+
+  PUBLIC SECTION.
+    METHODS: get_data, display.
+
+  PRIVATE SECTION.
+    METHODS set_pf_status
+      IMPORTING imp_alv TYPE REF TO cl_salv_table.
+
+ENDCLASS.
+
+CLASS lcl_splitter_container IMPLEMENTATION.
+  METHOD get_data .
+
+    SELECT * FROM vbak INTO TABLE lt_vbak UP TO 20 ROWS." WHERE vbeln  IN s_vbeln.
+    IF  lt_vbak IS NOT INITIAL .
+      SELECT * FROM vbap INTO TABLE lt_vbap
+        FOR ALL ENTRIES IN lt_vbak
+        WHERE vbeln = lt_vbak-vbeln.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD set_pf_status.
+*
+*   Calling method to set the PF-Status
+    imp_alv->set_screen_status(
+      pfstatus      =  'STATUS_ALV'
+      report        =  'ZPR_OALV_DEMO3'
+      set_functions = imp_alv->c_functions_all ).
+*
+  ENDMETHOD.
+
+  METHOD display.
+
+    CALL SCREEN 9000.
+
+
+  ENDMETHOD .
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(obj) = NEW lcl_splitter_container( ).
+
+  obj->get_data( ).
+  obj->display( ).
+
+***---------------------------------------------------------------------*
+*& Module STATUS_9000 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_9000 OUTPUT.
+
+  SET PF-STATUS 'STATUS'.
+  SET TITLEBAR 'TITLE'.
+
+  PERFORM get_container.
+  PERFORM splt_container.
+  PERFORM get_fcat.
+  PERFORM display_grid.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_9000  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_9000 INPUT.
+  IF sy-ucomm = 'BACK' OR sy-ucomm = 'EXIT'.
+    LEAVE TO SCREEN 0 .
+  ELSEIF sy-ucomm = 'CANCEL'.
+    LEAVE PROGRAM.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Form GET_CONTAINER
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_container .
+  IF obj_custome IS INITIAL.
+    CREATE OBJECT obj_custome
+      EXPORTING
+*       parent                      =     " Parent container
+        container_name              = 'CONTAINER'    " Name of the Screen CustCtrl Name to Link Container To
+*       style                       =     " Windows Style Attributes Applied to this Container
+*       lifetime                    = LIFETIME_DEFAULT    " Lifetime
+*       repid                       =     " Screen to Which this Container is Linked
+*       dynnr                       =     " Report To Which this Container is Linked
+*       no_autodef_progid_dynnr     =     " Don't Autodefined Progid and Dynnr?
+      EXCEPTIONS
+        cntl_error                  = 1
+        cntl_system_error           = 2
+        create_error                = 3
+        lifetime_error              = 4
+        lifetime_dynpro_dynpro_link = 5
+        OTHERS                      = 6.
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+                 WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SPLT_CONTAINER
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM splt_container .
+  CREATE OBJECT obj_splitter
+    EXPORTING
+      parent            = obj_custome   " Parent Container
+      orientation       = 0  " Orientation: 0 = Vertical, 1 = Horizontal
+*     sash_position     = 50    " Position of Splitter Bar (in Percent)
+      with_border       = 1    " With Border = 1; Without Border = 0
+*     name              =     " Name
+    EXCEPTIONS
+      cntl_error        = 1
+      cntl_system_error = 2
+      OTHERS            = 3.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+  "-------------------------------------------------------------------
+  obj_container1 = obj_splitter->top_left_container.
+  obj_container2 = obj_splitter->bottom_right_container..
+*  obj_container1 = obj_splitter->align_at_top.
+*  obj_container2 = obj_splitter->align_at_left.
+*  obj_container3 = obj_splitter->align_at_right.
+  "-------------------------------------------------------------------
+  CREATE OBJECT obj_grid1
+    EXPORTING
+*     i_shellstyle      = 0    " Control Style
+*     i_lifetime        =     " Lifetime
+      i_parent = obj_container1.  " Parent Container
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+  "--------------------------------------------------------------------
+  CREATE OBJECT obj_grid2
+    EXPORTING
+*     i_shellstyle      = 0    " Control Style
+*     i_lifetime        =     " Lifetime
+      i_parent = obj_container2.  " Parent Container
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_fcat .
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+*     I_BUFFER_ACTIVE        =
+      i_structure_name       = 'VBAK'
+*     I_CLIENT_NEVER_DISPLAY = 'X'
+*     I_BYPASSING_BUFFER     =
+*     I_INTERNAL_TABNAME     = 'LT_VBAK'
+    CHANGING
+      ct_fieldcat            = lt_fcat[]
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+  "-------------------------------------------------------------------
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+*     I_BUFFER_ACTIVE        =
+      i_structure_name       = 'VBAP'
+*     I_CLIENT_NEVER_DISPLAY = 'X'
+*     I_BYPASSING_BUFFER     =
+*     I_INTERNAL_TABNAME     = 'LT_VBAK'
+    CHANGING
+      ct_fieldcat            = lt_fcat1[]
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_GRID
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_grid .
+
+
+  obj_grid1->set_table_for_first_display(
+    CHANGING
+      it_outtab                     = lt_vbak    " Output Table
+    it_fieldcatalog               =  lt_fcat[]  " Field Catalog
+*    it_sort                       =     " Sort Criteria
+*    it_filter                     =     " Filter Criteria
+).
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+  "------------------------------------------------------------------------------
+  obj_grid2->set_table_for_first_display(
+    CHANGING
+      it_outtab                     = lt_vbap     " Output Table
+      it_fieldcatalog               = lt_fcat1   " Field Catalog
+*      it_sort                       =     " Sort Criteria
+*      it_filter                     =     " Filter Criteria
+*    EXCEPTIONS
+*      invalid_parameter_combination = 1
+*      program_error                 = 2
+*      too_many_lines                = 3
+*      others                        = 4
+  ).
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+               WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+ENDFORM.

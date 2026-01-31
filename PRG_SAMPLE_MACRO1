@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SAMPLE_MACRO1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_SAMPLE_MACRO1.
+
+DATA : lv TYPE I.
+
+PARAMETERS : i TYPE I.
+PARAMETERS : i1 TYPE I.
+PARAMETERS : p_r1 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS : p_r2 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS : p_r3 TYPE c RADIOBUTTON GROUP r1.
+
+DEFINE display.
+WRITE : TEXT-000,&1.
+END-OF-DEFINITION.
+
+IF p_r1 = 'X'.
+lv = i + i1.
+display lv.
+ENDIF.
+
+IF p_r2 = 'X'.
+lv = i - i1.
+display lv.
+ENDIF.
+
+IF p_r3 = 'X'.
+lv = i * i1.
+display lv.
+ENDIF.

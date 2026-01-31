@@ -1,0 +1,39 @@
+*&---------------------------------------------------------------------*
+*& Report ZPROGRAM_PALINDROME_OOPS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprogram_palindrome_oops_641.
+
+CLASS palindrome DEFINITION.
+  PUBLIC SECTION.
+    DATA lv_val TYPE string.
+    METHODS constructor IMPORTING im_val TYPE string.
+    METHODS check.
+ENDCLASS.
+
+CLASS palindrome IMPLEMENTATION.
+  METHOD constructor.
+    lv_val = im_val.
+  ENDMETHOD.
+
+  METHOD check.
+    DATA lv_reverse TYPE string.
+    lv_reverse = reverse( lv_val ).
+    IF lv_reverse = lv_val.
+      WRITE  :/ lv_val,'This is a Palindrome String'.
+    ELSE.
+      WRITE  :/ lv_val,'This is Not a Palindrome String'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(lo_obj) = NEW palindrome( 'INDIA' ).
+
+  lo_obj->check( ).
+
+   DATA(lo_obj1) = NEW palindrome( 'NAYAN' ).
+
+  lo_obj1->check( ).

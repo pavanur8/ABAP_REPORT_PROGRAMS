@@ -1,0 +1,266 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPS_ALV_ON_DRAG_EVENT_641
+*&---------------------------------------------------------------------*
+REPORT zoops_alv_on_drag_event_641.
+
+* Structure declaration for T016T
+TYPES: BEGIN OF ty_t016t,
+         brsch TYPE brsch,
+         brtxt TYPE text1_016t,
+         spras TYPE spras,
+       END OF ty_t016t.
+
+* Work area and internal table for T016T
+DATA: it_t016t TYPE STANDARD TABLE OF ty_t016t,
+      wa_t016t TYPE ty_t016t.
+
+* Class declaration
+CLASS lcl_objdragdropapp DEFINITION DEFERRED.
+
+* Data declarations for ALV
+DATA: c_dragdropapp TYPE REF TO lcl_objdragdropapp,
+      c_dockingcont TYPE REF TO cl_gui_docking_container,
+      c_alv         TYPE REF TO cl_gui_alv_grid,
+      c_dragdropalv TYPE REF TO cl_dragdrop,  " Reference to CL_DRAGDROP
+      it_layout     TYPE lvc_s_layo,
+      it_fcat       TYPE lvc_t_fcat.  " Field catalogue
+
+* Declarations for handle event
+DATA: effect     TYPE i,
+      handle_alv TYPE i.
+
+* Start of selection event
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  PERFORM alv_output.
+
+* Class definitions and method implementation for drag and drop
+CLASS lcl_dragdrop DEFINITION.
+  PUBLIC SECTION.
+    DATA: wa    TYPE ty_t016t,
+          index TYPE i.  " Index of line to be moved
+ENDCLASS.                    "lcl_dragdrop DEFINITION
+
+* Application class definition
+CLASS lcl_objdragdropapp DEFINITION.
+  PUBLIC SECTION.
+    METHODS:
+      handle_alv_drag
+        FOR EVENT ondrag
+        OF cl_gui_alv_grid
+        IMPORTING e_row e_column e_dragdropobj,
+      handle_alv_drop
+        FOR EVENT ondrop
+        OF cl_gui_alv_grid
+        IMPORTING e_row e_column e_dragdropobj.
+ENDCLASS.                    "lcl_objdragdropapp DEFINITION
+
+* Application class implementation
+CLASS lcl_objdragdropapp IMPLEMENTATION.
+
+  METHOD handle_alv_drag.
+    DATA: dataobj TYPE REF TO lcl_dragdrop.
+
+* Read dragged row
+    read table it_t016t index e_row-index into data(line).
+    IF sy-subrc <> 0.
+      RETURN.  " No data to drag
+    ENDIF.
+
+* Create and fill data object for events ondrop
+    create object dataobj.
+
+* Remember row index to move a line
+    dataobj->index = e_row-index.
+
+* Store the dragged line
+    dataobj->wa = line.
+
+* Assign data object to the referring event parameter
+    e_dragdropobj->object = dataobj.
+
+  ENDMETHOD.                    "handle_alv_drag
+
+  METHOD handle_alv_drop.
+    DATA: dataobj TYPE REF TO lcl_dragdrop,
+          stable  TYPE lvc_s_stbl.
+
+* Refresh alv Grid Control without scrolling
+    stable-row = 'X'.
+    stable-col = 'X'.
+
+* Catch statement to ensure the drag&drop operation is aborted properly
+    catch system-exceptions move_cast_error = 1.
+    dataobj ?= e_dragdropobj->object.
+    DELETE it_t016t INDEX dataobj->index.
+    INSERT dataobj->wa INTO it_t016t INDEX e_row-index.
+
+* Refreshing the alv
+    call method c_alv->refresh_table_display
+      exporting
+        i_soft_refresh = 'X'
+        is_stable      = stable.
+  ENDCATCH.
+
+  IF sy-subrc <> 0.
+* If anything went wrong, abort the drag and drop operation
+    call method e_dragdropobj->abort.
+  ENDIF.
+
+ENDMETHOD.                    "handle_alv_drop
+
+ENDCLASS.                    "lcl_objdragdropapp IMPLEMENTATION
+
+*&---------------------------------------------------------------------*
+*&      Form  alv_output
+*&---------------------------------------------------------------------*
+FORM alv_output.
+  CALL SCREEN 600.
+ENDFORM.                    "alv_output
+
+* PBO of the screen
+MODULE status_0600 OUTPUT.
+  SET PF-STATUS 'STANDARD'.  " Use standard status; create 'STATUS_0600' in SE41 if needed
+  SET TITLEBAR 'TITLE_0600'.  " Create in SE41 if needed; optional
+
+  IF c_alv IS INITIAL.
+    PERFORM alv_controls.
+  ENDIF.
+ENDMODULE.                 " STATUS_0600 OUTPUT
+
+*&---------------------------------------------------------------------*
+*&      Form  alv_controls
+*&---------------------------------------------------------------------*
+FORM alv_controls.
+  TRY.
+* Create docking container for alv control
+      create object c_dockingcont
+        exporting
+          dynnr     = '600'
+          extension = 300
+          side      = cl_gui_docking_container=>dock_at_top.
+
+* Create alv control
+      create object c_alv
+        exporting
+          i_parent = c_dockingcont.
+
+* Create the application object to handle the abap Objects Events
+      create object c_dragdropapp.
+
+* Events for alv control
+      set handler c_dragdropapp->handle_alv_drag for c_alv.
+      SET HANDLER c_dragdropapp->handle_alv_drop FOR c_alv.
+
+* Register delayed events for drag-drop reliability
+      call method c_alv->register_delayed_event
+        exporting
+          i_event_id = cl_gui_alv_grid=>mc_evt_delayed_move_curr_cell.
+
+* Build tree nodes for drag&drop
+      perform build_handle.
+
+* Field catalogue for alv
+      perform alv_build_fieldcat.
+
+* alv attributes for layout
+      perform alv_report_layout.
+
+* Call alv grid
+      call method c_alv->set_table_for_first_display
+        exporting
+          is_layout       = it_layout
+        changing
+          it_outtab       = it_t016t
+          it_fieldcatalog = it_fcat.
+
+    CATCH cx_root INTO DATA(lo_error).
+      MESSAGE lo_error->get_text( ) TYPE 'E'.
+  ENDTRY.
+
+ENDFORM.                    "alv_controls
+
+*&---------------------------------------------------------------------*
+*&      Form  build_handle
+*&---------------------------------------------------------------------*
+FORM build_handle.
+* Define a drag & drop behaviour for the whole grid
+  create object c_dragdropalv.
+
+  effect = cl_dragdrop=>move + cl_dragdrop=>copy.
+
+  CALL METHOD c_dragdropalv->add
+    EXPORTING
+      flavor     = 'Line'
+      dragsrc    = 'X'
+      droptarget = 'X'
+      effect     = effect.
+
+* Getting the handle for drag and drop
+  call method c_dragdropalv->get_handle
+    importing
+      handle = handle_alv.
+
+ENDFORM.                    "build_handle
+
+*&---------------------------------------------------------------------*
+*&      Form  fetch_data
+*&---------------------------------------------------------------------*
+FORM fetch_data.
+* Select data from t016t
+  select brsch brtxt spras from t016t into corresponding fields of table it_t016t
+    where spras = 'E'.
+  IF sy-subrc <> 0.
+    MESSAGE 'No data found for English language.' TYPE 'I'.
+  ENDIF.
+ENDFORM.                    "fetch_data
+
+*&---------------------------------------------------------------------*
+*&      Form  alv_report_layout
+*&---------------------------------------------------------------------*
+FORM alv_report_layout.
+  it_layout-grid_title = 'ALV Drag Drop Example'.
+
+* Provide handle to alv control for all rows for same drag & drop behaviour
+  it_layout-s_dragdrop-row_ddid = handle_alv.
+ENDFORM.                    "alv_report_layout
+
+*&---------------------------------------------------------------------*
+*&      Form  alv_build_fieldcat
+*&---------------------------------------------------------------------*
+FORM alv_build_fieldcat.
+  DATA: lv_fldcat TYPE lvc_s_fcat.
+
+  CLEAR lv_fldcat.
+  lv_fldcat-col_pos   = '1'.
+  lv_fldcat-fieldname = 'BRSCH'.
+  lv_fldcat-tabname   = 'IT_T016T'.
+  lv_fldcat-outputlen = 8.
+  lv_fldcat-scrtext_m = 'Industry'.
+  APPEND lv_fldcat TO it_fcat.
+
+  CLEAR lv_fldcat.
+  lv_fldcat-col_pos   = '2'.
+  lv_fldcat-fieldname = 'BRTXT'.
+  lv_fldcat-tabname   = 'IT_T016T'.
+  lv_fldcat-outputlen = 15.
+  lv_fldcat-scrtext_m = 'Description'.
+  APPEND lv_fldcat TO it_fcat.
+
+  CLEAR lv_fldcat.
+  lv_fldcat-col_pos   = '3'.
+  lv_fldcat-fieldname = 'SPRAS'.
+  lv_fldcat-tabname   = 'IT_T016T'.
+  lv_fldcat-outputlen = 5.
+  lv_fldcat-scrtext_m = 'Language'.
+  APPEND lv_fldcat TO it_fcat.
+
+ENDFORM.                    "alv_build_fieldcat
+
+* PAI module of the screen
+MODULE user_command_0600 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 " USER_COMMAND_0600 INPUT

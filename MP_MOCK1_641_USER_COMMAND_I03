@@ -1,0 +1,34 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZMP_MOCK1_641_USER_COMMAND_I03.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0102  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0102 INPUT.
+
+  CASE sy-ucomm.
+    WHEN 'DISPLAY'.
+      CLEAR wa.
+      SELECT SINGLE empid firstname lastname phoneno address email
+      FROM zemploye_641
+      INTO wa
+      WHERE empid = wa-empid.
+
+    WHEN 'SAVE'.
+      UPDATE zemploye_641 FROM wa.
+      IF sy-subrc = 0.
+        CLEAR wa.
+        MESSAGE s018(zmessge_1).
+      ELSE.
+        CLEAR wa.
+        MESSAGE e019(zmessge_1).
+      ENDIF.
+
+    WHEN 'EDIT'.
+*      gv_mode = 'E'.
+
+*      gv_mode = 'D'.
+  ENDCASE.
+ENDMODULE.

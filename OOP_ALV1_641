@@ -1,0 +1,100 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv1_641.
+
+TYPE-POOLS: slis.
+
+"----- Types -----"
+TYPES: BEGIN OF ty_item,
+         id       TYPE i,
+         name     TYPE string,
+         city     TYPE string,
+         qty      TYPE i,
+         price    TYPE p DECIMALS 2,
+         doc_date TYPE dats,
+       END OF ty_item.
+
+"----- Data -----"
+DATA: gt_data TYPE TABLE OF ty_item,
+      gs_data TYPE ty_item.
+
+"----- Selection screen -----"
+PARAMETERS: p_rows TYPE i DEFAULT 30.
+
+SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS p_filter TYPE string NO-DISPLAY.
+SELECTION-SCREEN: END OF BLOCK b1.
+
+INITIALIZATION.
+  text-001 = 'ALV SALV Demo'.
+
+AT SELECTION-SCREEN.
+  IF p_rows < 1 OR p_rows > 500.
+    MESSAGE 'Value must be between 1 and 500' TYPE 'E'.
+  ENDIF.
+
+START-OF-SELECTION.
+  PERFORM build_demo_data USING p_rows CHANGING gt_data.
+
+  "----- Build and show SALV -----"
+  DATA lo_table TYPE REF TO cl_salv_table.
+  TRY.
+      cl_salv_table=>factory(
+        EXPORTING
+          list_display = abap_false
+        IMPORTING
+          r_salv_table = lo_table
+        CHANGING
+          t_table      = gt_data ).
+
+      " General settings "
+      lo_table->get_functions( )->set_all( abap_true ).     " enable many standard functions
+      lo_table->get_display_settings( )->set_striped_pattern( abap_true ).
+
+      " Add totals for numeric columns using aggregations "
+      DATA(lo_aggregations) = lo_table->get_aggregations( ).
+      lo_aggregations->add_aggregation( columnname = 'QTY' aggregation = if_salv_c_aggregation=>total ).
+      lo_aggregations->add_aggregation( columnname = 'PRICE' aggregation = if_salv_c_aggregation=>total ).
+
+      " Allow column resize / move "
+      lo_table->get_columns( )->set_optimize( ).
+
+      " Create toolbar button for 'Show Details' (calls method in example) "
+      DATA(lo_functions) = lo_table->get_functions( ).
+      lo_functions->set_default( abap_true ).   " enable default functions like export
+
+      " Display the ALV"
+      lo_table->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_salv).
+      MESSAGE lx_salv->get_text( ) TYPE 'E'.
+    CATCH cx_salv_existing INTO DATA(lx_existing).
+      MESSAGE lx_existing->get_text( ) TYPE 'E'.
+  ENDTRY.
+
+  "----- Local routines -----"
+FORM build_demo_data USING iv_rows TYPE i CHANGING ct_data TYPE TABLE OF ty_item.
+  DATA: lv_idx TYPE i.
+  CLEAR ct_data.
+  IF iv_rows IS INITIAL. iv_rows = 30. ENDIF.
+  DO iv_rows TIMES.
+    lv_idx = sy-index.
+    CLEAR gs_data.
+    gs_data-id = lv_idx.
+    gs_data-name = |Customer { lv_idx }|.
+    CASE lv_idx MOD 5.
+      WHEN 0. gs_data-city = 'Mumbai'.
+      WHEN 1. gs_data-city = 'Delhi'.
+      WHEN 2. gs_data-city = 'Bengaluru'.
+      WHEN 3. gs_data-city = 'Chennai'.
+      WHEN 4. gs_data-city = 'Hyderabad'.
+    ENDCASE.
+    gs_data-qty = lv_idx * 3 MOD 100.
+    gs_data-price = ( 1000 + lv_idx * 12 ) / 1.
+    gs_data-doc_date = sy-datum - ( lv_idx MOD 30 ).
+    APPEND gs_data TO ct_data.
+  ENDDO.
+ENDFORM.

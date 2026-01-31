@@ -1,0 +1,31 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZMP_MOCK1_641_USER_COMMAND_I01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+
+*  CASE main_tab-activetab.
+**        WHEN 'TAB1'.
+**          CLEAR: wa-empid,wa-firstname,wa-lastname,wa-phoneno,wa-address,wa-email.
+*    WHEN 'TAB2'.
+*      CLEAR: wa-empid,wa-firstname,wa-lastname,wa-phoneno,wa-address,wa-email.
+*    WHEN 'TAB3'.
+*      CLEAR: wa-empid,wa-firstname,wa-lastname,wa-phoneno,wa-address,wa-email.
+*  ENDCASE.
+  CASE sy-ucomm.
+
+    WHEN 'TAB1'.
+      CLEAR wa.
+      main_tab-activetab = 'TAB1'.
+    WHEN 'TAB2'.
+      CLEAR wa.
+      main_tab-activetab = 'TAB2'.
+    WHEN 'TAB3'.
+      CLEAR wa.
+      main_tab-activetab = 'TAB3'.
+  ENDCASE.
+ENDMODULE.

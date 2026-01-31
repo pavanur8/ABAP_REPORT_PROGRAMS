@@ -1,0 +1,150 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALV_EDIT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_ALV_EDIT_641.
+
+DATA : i_tab TYPE TABLE OF ZORDER_HEA5.
+DATA : i_wa TYPE ZORDER_HEA5.
+DATA : lt_fieldcat TYPE SLIS_T_FIELDCAT_ALV.
+DATA : ls_fieldcat TYPE SLIS_FIELDCAT_ALV.
+DATA : lt_final TYPE TABLE OF ZORDER_HEA5.
+DATA : lw_final TYPE ZORDER_HEA5.
+DATA : lv_ono TYPE  ZORDER_ONO.
+DATA : gt_fcat   TYPE slis_t_fieldcat_alv,
+      gs_fcat   TYPE slis_fieldcat_alv,
+*      gs_layout TYPE slis_layout_alv.
+*      gt_fcat     TYPE lvc_t_fcat,
+*      gs_fcat     TYPE lvc_s_fcat,
+      gs_layout   TYPE lvc_s_layo.
+
+SELECT-OPTIONS : s_ono for lv_ono.
+*PARAMETERS : s_ono TYPE ZORDER_ONO.
+
+START-OF-SELECTION.
+*SELECT * FROM ZORDER_HEAD18 INTO TABLE i_tab WHERE order_number = ono.
+SELECT ORDER_NUMBER order_odate payment_mode total_amount currency
+FROM ZORDER_HEA5
+INTO TABLE i_tab
+WHERE ORDER_NUMBER IN s_ono.
+
+LOOP AT i_tab INTO i_wa.
+lw_final-order_number = i_wa-order_number.
+lw_final-order_odate = i_wa-order_odate.
+lw_final-payment_mode = i_wa-payment_mode.
+lw_final-total_amount = i_wa-total_amount.
+lw_final-currency = i_wa-currency.
+ENDLOOP.
+
+ls_fieldcat-row_pos =  '1'.
+ls_fieldcat-fieldname = 'ORDER_NUMBER'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Order Number'.
+*ls_fieldcat-key(1)  = 'X'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR ls_fieldcat.
+
+ls_fieldcat-row_pos =  '2'.
+ls_fieldcat-fieldname = 'ORDER_ODATE'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Order Date'.
+*ls_fieldcat-emphasize = 'C602'.
+ls_fieldcat-edit = 'X'.
+*ls_fieldcat-hotspot = 'X'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR ls_fieldcat.
+
+ls_fieldcat-row_pos =  '3'.
+ls_fieldcat-fieldname = 'PAYMENT_MODE'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Payment Mode'.
+ls_fieldcat-edit = 'X'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR ls_fieldcat.
+
+ls_fieldcat-row_pos =  '4'.
+ls_fieldcat-fieldname = 'TOTAL_AMOUNT'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Total Amount'.
+*ls_fieldcat-do_sum = 'X'.
+ls_fieldcat-edit = 'X'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR ls_fieldcat.
+
+ls_fieldcat-row_pos =  '5'.
+ls_fieldcat-fieldname = 'CURRENCY'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Currency'.
+ls_fieldcat-edit = 'X'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR ls_fieldcat.
+
+gs_layout-zebra = 'X'. " Zebra pattern for readability
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+ EXPORTING
+*   I_INTERFACE_CHECK                 = ' '
+*   I_BYPASSING_BUFFER                = ' '
+*   I_BUFFER_ACTIVE                   = ' '
+   I_CALLBACK_PROGRAM                = sy-repid
+   I_CALLBACK_PF_STATUS_SET          = 'USR_PF'
+   I_CALLBACK_USER_COMMAND           = 'MU_CMD'
+*   I_CALLBACK_TOP_OF_PAGE            = ' '
+*   I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*   I_CALLBACK_HTML_END_OF_LIST       = ' '
+*   I_STRUCTURE_NAME                  =
+*   I_BACKGROUND_ID                   = ' '
+*   I_GRID_TITLE                      =
+*   I_GRID_SETTINGS                   =
+*   IS_LAYOUT                         =
+   IT_FIELDCAT                       = lt_fieldcat
+*   IT_EXCLUDING                      =
+*   IT_SPECIAL_GROUPS                 =
+*   IT_SORT                           =
+*   IT_FILTER                         =
+*   IS_SEL_HIDE                       =
+*   I_DEFAULT                         = 'X'
+*   I_SAVE                            = ' '
+*   IS_VARIANT                        =
+*   IT_EVENTS                         =
+*   IT_EVENT_EXIT                     =
+*   IS_PRINT                          =
+*   IS_REPREP_ID                      =
+*   I_SCREEN_START_COLUMN             = 0
+*   I_SCREEN_START_LINE               = 0
+*   I_SCREEN_END_COLUMN               = 0
+*   I_SCREEN_END_LINE                 = 0
+*   I_HTML_HEIGHT_TOP                 = 0
+*   I_HTML_HEIGHT_END                 = 0
+*   IT_ALV_GRAPHICS                   =
+*   IT_HYPERLINK                      =
+*   IT_ADD_FIELDCAT                   =
+*   IT_EXCEPT_QINFO                   =
+*   IR_SALV_FULLSCREEN_ADAPTER        =
+*   O_PREVIOUS_SRAL_HANDLER           =
+*   O_COMMON_HUB                      =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER           =
+*   ES_EXIT_CAUSED_BY_USER            =
+  TABLES
+    t_outtab                          = i_tab
+ EXCEPTIONS
+   PROGRAM_ERROR                     = 1
+   OTHERS                            = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+FORM USR_PF USING RT_EXTAB TYPE SLIS_T_EXTAB.
+  SET PF-STATUS 'SAVE'.
+ENDFORM.
+
+FORM MU_CMD  USING R_UCOMM LIKE SY-UCOMM
+                                  RS_SELFIELD TYPE SLIS_SELFIELD.
+  READ TABLE i_tab INTO i_wa INDEX RS_SELFIELD-tabindex.
+  IF R_UCOMM = 'SAVE' .
+    UPDATE ZORDER_HEA5 FROM i_wa.
+  ENDIF.
+ENDFORM.

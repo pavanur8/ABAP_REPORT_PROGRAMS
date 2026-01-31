@@ -1,0 +1,28 @@
+*&---------------------------------------------------------------------*
+*& Report ZNEW_PROGRAMNEWSYNTAX_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT znew_programnewsyntax_641.
+
+TYPES:
+  BEGIN OF ty_tab1,
+    val1 TYPE char1,
+    val2 TYPE i,
+  END OF ty_tab1,
+  tt_tab1 TYPE STANDARD TABLE OF ty_tab1 WITH EMPTY KEY.
+
+DATA(lt_tab1) = VALUE tt_tab1(
+                   ( val1 = 'A' val2 = 100 )
+                   ( val1 = 'B' val2 = 200 ) ).
+
+cl_demo_output=>write( lt_tab1 ).
+
+* LET
+DATA(lt_tab2) = VALUE tt_tab1(
+                  FOR wa IN lt_tab1 INDEX INTO idx
+                  LET x = wa-val2 + idx
+                  IN ( val1 = wa-val1 val2 = x ) ).
+
+cl_demo_output=>write( lt_tab2 ).
+cl_demo_output=>display( ).

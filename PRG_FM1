@@ -1,0 +1,96 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_FM1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_FM1.
+
+DATA : lt_output TYPE ZGLOBALSTR_INTERT.
+DATA : lw_output TYPE ZGLOBALSTR.
+DATA : lt_fieldcat TYPE SLIS_T_FIELDCAT_ALV.
+
+PARAMETERS : p_ono TYPE ZORDER_ONO.
+
+CALL FUNCTION 'ZFMSAMPLE_ORDER'
+  EXPORTING
+    pono           = p_ono
+ IMPORTING
+   LT_FINAL       = lt_output
+          .
+
+*LOOP AT lt_output INTO lw_output.
+*WRITE : / lw_output-ORDER_NUMBER,lw_output-ORDER_ODATE,lw_output-PAYMENT_MODE,
+*          lw_output-PAYMENT_MODE,lw_output-CURRENCY,lw_output-ORDER_ITEM_NUMBER,
+*          lw_output-ITEM_COST.
+*ENDLOOP.
+
+*LOOP AT lt_output INTO lw_output.
+*
+*
+*ENDLOOP.
+
+CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+ EXPORTING
+   I_PROGRAM_NAME               = sy-repid
+*   I_INTERNAL_TABNAME           = ''
+   I_STRUCTURE_NAME             = 'ZGLOBALSTR'
+*   I_CLIENT_NEVER_DISPLAY       = 'X'
+*   I_INCLNAME                   =
+*   I_BYPASSING_BUFFER           =
+*   I_BUFFER_ACTIVE              =
+  CHANGING
+    ct_fieldcat                  = lt_fieldcat
+ EXCEPTIONS
+   INCONSISTENT_INTERFACE       = 1
+   PROGRAM_ERROR                = 2
+   OTHERS                       = 3
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
+ EXPORTING
+**   I_INTERFACE_CHECK              = ' '
+**   I_BYPASSING_BUFFER             =
+**   I_BUFFER_ACTIVE                = ' '
+   I_CALLBACK_PROGRAM             = sy-repid
+**   I_CALLBACK_PF_STATUS_SET       = ' '
+**   I_CALLBACK_USER_COMMAND        = ' '
+**   I_STRUCTURE_NAME               =
+**   IS_LAYOUT                      =
+   IT_FIELDCAT                    = lt_fieldcat
+**   IT_EXCLUDING                   =
+**   IT_SPECIAL_GROUPS              =
+**   IT_SORT                        =
+**   IT_FILTER                      =
+**   IS_SEL_HIDE                    =
+**   I_DEFAULT                      = 'X'
+**   I_SAVE                         = ' '
+**   IS_VARIANT                     =
+**   IT_EVENTS                      =
+**   IT_EVENT_EXIT                  =
+**   IS_PRINT                       =
+**   IS_REPREP_ID                   =
+**   I_SCREEN_START_COLUMN          = 0
+**   I_SCREEN_START_LINE            = 0
+**   I_SCREEN_END_COLUMN            = 0
+**   I_SCREEN_END_LINE              = 0
+**   IR_SALV_LIST_ADAPTER           =
+**   IT_EXCEPT_QINFO                =
+**   I_SUPPRESS_EMPTY_DATA          = ABAP_FALSE
+**   IO_SALV_ADAPTER                =
+**   O_COMMON_HUB                   =
+** IMPORTING
+**   E_EXIT_CAUSED_BY_CALLER        =
+**   ES_EXIT_CAUSED_BY_USER         =
+  TABLES
+    t_outtab                       = lt_output
+ EXCEPTIONS
+   PROGRAM_ERROR                  = 1
+   OTHERS                         = 2
+          .
+*IF sy-subrc <> 0.
+** Implement suitable error handling here
+*ENDIF.

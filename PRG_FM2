@@ -1,0 +1,24 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_FM2
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_fm2.
+
+DATA : lv_ono TYPE zorder_ono.
+DATA : lt TYPE zglobalstr_intert.
+DATA : wa TYPE zglobalstr.
+
+SELECT-OPTIONS : sono FOR lv_ono.
+
+CALL FUNCTION 'ZFMSAMPLE_ORDER_MULTIPLE'
+  EXPORTING
+    sono          = sono[]
+ IMPORTING
+   SOUTPT        = lt
+          .
+
+LOOP AT lt INTO wa.
+  WRITE : / wa-order_number,wa-order_odate,wa-payment_mode,wa-currency,wa-order_item_number,
+            wa-item_cost.
+ENDLOOP.

@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_BADI_IMPLI_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_badi_impli_641.
+
+CLASS zcl_implementation DEFINITION FINAL  .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_badi_interface .
+
+    CLASS-METHODS class_constructor .
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: _mt_ZORDER_HEA5 TYPE TABLE OF zorder_hea5 WITH KEY order_number.
+ENDCLASS.
+
+CLASS zcl_implementation IMPLEMENTATION.
+
+  METHOD class_constructor.
+
+    SELECT *
+      FROM zorder_hea5
+      INTO TABLE _mt_ZORDER_HEA5.
+
+  ENDMETHOD.
+
+  METHOD if_badi_interface~process_line.
+
+    ASSIGN _mt_ZORDER_HEA5[ order_number = iv_key ] TO FIELD-SYMBOL(<ls_ZORDER_HEA5>).
+    IF sy-subrc = 0.
+      WRITE : 'Not Found'.
+    ENDIF.
+
+  ENDMETHOD.
+
+ENDCLASS.

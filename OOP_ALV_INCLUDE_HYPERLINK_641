@@ -1,0 +1,138 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_INCLUDE_HYPERLINK_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_include_hyperlink_641.
+
+* Define types for output table with hyperlink handle field
+TYPES: BEGIN OF ty_order,
+         vbeln    TYPE vbak-vbeln,
+         erdat    TYPE vbak-erdat,
+         kunnr    TYPE vbak-kunnr,
+         posnr    TYPE vbap-posnr,
+         matnr    TYPE vbap-matnr,
+         arktx    TYPE vbap-arktx,
+         hl_vbeln TYPE int4,  " Hyperlink handle for VBELN column
+       END OF ty_order.
+
+* Data declarations
+DATA: gt_orders    TYPE TABLE OF ty_order,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_container TYPE REF TO cl_gui_custom_container,
+      lt_fieldcat  TYPE lvc_t_fcat,
+      lt_hypetab   TYPE lvc_t_hype,
+      gs_layout    TYPE lvc_s_layo.
+
+* Local class for handling button click event (for hyperlinks)
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: on_button_click FOR EVENT button_click OF cl_gui_alv_grid
+      IMPORTING es_col_id es_row_no.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_button_click.
+    READ TABLE gt_orders ASSIGNING FIELD-SYMBOL(<fs_order>) INDEX es_row_no-row_id.
+    IF sy-subrc = 0.
+      MESSAGE |Hyperlink clicked in column { es_col_id-fieldname } and row { es_row_no-row_id }. Order: { <fs_order>-vbeln }| TYPE 'I'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_and_assign_handles.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch data and assign hyperlink handles
+FORM fetch_and_assign_handles.
+  " Step 3: Select data and copy to output table
+  SELECT a~vbeln, a~erdat, a~kunnr, b~posnr, b~matnr, b~arktx
+    FROM vbak AS a
+    INNER JOIN vbap AS b ON a~vbeln = b~vbeln
+    INTO TABLE @gt_orders
+    UP TO 70 ROWS.
+
+  " Step 6: Read output table rows and assign handles
+  LOOP AT gt_orders ASSIGNING FIELD-SYMBOL(<fs_order>).
+    " Assign handle (e.g., 1 or 2 alternately)
+    IF sy-tabix MOD 2 = 1.
+      <fs_order>-hl_vbeln = 1.  " Handle for first hyperlink
+    ELSE.
+      <fs_order>-hl_vbeln = 2.  " Handle for second hyperlink
+    ENDIF.
+  ENDLOOP.
+
+  " Step 5: Create hyperlink table
+  lt_hypetab = VALUE lvc_t_hype(
+    ( handle = '1' href = 'http://www.sap.com' )
+    ( handle = '2' href = 'http://www.mysap.com' )
+  ).
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  DATA  go_event_handler TYPE REF TO lcl_event_handler.
+  " Step 4: Manually generate field catalog to avoid 'no fieldcatalog found' error
+  CLEAR lt_fieldcat.
+
+  APPEND VALUE #( fieldname = 'VBELN' scrtext_m = 'Sales Document' key = 'X' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'ERDAT' scrtext_m = 'Created On' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'KUNNR' scrtext_m = 'Sold-to Party' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'POSNR' scrtext_m = 'Item' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'MATNR' scrtext_m = 'Material' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'ARKTX' scrtext_m = 'Description' ) TO lt_fieldcat.
+  APPEND VALUE #( fieldname = 'HL_VBELN' tech = 'X' ) TO lt_fieldcat.  " Hidden handle field
+
+  " Assign WEB_FIELD for the hyperlink column (VBELN in this example)
+  LOOP AT lt_fieldcat ASSIGNING FIELD-SYMBOL(<fs_fcat>).
+    IF <fs_fcat>-fieldname = 'VBELN'.
+      <fs_fcat>-web_field = 'HL_VBELN'.  " Link handle field to column
+    ENDIF.
+  ENDLOOP.
+
+  " Set layout (optional)
+  CLEAR gs_layout.
+
+  " Step 11: Pass field catalog, hyperlink table, and output table
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = gs_layout
+      it_hyperlink    = lt_hypetab
+    CHANGING
+      it_outtab       = gt_orders
+      it_fieldcatalog = lt_fieldcat.
+
+  " Register event handler for clicks
+  CREATE OBJECT go_event_handler.
+  SET HANDLER go_event_handler->on_button_click FOR go_alv.
+
+  CALL METHOD cl_gui_cfw=>flush.
+ENDFORM.

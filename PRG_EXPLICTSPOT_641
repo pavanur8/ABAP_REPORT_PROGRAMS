@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_EXPLICTSPOT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_explictspot_641.
+
+TYPES : BEGIN OF ts_mara,
+          matnr TYPE mara-matnr,
+          ersda TYPE mara-ersda,
+          ernam TYPE mara-ernam,
+          laeda TYPE mara-laeda,
+          aenam TYPE mara-aenam,
+        END OF ts_mara.
+
+DATA itab TYPE TABLE OF ts_mara.
+DATA wa TYPE ts_mara.
+
+SELECT matnr ersda ernam laeda aenam
+FROM mara
+INTO TABLE itab UP TO 10 ROWS.
+
+ENHANCEMENT-SECTION ZSAMPLE_INFO_MATERIAL SPOTS ZINFO_MATERIAL .
+WRITE : /5 'Material Number',
+         30 'Created On',
+         60 'Name of Person',
+         90 'Date of Last Change',
+         120 'Who Changed Object'.
+END-ENHANCEMENT-SECTION.
+
+LOOP AT itab INTO wa.
+  WRITE : /5 wa-matnr,
+           30  wa-ersda,
+           60  wa-ernam,
+           90  wa-laeda,
+           120  wa-aenam.
+ENDLOOP.

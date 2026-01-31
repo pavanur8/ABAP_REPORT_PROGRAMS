@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG8_MULTIPLE_INHERITENCE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg8_multiple_inheritence_641.
+
+DATA lv_erdat TYPE erdat.
+DATA lv_erzet TYPE erzet.
+DATA lv_ernam TYPE ernam.
+DATA lv_vbtyp TYPE vbtypl.
+
+PARAMETERS p_vbeln TYPE vbeln_va.
+PARAMETERS p_r1 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS p_r2 TYPE c RADIOBUTTON GROUP r1.
+
+INTERFACE interface1.
+  METHODS sales IMPORTING pvbeln TYPE vbeln_va
+                EXPORTING perdat TYPE erdat
+                          perzet TYPE erzet
+                          pernam TYPE ernam
+                          pvbtyp TYPE vbtypl.
+ENDINTERFACE.
+
+INTERFACE interface2.
+  METHODS billing IMPORTING pvbeln TYPE vbeln_va
+                  EXPORTING perdat TYPE erdat
+                            perzet TYPE erzet
+                            pernam TYPE ernam
+                            pvbtyp TYPE vbtypl.
+ENDINTERFACE.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES interface1.
+    INTERFACES interface2.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD interface1~sales.
+    SELECT SINGLE  erdat erzet ernam vbtyp
+   FROM vbak
+   INTO ( perdat, perzet, pernam,pvbtyp )
+   WHERE vbeln = pvbeln.
+  ENDMETHOD.
+
+  METHOD interface2~billing.
+    SELECT SINGLE  vbtyp ernam erzet erdat
+   FROM vbrk
+   INTO ( pvbtyp,pernam,perzet,perdat   )
+   WHERE vbeln = pvbeln.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA lo_obj TYPE REF TO class1.
+  CREATE OBJECT lo_obj.
+
+  IF p_r1 = 'X'.
+    lo_obj->interface1~sales(  EXPORTING pvbeln = p_vbeln
+                    IMPORTING perdat = lv_erdat
+                              perzet = lv_erzet
+                              pernam = lv_ernam
+                              pvbtyp = lv_vbtyp ).
+    WRITE : 'Sales Document Deatils Below'.
+    WRITE : / lv_erdat,/ lv_erzet, / lv_ernam,/ lv_vbtyp.
+  ELSEIF p_r2 = 'X'.
+    lo_obj->interface2~billing( EXPORTING pvbeln = p_vbeln
+                     IMPORTING pvbtyp = lv_vbtyp
+                               pernam = lv_ernam
+                               perzet = lv_erzet
+                               perdat =  lv_erdat ).
+    WRITE : 'Billing Details Below'.
+    WRITE : / lv_vbtyp,lv_ernam,lv_erzet,lv_erdat.
+  ENDIF.

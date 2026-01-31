@@ -1,0 +1,56 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_BACKGROUND_JOB_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_background_job_641.
+
+DATA: lv_jobname  TYPE tbtcjob-jobname VALUE 'MY_BACKGROUND_JOB',
+      lv_jobcount TYPE tbtcjob-jobcount.
+
+CALL FUNCTION 'JOB_OPEN'
+  EXPORTING
+    jobname          = lv_jobname
+  IMPORTING
+    jobcount         = lv_jobcount
+  EXCEPTIONS
+    cant_create_job  = 1
+    invalid_job_data = 2
+    OTHERS           = 3.
+
+IF sy-subrc <> 0.
+  WRITE: / 'Error opening job'.
+  EXIT.
+ENDIF.
+
+CALL FUNCTION 'JOB_SUBMIT'
+  EXPORTING
+    authcknam        = sy-uname  " Corrected parameter name from 'user' to 'authcknam'
+    jobname          = lv_jobname
+    jobcount         = lv_jobcount
+    report           = 'ZMY_PROGRAM'  " Replace with your program name
+    variant          = 'MY_VARIANT'   " Optional: Specify a variant if needed
+  EXCEPTIONS
+    invalid_job_data = 1
+    OTHERS           = 2.
+
+IF sy-subrc <> 0.
+  WRITE: / 'Error submitting program'.
+  EXIT.
+ENDIF.
+
+CALL FUNCTION 'JOB_CLOSE'
+  EXPORTING
+    jobname              = lv_jobname
+    jobcount             = lv_jobcount
+    strtimmed            = 'X'  " Immediate start; use SDLSTRTDT/SDLSTRTTM for specific time
+  EXCEPTIONS
+    cant_start_immediate = 1
+    invalid_startdate    = 2
+    OTHERS               = 3.
+
+IF sy-subrc <> 0.
+  WRITE: / 'Error closing job'.
+ELSE.
+  WRITE: / 'Job scheduled successfully'.
+ENDIF.

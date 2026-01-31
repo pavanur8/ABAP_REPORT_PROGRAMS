@@ -1,0 +1,164 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO1_ALVOOPS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro3_alvoops_641.
+
+TABLES vbak.
+
+TYPES : BEGIN OF ltvbak,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+          vbtyp TYPE VBTYPl,
+        END OF ltvbak.
+
+TYPES : BEGIN OF ltvbap,
+          vbeln TYPE vbeln_va,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+        END OF ltvbap.
+
+TYPES : BEGIN OF ltfinal,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+          vbtyp TYPE VBTYPl,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+        END OF ltfinal.
+
+DATA itab_vbak TYPE TABLE OF ltvbak.
+DATA wa_vbak TYPE  ltvbak.
+DATA itab_vbap TYPE TABLE OF ltvbap.
+DATA wa_vbap TYPE  ltvbap.
+DATA itab_final TYPE TABLE OF ltfinal.
+DATA wa_final TYPE ltfinal.
+DATA itab_fieldcat TYPE lvc_t_fcat.
+DATA wa_fieldcat TYPE lvc_s_fcat.
+DATA lo_object TYPE REF TO cl_gui_custom_container.
+DATA lo_grid TYPE REF TO cl_gui_alv_grid.
+
+SELECT-OPTIONS s_vbeln FOR vbak-vbeln.
+
+SELECT vbeln erdat erzet ernam vbtyp
+FROM  vbak
+INTO TABLE itab_vbak
+WHERE vbeln IN s_vbeln.
+
+IF itab_vbak IS NOT INITIAL.
+  SELECT vbeln posnr matnr
+  FROM vbap
+  INTO TABLE itab_vbap
+  FOR ALL ENTRIES IN itab_vbak
+  WHERE vbeln = itab_vbak-vbeln.
+ENDIF.
+
+LOOP AT itab_vbak INTO wa_vbak.
+  LOOP AT itab_vbap INTO wa_vbap WHERE vbeln = wa_vbak-vbeln.
+    wa_final-vbeln = wa_vbak-vbeln.
+    wa_final-erdat = wa_vbak-erdat.
+    wa_final-erzet = wa_vbak-erzet.
+    wa_final-ernam = wa_vbak-ernam.
+    wa_final-vbtyp = wa_vbak-vbtyp.
+    wa_final-posnr = wa_vbap-posnr.
+    wa_final-matnr = wa_vbap-matnr.
+    APPEND wa_final TO itab_final.
+    CLEAR wa_final.
+  ENDLOOP.
+ENDLOOP.
+
+*CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+*  EXPORTING
+*    i_structure_name       = 'ZSTR_ALVOOPS_641'
+*  CHANGING
+*    ct_fieldcat            = itab_fieldcat
+*  EXCEPTIONS
+*    inconsistent_interface = 1
+*    program_error          = 2
+*    OTHERS                 = 3.
+*IF sy-subrc <> 0.
+*  MESSAGE 'Implement suitable error handling here' TYPE 'S'.
+*ENDIF.
+*
+*LOOP AT itab_fieldcat INTO wa_fieldcat.
+*  IF wa_fieldcat-fieldname = 'VBELN'.
+*    wa_fieldcat-col_pos = 8.
+*    MODIFY itab_fieldcat FROM wa_fieldcat TRANSPORTING col_pos.
+*  ENDIF.
+*  IF wa_fieldcat-fieldname = 'ERDAT'.
+**    wa_fieldcat-scrtext_l = 'Created Date'.
+*    wa_fieldcat-col_pos = 3.
+*    MODIFY itab_fieldcat FROM wa_fieldcat TRANSPORTING col_pos.
+*  ENDIF.
+*  IF wa_fieldcat-fieldname = 'ERZET'.
+*    wa_fieldcat-col_pos = 1.
+*    MODIFY itab_fieldcat FROM wa_fieldcat TRANSPORTING col_pos.
+*  ENDIF.
+*  IF wa_fieldcat-fieldname = 'ERZET'.
+*    wa_fieldcat-scrtext_l = 'Creation Time'.
+*    MODIFY itab_fieldcat FROM wa_fieldcat TRANSPORTING scrtext_l.
+*  ENDIF.
+*ENDLOOP.
+
+*DATA(lo_object) = NEW cl_gui_custom_container( )
+CREATE OBJECT lo_object
+  EXPORTING
+    container_name = 'CONT'.
+
+CREATE OBJECT lo_grid
+  EXPORTING
+    i_parent = lo_object.
+
+CALL METHOD lo_grid->set_table_for_first_display
+  EXPORTING
+*   i_buffer_active               =
+*   i_bypassing_buffer            =
+*   i_consistency_check           =
+    i_structure_name              = 'ZSTR_ALVOOPS_641'
+*   is_variant                    =
+*   i_save                        =
+*   i_default                     = 'X'
+*   is_layout                     =
+*   is_print                      =
+*   it_special_groups             =
+*   it_toolbar_excluding          =
+*   it_hyperlink                  =
+*   it_alv_graphics               =
+*   it_except_qinfo               =
+*   ir_salv_adapter               =
+  CHANGING
+    it_outtab                     = itab_final
+*   it_fieldcatalog               =
+*   it_sort                       =
+*   it_filter                     =
+  EXCEPTIONS
+    invalid_parameter_combination = 1
+    program_error                 = 2
+    too_many_lines                = 3
+    OTHERS                        = 4.
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+*CALL METHOD lo_grid->set_table_for_first_display
+*  CHANGING
+*    it_outtab                     = itab_final
+*    it_fieldcatalog               = itab_fieldcat
+*  EXCEPTIONS
+*    invalid_parameter_combination = 1
+*    program_error                 = 2
+*    too_many_lines                = 3
+*    OTHERS                        = 4.
+*IF sy-subrc <> 0.
+*  MESSAGE 'Implement suitable error handling here' TYPE 'E'.
+*ENDIF.
+
+CALL SCREEN '0108'.
+
+INCLUDE zpro1_alvoops_641_user_commi01.
+
+INCLUDE zpro1_alvoops_641_status_01o01.

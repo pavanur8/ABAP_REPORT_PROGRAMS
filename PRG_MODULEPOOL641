@@ -1,0 +1,79 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZPRG_MODULEPOOL641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM zprg_modulepool641.
+
+TABLES : zorder_hea5,zorder_it18.
+
+TYPES : BEGIN OF lty,
+          order_number TYPE zorder_ono,
+          order_odate  TYPE zorder_od,
+          payment_mode TYPE zorder_pm,
+          total_amount TYPE zorder_ta,
+          currency     TYPE zorder_cu,
+        END OF lty.
+
+TYPES : BEGIN OF ltitem,
+          order_number      TYPE zorder_ono,
+          order_item_number TYPE zorder_ino,
+          order_description TYPE zorder_odes,
+          item_cost         TYPE zorder_ic,
+        END OF ltitem.
+
+
+DATA : lt TYPE TABLE OF lty,
+       lw TYPE lty.
+DATA : lti TYPE TABLE OF ltitem,
+       lwi TYPE ltitem.
+
+INCLUDE zprg_modulepool641_status_0o01.
+
+INCLUDE zprg_modulepool641_user_comi01.
+
+*&SPWIZARD: FUNCTION CODES FOR TABSTRIP 'ZTABS'
+CONSTANTS: BEGIN OF C_ZTABS,
+             TAB1 LIKE SY-UCOMM VALUE 'ZTABS_FC1',
+             TAB2 LIKE SY-UCOMM VALUE 'ZTABS_FC2',
+           END OF C_ZTABS.
+*&SPWIZARD: DATA FOR TABSTRIP 'ZTABS'
+CONTROLS:  ZTABS TYPE TABSTRIP.
+DATA:      BEGIN OF G_ZTABS,
+             SUBSCREEN   LIKE SY-DYNNR,
+             PROG        LIKE SY-REPID VALUE 'ZPRG_MODULEPOOL641',
+             PRESSED_TAB LIKE SY-UCOMM VALUE C_ZTABS-TAB1,
+           END OF G_ZTABS.
+DATA:      OK_CODE LIKE SY-UCOMM.
+
+*&SPWIZARD: OUTPUT MODULE FOR TS 'ZTABS'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: SETS ACTIVE TAB
+MODULE ZTABS_ACTIVE_TAB_SET OUTPUT.
+  ZTABS-ACTIVETAB = G_ZTABS-PRESSED_TAB.
+  CASE G_ZTABS-PRESSED_TAB.
+    WHEN C_ZTABS-TAB1.
+      G_ZTABS-SUBSCREEN = '0201'.
+    WHEN C_ZTABS-TAB2.
+      G_ZTABS-SUBSCREEN = '0202'.
+    WHEN OTHERS.
+*&SPWIZARD:      DO NOTHING
+  ENDCASE.
+ENDMODULE.
+
+*&SPWIZARD: INPUT MODULE FOR TS 'ZTABS'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: GETS ACTIVE TAB
+MODULE ZTABS_ACTIVE_TAB_GET INPUT.
+  OK_CODE = SY-UCOMM.
+  CASE OK_CODE.
+    WHEN C_ZTABS-TAB1.
+      G_ZTABS-PRESSED_TAB = C_ZTABS-TAB1.
+    WHEN C_ZTABS-TAB2.
+      G_ZTABS-PRESSED_TAB = C_ZTABS-TAB2.
+    WHEN OTHERS.
+*&SPWIZARD:      DO NOTHING
+  ENDCASE.
+ENDMODULE.
+
+INCLUDE zprg_modulepool641_validatei01.
+
+INCLUDE zprg_modulepool641_validatei02.

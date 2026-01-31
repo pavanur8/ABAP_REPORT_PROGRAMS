@@ -1,0 +1,59 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_3_TABLE_JOINS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_3_table_joins_641.
+
+TYPES : BEGIN OF ls,
+          matnr TYPE mara-matnr,
+          mtart TYPE mara-mtart,
+          mbrsh TYPE mara-mbrsh,
+          meins TYPE mara-meins,
+          spras TYPE makt-spras,
+          maktx TYPE makt-maktx,
+          werks TYPE marc-werks,
+          ekgrp TYPE marc-ekgrp,
+        END OF ls.
+
+DATA itab TYPE TABLE OF ls.
+DATA wa TYPE ls.
+DATA lo_alv TYPE REF TO cl_salv_table.
+
+SELECT a~matnr
+       a~mtart
+       a~mbrsh
+       a~meins
+       b~spras
+       b~maktx
+       c~werks
+       c~ekgrp
+  INTO TABLE itab
+  FROM mara AS a
+  INNER JOIN makt AS b ON a~matnr = b~matnr
+  INNER JOIN marc AS c ON b~matnr = c~matnr
+  WHERE a~mtart = 'FERT'
+    AND b~spras = 'EN' .
+
+*cl_demo_output=>display( itab ).
+*TRY.
+*    CALL METHOD cl_salv_table=>factory
+*      IMPORTING
+*        r_salv_table = lo_alv
+*      CHANGING
+*        t_table      = itab.
+*  CATCH cx_salv_msg.
+*ENDTRY.
+*
+*lo_alv->display( ).
+
+LOOP AT itab INTO wa.
+  WRITE : / wa-matnr ,
+            wa-mtart ,
+            wa-mbrsh ,
+            wa-meins ,
+            wa-spras ,
+            wa-maktx ,
+            wa-werks COLOR 6,
+            wa-ekgrp COLOR 5 .
+ENDLOOP.

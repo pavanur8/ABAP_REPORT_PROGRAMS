@@ -1,0 +1,167 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPS_ALV_SUBTOTAL_EVENT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoops_alv_subtotal_event_641.
+
+* Structure declaration for T016T (example data with numeric field for subtotals)
+TYPES: BEGIN OF ty_t016t,
+         brsch     TYPE brsch,      " Industry key (grouping field)
+         brtxt     TYPE text1_016t, " Description
+         spras     TYPE spras,      " Language
+         dummy_qty TYPE i,      " Dummy numeric field for subtotal calculation
+       END OF ty_t016t.
+
+* Work area and internal table for T016T
+DATA: it_t016t TYPE STANDARD TABLE OF ty_t016t,
+      wa_t016t TYPE ty_t016t.
+
+* Class declaration for event handler
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: subtotal_text
+      FOR EVENT subtotal_text OF cl_gui_alv_grid
+      IMPORTING es_subtottxt_info ep_subtot_line e_event_data.
+ENDCLASS.
+
+* Event handler implementation
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD subtotal_text.
+    DATA: lv_text TYPE string.
+
+* Customize subtotal TEXT based ON criterion (e.g., IF hidden)
+    lv_text = |Subtotal for Industry: { es_subtottxt_info-criteria }|.
+
+* Access and modify the subtotal line (ep_subtot_line is REF TO data)
+    FIELD-SYMBOLS: <fs_subtot> TYPE ty_t016t.
+    ASSIGN ep_subtot_line->* TO <fs_subtot>.
+    IF sy-subrc = 0.
+      <fs_subtot>-brtxt = lv_text.  " Place custom text in a visible field
+    ENDIF.
+
+* Modify event data to set the subtotal text
+    FIELD-SYMBOLS: <fs_event_data> TYPE any.
+    ASSIGN e_event_data->m_data->* TO <fs_event_data>.
+    IF sy-subrc = 0.
+      <fs_event_data> = lv_text.  " Set the display text
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+* Data declarations for ALV
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_handler   TYPE REF TO lcl_event_handler,
+      it_fcat      TYPE lvc_t_fcat,
+      it_sort      TYPE lvc_t_sort,
+      it_layout    TYPE lvc_s_layo.
+
+* Start of selection
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  CALL SCREEN 100.
+
+* PBO module
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STANDARD'.
+  SET TITLEBAR 'TITLE'.
+
+  IF go_alv IS INITIAL.
+* Create container
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CC_ALV'.  " Custom container on screen 100
+
+* Create alv grid
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+* Create event handler
+    CREATE OBJECT go_handler.
+    SET HANDLER go_handler->subtotal_text FOR go_alv.
+
+* Build field catalog
+    PERFORM build_fieldcat.
+
+* Build sort table for subtotals (group by brsch and subtotal ON dummy_qty)
+    PERFORM build_sort.
+
+* Layout settings (enable subtotals)
+    it_layout-grid_title = 'ALV Subtotal Text Example'.
+    it_layout-no_totline = ' '.  " Show totals if needed
+
+* Display alv
+    CALL METHOD go_alv->set_table_for_first_display
+      EXPORTING
+        is_layout       = it_layout
+      CHANGING
+        it_outtab       = it_t016t
+        it_fieldcatalog = it_fcat
+        it_sort         = it_sort.
+  ENDIF.
+ENDMODULE.
+
+* PAI module
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Form  fetch_data
+*&---------------------------------------------------------------------*
+FORM fetch_data.
+* Sample data (REPLACE with actual SELECT for real use)
+  SELECT brsch brtxt spras FROM t016t INTO CORRESPONDING FIELDS OF TABLE it_t016t UP TO 20 ROWS
+    WHERE spras = 'E' .
+
+* Add dummy quantity for subtotal calculation
+  LOOP AT it_t016t ASSIGNING FIELD-SYMBOL(<fs>).
+    <fs>-dummy_qty = sy-tabix.  " Sample numeric values
+  ENDLOOP.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  build_fieldcat
+*&---------------------------------------------------------------------*
+FORM build_fieldcat.
+  DATA: ls_fcat TYPE lvc_s_fcat.
+
+  ls_fcat-fieldname = 'BRSCH'.
+  ls_fcat-scrtext_m = 'Industry'.
+  ls_fcat-outputlen = 8.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'BRTXT'.
+  ls_fcat-scrtext_m = 'Description'.
+  ls_fcat-outputlen = 15.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'SPRAS'.
+  ls_fcat-scrtext_m = 'Language'.
+  ls_fcat-outputlen = 5.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'DUMMY_QTY'.
+  ls_fcat-scrtext_m = 'Quantity'.
+  ls_fcat-outputlen = 10.
+  ls_fcat-do_sum = 'X'.  " Enable sum for this field
+  APPEND ls_fcat TO it_fcat.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  build_sort
+*&---------------------------------------------------------------------*
+FORM build_sort.
+  DATA: ls_sort TYPE lvc_s_sort.
+
+  ls_sort-fieldname = 'BRSCH'.  " Group by Industry
+  ls_sort-spos = 1.
+  ls_sort-up = 'X'.
+  ls_sort-subtot = 'X'.  " Enable subtotals
+  APPEND ls_sort TO it_sort.
+ENDFORM.

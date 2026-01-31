@@ -1,0 +1,63 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SY_INDEX_SY_TABIX_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_sy_index_sy_tabix_641.
+
+*TYPES  : BEGIN OF str,
+*           vbeln TYPE vbeln_va,
+*           ernam TYPE ernam,
+*           erdat TYPE erdat,
+*         END OF str.
+*
+*DATA itab TYPE TABLE OF str.
+*DATA wa LIKE LINE OF itab.
+*
+*WRITE :'Initial Values of sy-Index',sy-index.
+*WRITE :'Initial Values of sy-Tabix',sy-tabix.
+*
+*SELECT vbeln ernam erdat UP TO 10 ROWS
+*FROM vbak
+*INTO TABLE itab.
+*
+*ULINE.
+*
+*LOOP AT itab INTO wa.
+*  WRITE : sy-tabix,sy-index.
+*ENDLOOP.
+*
+*TOP-OF-PAGE.
+*  WRITE : 'Sample Classic report'.
+*  ULINE AT 0(90).
+
+
+TYPES: BEGIN OF ty_str,
+         vbeln TYPE vbeln_va,
+         ernam TYPE ernam,
+         erdat TYPE erdat,
+       END OF ty_str.
+
+DATA: itab TYPE TABLE OF ty_str,
+      wa   TYPE ty_str.
+
+WRITE: / 'Initial Values of sy-index:', sy-index.
+WRITE: / 'Initial Values of sy-tabix:', sy-tabix.
+
+SELECT vbeln, ernam, erdat
+  UP TO 10 ROWS
+  FROM vbak
+  INTO TABLE @itab.
+
+IF sy-subrc = 0.
+  DESCRIBE TABLE itab LINES DATA(lv_lines).
+  WRITE: / 'Number of rows fetched:', lv_lines. "sy-dbcnt also holds this value
+ENDIF.
+
+WRITE: / 'sy-tabix after SELECT (before LOOP):', sy-tabix. "Remains 0, as SELECT doesn't set it for the table
+
+LOOP AT itab INTO wa.
+  WRITE: / 'Processing row - vbeln:', wa-vbeln, 'sy-tabix:', sy-tabix. "Increments per loop pass
+ENDLOOP.
+
+WRITE: / 'sy-tabix after LOOP:', sy-tabix. "Resets to value before entering LOOP (0)

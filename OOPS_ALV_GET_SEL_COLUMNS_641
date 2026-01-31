@@ -1,0 +1,111 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPS_ALV_GET_SEL_COLUMNS_641
+*&---------------------------------------------------------------------*
+REPORT zoops_alv_get_sel_columns_641.
+
+* Data declarations
+DATA: gt_sflight       TYPE TABLE OF sflight,
+      gr_alvgrid       TYPE REF TO cl_gui_alv_grid,
+      gr_container     TYPE REF TO cl_gui_custom_container,
+      gt_selected_cols TYPE lvc_t_col.
+
+* Event handler class
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: handle_user_command FOR EVENT user_command OF cl_gui_alv_grid
+      IMPORTING e_ucomm,
+      handle_toolbar FOR EVENT toolbar OF cl_gui_alv_grid
+        IMPORTING e_object e_interactive.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD handle_user_command.
+    DATA: lv_message TYPE string.
+
+    " Clear previous selections
+    CLEAR gt_selected_cols.
+
+    " Call the method to get selected columns
+    CALL METHOD gr_alvgrid->get_selected_columns
+      IMPORTING
+        et_index_columns = gt_selected_cols.
+
+    IF gt_selected_cols IS INITIAL.
+      lv_message = 'No columns selected or only rows/cells selected.'.
+    ELSE.
+      LOOP AT gt_selected_cols INTO DATA(ls_col).
+        CONCATENATE lv_message ls_col-fieldname ',' INTO lv_message SEPARATED BY space.
+      ENDLOOP.
+      lv_message = |Selected columns: { lv_message }|.
+    ENDIF.
+
+    " Display the result
+    CALL FUNCTION 'POPUP_TO_INFORM'
+      EXPORTING
+        titel = 'Selected Columns'
+        txt1  = lv_message
+        txt2  = ''
+        txt3  = ''
+        txt4  = ''.
+  ENDMETHOD.
+
+  METHOD handle_toolbar.
+    DATA: ls_toolbar TYPE stb_button.
+
+    " Add custom button to ALV toolbar
+    CLEAR ls_toolbar.
+    ls_toolbar-function  = 'GETCOLS'.  " Function code for the button
+    ls_toolbar-icon      = '@4U@'.     " Icon (optional, use any valid icon)
+    ls_toolbar-text      = 'Get Selected Columns'.  " Button text
+    ls_toolbar-quickinfo = 'Retrieve selected column names'.  " Tooltip
+    ls_toolbar-butn_type = 0.         " Normal button
+    APPEND ls_toolbar TO e_object->mt_toolbar.
+  ENDMETHOD.
+ENDCLASS.
+
+* Main program
+START-OF-SELECTION.
+  " Fetch sample data
+  SELECT * FROM sflight INTO TABLE gt_sflight UP TO 20 ROWS.
+
+  " Call screen with ALV container
+  CALL SCREEN 0100.
+
+* PBO module for screen 0100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_0100'.  " Optional: For screen-level buttons like BACK/EXIT
+
+  IF gr_container IS INITIAL.
+    CREATE OBJECT gr_container
+      EXPORTING
+        container_name = 'ALV_CONTAINER'.
+
+    CREATE OBJECT gr_alvgrid
+      EXPORTING
+        i_parent = gr_container.
+
+    " Set event handlers
+    DATA: gr_event_handler TYPE REF TO lcl_event_handler.
+    CREATE OBJECT gr_event_handler.
+    SET HANDLER gr_event_handler->handle_user_command FOR gr_alvgrid.
+    SET HANDLER gr_event_handler->handle_toolbar FOR gr_alvgrid.
+
+    " Display ALV grid
+    CALL METHOD gr_alvgrid->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'SFLIGHT'
+      CHANGING
+        it_outtab        = gt_sflight.
+
+    " Refresh to apply toolbar changes
+    CALL METHOD gr_alvgrid->refresh_table_display.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 0100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.

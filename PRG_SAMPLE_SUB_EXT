@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SAMPLE_SUB_EXT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_SAMPLE_SUB_EXT.
+DATA : ou TYPE numc3.
+PARAMETERS : l1 TYPE numc3.
+PARAMETERS : l2 TYPE numc3.
+
+*PERFORM sum(ZPRG_SAMPLE_SUB_PARA) USING l1 l2 CHANGING ou.
+PERFORM sum IN PROGRAM ZPRG_SAMPLE_SUB_PARA USING l1 l2 CHANGING ou IF FOUND.
+
+WRITE ou.

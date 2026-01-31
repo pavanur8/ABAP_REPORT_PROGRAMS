@@ -1,0 +1,71 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZMP_MOCK1_641_USER_COMMAND_I02.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0101  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0101 INPUT.
+  DATA wa_insert TYPE zemploye_641.
+  DATA: lv_count TYPE n.
+  DATA: lv_mob_len TYPE string.
+
+*  lv_value = wa-firstname.
+
+*  TRANSLATE lv_value TO UPPER CASE.
+*  CONDENSE lv_value NO-GAPS.
+
+
+  lv_mob_len = wa-phoneno.
+*  DATA lv_mob_len TYPE i.
+
+
+
+  CASE sy-ucomm.
+    WHEN 'INSERT'.
+
+      IF wa-firstname CA '1234567890' .
+        MESSAGE i008(zm_sms1) WITH wa-firstname.
+      ELSE.
+        wa_insert-firstname = wa-firstname.
+        lv_count = lv_count + 1.
+      ENDIF.
+
+      IF wa-lastname CA '1234567890'.
+        MESSAGE i010(zm_sms1) WITH wa-lastname.
+      ELSE.
+        wa_insert-lastname  = wa-lastname.
+        lv_count = lv_count + 1.
+      ENDIF.
+
+      IF NOT wa-email CP '*@gmail.com' .
+        MESSAGE i011(zm_sms1) WITH wa-email.
+      ELSE.
+        wa_insert-email  = wa-email.
+        lv_count = lv_count + 1.
+      ENDIF.
+
+      DATA(str) = strlen( wa-phoneno ).
+      IF  wa-phoneno = '0000000000' OR str < 10 .
+        MESSAGE i001(zm_sms1) WITH wa-phoneno.
+      ELSE.
+        wa_insert-empid    = lv_max_id.
+        wa_insert-phoneno  = wa-phoneno.
+        wa_insert-address    = wa-address.
+        lv_count = lv_count + 1.
+      ENDIF.
+      IF lv_count = 4.
+        INSERT zemploye_641 FROM wa_insert.
+        IF sy-subrc = 0.
+          CLEAR wa.
+          MESSAGE 'Record inserted successfully' TYPE 'S'.
+        ELSE.
+          CLEAR wa.
+          MESSAGE 'Insert failed. Duplicate or error.' TYPE 'E'.
+        ENDIF.
+      ENDIF.
+
+
+  ENDCASE.
+ENDMODULE.

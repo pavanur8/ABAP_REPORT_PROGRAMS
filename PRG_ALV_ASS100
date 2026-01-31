@@ -1,0 +1,267 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_ALV_ASS100
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_ALV_ASS100.
+
+TYPES : BEGIN OF ly,
+            lifnr TYPE lifnr,
+            name1 TYPE name1_gp,
+            regio TYPE regio,
+          END OF ly.
+
+  TYPES : BEGIN OF ly_t,
+            ebeln TYPE ekko-ebeln,
+            bedat TYPE ekko-bedat,
+            matnr TYPE ekpo-matnr,
+            menge TYPE ekpo-menge,
+            netpr TYPE ekpo-netpr,
+            waers TYPE ekko-waers,
+            "netwr TYPE ekpo-bwert,
+            peinh TYPE ekpo-peinh,
+          END OF ly_t.
+
+  DATA : lt_v TYPE TABLE OF ly.
+  DATA : lw_v TYPE ly.
+  DATA : lt_t TYPE TABLE OF ly_t.
+  DATA : lw_t TYPE ly_t.
+  DATA : lv_ono TYPE lifnr.
+  DATA : lt_fieldcat TYPE slis_t_fieldcat_alv.
+  DATA : lw_fieldcat TYPE slis_fieldcat_alv.
+  DATA : lt_fieldcat1 TYPE slis_t_fieldcat_alv.
+  DATA : lw_fieldcat1 TYPE slis_fieldcat_alv.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-018.
+  PARAMETERS: c_region AS CHECKBOX  USER-COMMAND ucmd .
+  PARAMETERS: p_land1 TYPE lfa1-land1 MODIF ID kvr.
+  SELECT-OPTIONS : s_ono FOR lv_ono .
+SELECTION-SCREEN END OF BLOCK b1.
+
+AT SELECTION-SCREEN.
+   IF NOT p_land1 IS INITIAL.
+    SELECT SINGLE REGIO FROM lfa1 INTO lw_v WHERE REGIO = p_land1."@DATA(lv_matnr) WHERE REGIO =  @p_land1.
+    IF sy-subrc <> 0.
+      MESSAGE  E005(ZMESSGE_1) DISPLAY LIKE 'I'.
+    ENDIF.
+  ENDIF.
+
+
+  AT SELECTION-SCREEN OUTPUT.
+  IF c_region = ' '.
+    LOOP AT SCREEN.
+      IF screen-group1 =  'KVR'.
+        screen-active = 0 .
+        MODIFY SCREEN.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+START-OF-SELECTION.
+  SELECT lifnr name1 regio
+ FROM lfa1
+ INTO TABLE lt_v
+ WHERE lifnr IN s_ono.
+
+
+    lw_fieldcat-col_pos = 1.
+    lw_fieldcat-fieldname = 'LIFNR'.
+    lw_fieldcat-tabname = 'LT_V'.
+    lw_fieldcat-seltext_l = TEXT-001.
+    APPEND : lw_fieldcat TO lt_fieldcat.
+    CLEAR : lw_fieldcat.
+
+    lw_fieldcat-col_pos = 2.
+    lw_fieldcat-fieldname = 'NAME1'.
+    lw_fieldcat-tabname = 'LT_V'.
+    lw_fieldcat-seltext_l = TEXT-002.
+    APPEND : lw_fieldcat TO lt_fieldcat.
+    CLEAR : lw_fieldcat.
+
+    lw_fieldcat-col_pos = 3.
+    lw_fieldcat-fieldname = 'REGIO'.
+    lw_fieldcat-tabname = 'LT_V'.
+    lw_fieldcat-seltext_l = TEXT-011.
+    APPEND : lw_fieldcat TO lt_fieldcat.
+    CLEAR : lw_fieldcat.
+
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+*       I_INTERFACE_CHECK        = ' '
+*       I_BYPASSING_BUFFER       = ' '
+*       I_BUFFER_ACTIVE          = ' '
+        i_callback_program       = sy-repid
+        i_callback_pf_status_set = 'PF_STATUS'
+        i_callback_user_command  = 'USR_COMMAND'
+*       I_CALLBACK_TOP_OF_PAGE   = ' '
+*       I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*       I_CALLBACK_HTML_END_OF_LIST       = ' '
+*       I_STRUCTURE_NAME         =
+*       I_BACKGROUND_ID          = ' '
+*       I_GRID_TITLE             =
+*       I_GRID_SETTINGS          =
+*       IS_LAYOUT                =
+        it_fieldcat              = lt_fieldcat
+*       IT_EXCLUDING             =
+*       IT_SPECIAL_GROUPS        =
+*       IT_SORT                  =
+*       IT_FILTER                =
+*       IS_SEL_HIDE              =
+*       I_DEFAULT                = 'X'
+*       I_SAVE                   = ' '
+*       IS_VARIANT               =
+*       IT_EVENTS                =
+*       IT_EVENT_EXIT            =
+*       IS_PRINT                 =
+*       IS_REPREP_ID             =
+*       I_SCREEN_START_COLUMN    = 0
+*       I_SCREEN_START_LINE      = 0
+*       I_SCREEN_END_COLUMN      = 0
+*       I_SCREEN_END_LINE        = 0
+*       I_HTML_HEIGHT_TOP        = 0
+*       I_HTML_HEIGHT_END        = 0
+*       IT_ALV_GRAPHICS          =
+*       IT_HYPERLINK             =
+*       IT_ADD_FIELDCAT          =
+*       IT_EXCEPT_QINFO          =
+*       IR_SALV_FULLSCREEN_ADAPTER        =
+*       O_PREVIOUS_SRAL_HANDLER  =
+*       O_COMMON_HUB             =
+* IMPORTING
+*       E_EXIT_CAUSED_BY_CALLER  =
+*       ES_EXIT_CAUSED_BY_USER   =
+      TABLES
+        t_outtab                 = lt_v
+      EXCEPTIONS
+        program_error            = 1
+        OTHERS                   = 2.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+
+*  FORM pf_status USING rt_extab TYPE slis_t_extab.
+*    SET PF-STATUS 'DISP'.
+*  ENDFORM.
+
+FORM usr_command  USING r_ucomm LIKE sy-ucomm
+rs_selfield TYPE slis_selfield.
+
+  REFRESH : lt_fieldcat1.
+
+  READ TABLE lt_v INTO lw_v INDEX rs_selfield-tabindex.
+  IF sy-subrc = 0.
+
+    SELECT a~ebeln a~bedat b~matnr b~menge b~netpr a~waers b~peinh
+    INTO TABLE lt_t
+    FROM ekko AS a
+    INNER JOIN ekpo AS b ON a~ebeln = b~ebeln.
+*    WHERE a~lifnr = s_ono.
+
+
+    lw_fieldcat1-col_pos = 1.
+    lw_fieldcat1-fieldname = 'EBELN'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-004.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 2.
+    lw_fieldcat1-fieldname = 'BEDAT'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_l  = TEXT-005.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 3.
+    lw_fieldcat1-fieldname = 'MATNR'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-006.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 4.
+    lw_fieldcat1-fieldname = 'MENGE'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-007.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 5.
+    lw_fieldcat1-fieldname = 'NETPR'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-008.
+    lw_fieldcat1-do_sum  = 'X'.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 6.
+    lw_fieldcat1-fieldname = 'WAERS'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-009.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    lw_fieldcat1-col_pos = 7.
+    lw_fieldcat1-fieldname = 'PEINH'.
+    lw_fieldcat1-tabname = 'LT_T'.
+    lw_fieldcat1-seltext_m  = TEXT-010.
+    APPEND : lw_fieldcat1 TO lt_fieldcat1.
+    CLEAR : lw_fieldcat1.
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+*       I_INTERFACE_CHECK                 = ' '
+*       I_BYPASSING_BUFFER                = ' '
+*       I_BUFFER_ACTIVE                   = ' '
+*       I_CALLBACK_PROGRAM                = ' '
+*       I_CALLBACK_PF_STATUS_SET          = ' '
+*       I_CALLBACK_USER_COMMAND           = ' '
+*       I_CALLBACK_TOP_OF_PAGE            = ' '
+*       I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*       I_CALLBACK_HTML_END_OF_LIST       = ' '
+*       I_STRUCTURE_NAME                  =
+*       I_BACKGROUND_ID                   = ' '
+*       I_GRID_TITLE  =
+*       I_GRID_SETTINGS                   =
+*       IS_LAYOUT     =
+        it_fieldcat   = lt_fieldcat1
+*       IT_EXCLUDING  =
+*       IT_SPECIAL_GROUPS                 =
+*       IT_SORT       =
+*       IT_FILTER     =
+*       IS_SEL_HIDE   =
+*       I_DEFAULT     = 'X'
+*       I_SAVE        = ' '
+*       IS_VARIANT    =
+*       IT_EVENTS     =
+*       IT_EVENT_EXIT =
+*       IS_PRINT      =
+*       IS_REPREP_ID  =
+*       I_SCREEN_START_COLUMN             = 0
+*       I_SCREEN_START_LINE               = 0
+*       I_SCREEN_END_COLUMN               = 0
+*       I_SCREEN_END_LINE                 = 0
+*       I_HTML_HEIGHT_TOP                 = 0
+*       I_HTML_HEIGHT_END                 = 0
+*       IT_ALV_GRAPHICS                   =
+*       IT_HYPERLINK  =
+*       IT_ADD_FIELDCAT                   =
+*       IT_EXCEPT_QINFO                   =
+*       IR_SALV_FULLSCREEN_ADAPTER        =
+*       O_PREVIOUS_SRAL_HANDLER           =
+*       O_COMMON_HUB  =
+* IMPORTING
+*       E_EXIT_CAUSED_BY_CALLER           =
+*       ES_EXIT_CAUSED_BY_USER            =
+      TABLES
+        t_outtab      = lt_t
+      EXCEPTIONS
+        program_error = 1
+        OTHERS        = 2.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+  ENDIF.
+ENDFORM.

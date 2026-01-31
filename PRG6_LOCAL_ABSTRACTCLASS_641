@@ -1,0 +1,92 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG6_LOCAL_ABSTRACTCLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg6_local_abstractclass_641.
+
+DATA lv_erdat TYPE erdat.
+DATA lv_erzet TYPE erzet.
+DATA lv_ernam TYPE ernam.
+DATA lv_vbtyp TYPE vbtypl.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS p_vbeln TYPE vbeln_va.
+  PARAMETERS pr1 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS pr2 TYPE c RADIOBUTTON GROUP r1.
+SELECTION-SCREEN END OF BLOCK b1.
+
+CLASS abstract_class DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    METHODS : display ABSTRACT IMPORTING pvbeln TYPE vbeln_va
+                               EXPORTING perdat TYPE erdat
+                                         perzet TYPE erzet
+                                         pernam TYPE ernam
+                                         pvbtyp TYPE vbtypl.
+ENDCLASS.
+
+CLASS sales DEFINITION INHERITING FROM abstract_class.
+  PUBLIC SECTION.
+    METHODS display REDEFINITION.
+ENDCLASS.
+
+CLASS sales IMPLEMENTATION.
+  METHOD display.
+    SELECT SINGLE erdat erzet ernam vbtyp
+    FROM vbak
+    INTO ( perdat, perzet, pernam, pvbtyp )
+    WHERE vbeln = p_vbeln.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS billing DEFINITION INHERITING FROM abstract_class.
+  PUBLIC SECTION.
+    METHODS display REDEFINITION.
+ENDCLASS.
+
+CLASS billing IMPLEMENTATION.
+  METHOD display.
+    SELECT SINGLE vbtyp ernam erzet erdat
+    FROM vbrk
+    INTO ( pvbtyp, pernam, perzet, perdat )
+    WHERE vbeln = p_vbeln.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA obj1 TYPE REF TO sales.
+  DATA obj2 TYPE REF TO billing.
+
+  IF pr1 = 'X'.
+    CREATE OBJECT obj1.
+    obj1->display( EXPORTING pvbeln = p_vbeln
+                   IMPORTING perdat = lv_erdat
+                             perzet = lv_erzet
+                             pernam = lv_ernam
+                             pvbtyp = lv_vbtyp ).
+
+    WRITE : 'Sales Document :'.
+    WRITE : sy-uline.
+    WRITE : / lv_erdat,
+            / lv_erzet,
+            / lv_ernam,
+            / lv_vbtyp.
+  ENDIF.
+
+  IF pr2 = 'X'.
+    CREATE OBJECT obj2.
+    obj2->display( EXPORTING pvbeln = p_vbeln
+                   IMPORTING pvbtyp = lv_vbtyp
+                             pernam = lv_ernam
+                             perzet = lv_erzet
+                             perdat = lv_erdat ).
+
+    WRITE : 'Sales Document :'.
+    WRITE : sy-uline.
+    WRITE : / lv_vbtyp,
+            / lv_ernam,
+            / lv_erzet,
+            / lv_erdat.
+  ENDIF.

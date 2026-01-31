@@ -1,0 +1,171 @@
+REPORT z_multi_tree_alv_641.
+
+DATA: lr_cust      TYPE REF TO cl_gui_custom_container,
+      lr_list_tree TYPE REF TO cl_gui_list_tree,
+      lt_flight    TYPE TABLE OF scarr,
+      ls_flight    TYPE scarr,
+      lt_spfli     TYPE TABLE OF spfli,
+      ls_spfli     TYPE spfli,
+      lt_node      TYPE treev_ntab,
+      ls_node      TYPE LINE OF treev_ntab,
+      lt_item      TYPE TABLE OF mtreeitm,
+      ls_item      TYPE mtreeitm.
+
+START-OF-SELECTION.
+  CALL SCREEN 0001.
+
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0001  OUTPUT
+*&---------------------------------------------------------------------*
+MODULE status_0001 OUTPUT.
+  SET PF-STATUS 'LIST_STATUS'.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  GET_DATA  OUTPUT
+*&---------------------------------------------------------------------*
+MODULE get_data OUTPUT.
+  IF lt_flight IS INITIAL.
+    SELECT * FROM scarr INTO TABLE lt_flight.
+    IF lt_flight IS NOT INITIAL.
+      SELECT * FROM spfli INTO TABLE lt_spfli FOR ALL ENTRIES IN lt_flight
+        WHERE carrid = lt_flight-carrid.
+    ENDIF.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  BUILD_LIST_TREE  OUTPUT
+*&---------------------------------------------------------------------*
+MODULE build_list_tree OUTPUT.
+  IF lr_cust IS NOT BOUND.
+    CREATE OBJECT lr_cust
+      EXPORTING
+        container_name = 'LIST_TREE'
+        repid          = sy-repid
+        dynnr          = sy-dynnr
+      EXCEPTIONS
+        cntl_error     = 1
+        OTHERS         = 2.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+  ENDIF.
+
+  IF lr_list_tree IS NOT BOUND.
+    CREATE OBJECT lr_list_tree
+      EXPORTING
+        parent                      = lr_cust
+        node_selection_mode         = cl_gui_list_tree=>node_sel_mode_single
+        item_selection              = 'X'
+        with_headers                = ' '
+      EXCEPTIONS
+        lifetime_error              = 1
+        cntl_system_error           = 2
+        create_error                = 3
+        illegal_node_selection_mode = 4
+        failed                      = 5
+        OTHERS                      = 6.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+  ENDIF.
+
+  IF lr_list_tree IS BOUND.
+
+    CLEAR: lt_node, lt_item.
+
+    " Building Root Node
+    CLEAR ls_node.
+    ls_node-node_key = 'FLIGHT'.
+    ls_node-hidden = ' '.
+    ls_node-disabled = ' '.
+    ls_node-isfolder = 'X'.
+    APPEND ls_node TO lt_node.
+
+    " Building sub nodes for carriers and their connections
+    LOOP AT lt_flight INTO ls_flight.
+      CLEAR ls_node.
+      ls_node-node_key = ls_flight-carrid.
+      ls_node-relatkey = 'FLIGHT'.
+      ls_node-relatship = cl_gui_list_tree=>relat_last_child.
+      ls_node-hidden = ' '.
+      ls_node-disabled = ' '.
+*      ls_node-n_image = '@7T@'.
+      ls_node-isfolder = 'X'.
+      APPEND ls_node TO lt_node.
+
+      LOOP AT lt_spfli INTO ls_spfli WHERE carrid = ls_flight-carrid.
+        CLEAR ls_node.
+        ls_node-node_key = |{ ls_spfli-carrid }{ ls_spfli-connid }|.  " Unique node key
+        ls_node-relatkey = ls_flight-carrid.
+        ls_node-relatship = cl_gui_list_tree=>relat_last_child.
+        ls_node-hidden = ' '.
+        ls_node-disabled = ' '.
+        ls_node-isfolder = ' '.  " Leaf node
+        APPEND ls_node TO lt_node.
+      ENDLOOP.
+    ENDLOOP.
+
+    " Building root Node Text (Item)
+    CLEAR ls_item.
+    ls_item-node_key = 'FLIGHT'.
+    ls_item-item_name = '1'.
+    ls_item-class = cl_gui_list_tree=>item_class_text.
+    ls_item-alignment = cl_gui_list_tree=>align_auto.
+    ls_item-font = cl_gui_list_tree=>item_font_prop.
+    ls_item-text = 'Flight Info'.
+    APPEND ls_item TO lt_item.
+
+    " Building item texts for carriers
+    LOOP AT lt_flight INTO ls_flight.
+      CLEAR ls_item.
+      ls_item-node_key = ls_flight-carrid.
+      ls_item-item_name = '1'.
+      ls_item-class = cl_gui_list_tree=>item_class_text.
+      ls_item-alignment = cl_gui_list_tree=>align_auto.
+      ls_item-font = cl_gui_list_tree=>item_font_prop.
+      ls_item-text = ls_flight-carrname.
+      APPEND ls_item TO lt_item.
+
+      "Building item texts for connections
+      LOOP AT lt_spfli INTO ls_spfli WHERE carrid = ls_flight-carrid.
+        CLEAR ls_item.
+        ls_item-node_key = |{ ls_spfli-carrid }{ ls_spfli-connid }|.
+        ls_item-item_name = '1'.
+        ls_item-class = cl_gui_list_tree=>item_class_text.
+        ls_item-alignment = cl_gui_list_tree=>align_auto.
+        ls_item-font = cl_gui_list_tree=>item_font_prop.
+        CONCATENATE ls_spfli-countryfr '-' ls_spfli-cityfrom '-'
+                    ls_spfli-countryto '-' ls_spfli-cityto INTO ls_item-text.
+        APPEND ls_item TO lt_item.
+      ENDLOOP.
+    ENDLOOP.
+
+    CALL METHOD lr_list_tree->add_nodes_and_items
+      EXPORTING
+        node_table                     = lt_node
+        item_table                     = lt_item
+        item_table_structure_name      = 'MTREEITM'
+      EXCEPTIONS
+        failed                         = 1
+        cntl_system_error              = 2
+        error_in_tables                = 3
+        dp_error                       = 4
+        table_structure_name_not_found = 5
+        OTHERS                         = 6.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0001  INPUT
+*&---------------------------------------------------------------------*
+MODULE user_command_0001 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.

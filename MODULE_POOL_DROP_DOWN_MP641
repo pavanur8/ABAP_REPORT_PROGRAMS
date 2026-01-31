@@ -1,0 +1,16 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZDROP_DOWN_MP641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM ZDROP_DOWN_MP641.
+TABLES ZSTATES_641.
+TYPES : BEGIN OF stf,
+        REGION TYPE ZREGION1,
+        END OF stf.
+DATA : itab TYPE TABLE of stf,
+      wa TYPE stf.
+
+INCLUDE zdrop_down_mp641_user_commai01.
+
+INCLUDE zdrop_down_mp641_status_020o01.

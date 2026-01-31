@@ -1,0 +1,47 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZPRG_MODULEPOOL641_USER_COMI01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+*  DATA: order_number TYPE zorder_hea5-order_number.
+
+  IF sy-ucomm = 'DISPLAY'.
+
+    SELECT order_number order_odate payment_mode total_amount currency
+    FROM zorder_hea5
+    INTO TABLE lt
+    WHERE order_number = zorder_hea5-order_number.
+
+    IF lt IS NOT INITIAL.
+      SELECT order_number order_item_number order_description item_cost
+      FROM ZORDER_IT18
+      INTO TABLE lti
+      FOR ALL ENTRIES IN lt
+      WHERE order_number = lt-order_number.
+    endif.
+
+      READ TABLE lt INTO lw INDEX 1.
+      IF sy-subrc = 0.
+        zorder_hea5-order_odate = lw-order_odate.
+        zorder_hea5-payment_mode = lw-payment_mode.
+        zorder_hea5-total_amount = lw-total_amount.
+        zorder_hea5-currency = lw-currency.
+      ENDIF.
+    ENDIF.
+
+    IF sy-ucomm = 'PF_NEXT'.
+      CALL SCREEN '0200'.
+    ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CALL SCREEN '0100'.
+ENDMODULE.

@@ -1,0 +1,142 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_TOOL_BAR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_tool_bar_641.
+
+DATA : lr_toolbar   TYPE REF TO cl_gui_toolbar,
+       lr_cust_cont TYPE REF TO cl_gui_custom_container,
+       lt_event     TYPE cntl_simple_events,
+       ls_event     LIKE LINE OF lt_event.
+
+*———————————————————————-*
+*       CLASS LCL_HANDLE_TOOLBAR DEFINITION
+*———————————————————————-*
+CLASS lcl_handle_toolbar DEFINITION.
+  PUBLIC SECTION.
+    METHODS : handle_button FOR EVENT function_selected
+                            OF cl_gui_toolbar IMPORTING fcode .
+ENDCLASS.
+
+*———————————————————————-*
+*       CLASS lcl_handle_toolbar IMPLEMENTATION
+*———————————————————————-*
+CLASS lcl_handle_toolbar IMPLEMENTATION.
+  METHOD handle_button .
+    CASE fcode.
+      WHEN 'TSAVE'.
+        MESSAGE 'Save button clicked' TYPE 'I'.
+    ENDCASE.
+  ENDMETHOD. "handle_button
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA : lr_handle TYPE REF TO lcl_handle_toolbar.
+  CREATE OBJECT lr_handle.
+
+  CALL SCREEN 0001.
+
+*&———————————————————————*
+*&      Module  CREATE_PFSTATUS  OUTPUT
+*&———————————————————————*
+MODULE create_pfstatus OUTPUT.
+  SET PF-STATUS 'PFS'.
+ENDMODULE.
+
+*&———————————————————————*
+*&      Module  CREATE_TOOLBAR  OUTPUT
+*&———————————————————————*
+MODULE create_toolbar OUTPUT.
+  IF lr_cust_cont IS NOT BOUND.
+    CREATE OBJECT lr_cust_cont
+      EXPORTING
+        container_name              = 'TOOLBAR'
+      EXCEPTIONS
+        cntl_error                  = 1
+        cntl_system_error           = 2
+        create_error                = 3
+        lifetime_error              = 4
+        lifetime_dynpro_dynpro_link = 5.
+    IF sy-subrc <> 0.
+      MESSAGE 'Error creating custom container' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+
+  IF lr_toolbar IS NOT BOUND.
+    CREATE OBJECT lr_toolbar
+      EXPORTING
+        parent             = lr_cust_cont
+        display_mode       = cl_gui_toolbar=>m_mode_horizontal
+      EXCEPTIONS
+        cntl_install_error = 1
+        cntl_error         = 2
+        cntb_wrong_version = 3
+        OTHERS             = 4.
+    IF sy-subrc <> 0.
+      MESSAGE 'Error creating toolbar' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+
+  CALL METHOD lr_toolbar->add_button
+    EXPORTING
+      fcode            = 'TSAVE'
+      icon             = '@2L@'
+      butn_type        = 0
+      text             = 'Save'
+      quickinfo        = 'Click to UPDATE the database'
+    EXCEPTIONS
+      cntl_error       = 1
+      cntb_btype_error = 2
+      cntb_error_fcode = 3
+      OTHERS           = 4.
+  IF sy-subrc <> 0.
+    MESSAGE 'Error adding button to toolbar' TYPE 'E'.
+  ENDIF.
+
+  ls_event-eventid = cl_gui_toolbar=>m_id_function_selected.
+  ls_event-appl_event = 'X'.  " Set as application event
+  APPEND ls_event TO lt_event.
+
+  CALL METHOD lr_toolbar->set_registered_events
+    EXPORTING
+      events                        = lt_event
+    EXCEPTIONS
+      cntl_error                    = 1
+*      cntb_error_illegal_event_type = 2
+      OTHERS                        = 3.
+  IF sy-subrc <> 0.
+    MESSAGE 'Error registering events' TYPE 'E'.
+  ENDIF.
+
+  SET HANDLER lr_handle->handle_button FOR lr_toolbar.
+
+  CALL METHOD cl_gui_cfw=>flush
+    EXCEPTIONS
+      cntl_system_error = 1
+      cntl_error        = 2.
+  IF sy-subrc <> 0.
+    MESSAGE 'Error flushing GUI controls' TYPE 'E'.
+  ENDIF.
+
+ENDMODULE.
+
+*&———————————————————————*
+*&      Module  HANDLE_USERACTION  INPUT
+*&———————————————————————*
+MODULE handle_useraction INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      " Clean up objects before leaving
+      IF lr_toolbar IS BOUND.
+        CALL METHOD lr_toolbar->free.
+        FREE lr_toolbar.
+      ENDIF.
+      IF lr_cust_cont IS BOUND.
+        CALL METHOD lr_cust_cont->free.
+        FREE lr_cust_cont.
+      ENDIF.
+      LEAVE TO SCREEN 0.
+    WHEN OTHERS.
+  ENDCASE.
+ENDMODULE.

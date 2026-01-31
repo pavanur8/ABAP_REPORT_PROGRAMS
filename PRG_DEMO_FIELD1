@@ -1,0 +1,28 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_DEMO_FIELD1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_DEMO_FIELD1.
+
+*DATA(lv_data) = 10.
+*
+*FIELD-SYMBOLS : <fs_data> TYPE i.
+*
+*ASSIGN lv_data TO <fs_data>.
+*
+*IF <fs_data> IS ASSIGNED.
+*<fs_data> = 20.
+*WRITE : lv_data.
+*ENDIF.
+
+DATA(var) = 'Welcome At Ladera'.
+WRITE : / var.
+WRITE sy-uline.
+FIELD-SYMBOLS : <fs_data> TYPE c.
+
+ASSIGN var+8(2) TO <fs_data>.
+IF <fs_data> IS ASSIGNED.
+<fs_data> = 'To'.
+WRITE : var.
+ENDIF.

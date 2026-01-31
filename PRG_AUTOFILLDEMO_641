@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_AUTOFILLDEMO_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_autofilldemo_641.
+
+INCLUDE zautofillselectionscreen.
+
+AT SELECTION-SCREEN OUTPUT.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_budat.
+
+  INCLUDE zautofill_month_year.

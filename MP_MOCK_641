@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*& Modulpool ZMP_MOCK_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM zmp_mock_641.
+TABLES : vbak, vbap, likp, kna1, knvv, mara, makt.
+
+SELECTION-SCREEN BEGIN OF SCREEN 100 AS SUBSCREEN.
+
+  SELECT-OPTIONS: s_vbeln  FOR vbak-vbeln,
+                  s_kunnr  FOR vbak-kunnr,
+                  s_lvbeln FOR likp-vbeln.
+  SELECTION-SCREEN ULINE.
+  PARAMETERS : s_matnr TYPE vbap-matnr,
+               s_vkorg TYPE vbak-vkorg ,
+               s_vtweg TYPE vbak-vtweg,
+               s_spart TYPE vbak-spart.
+  PARAMETERS: p_del AS CHECKBOX.
+  SELECTION-SCREEN ULINE.
+SELECTION-SCREEN END OF SCREEN 100.
+
+TYPES : BEGIN OF tls,
+        vbeln type VBAK-VBELN,
+        kunnr TYPE VBAK-KUNNR,
+        vkorg TYPE VBAK-VKORG,
+        vtweg TYPE VBAK-VTWEG,
+        spart type VBAK-SPART,
+        END OF tls.
+
+DATA : itab TYPE TABLE of tls,
+       wa TYPE tls.
+
+INCLUDE zmp_mock_641_user_command_0i01.

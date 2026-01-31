@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPALV_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoopalv_641.
+
+"SCARR is the SAP Standard table which stores Airlines data
+DATA: t_flight TYPE TABLE OF scarr.
+DATA: cust_container TYPE REF TO cl_gui_custom_container,
+      cust_grid      TYPE REF TO cl_gui_alv_grid.
+
+SELECT * FROM scarr INTO TABLE t_flight.
+
+CALL SCREEN 100.
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'SCREEN1'.
+  SET TITLEBAR 'AIRLINES LIST'.
+ENDMODULE.
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+MODULE list OUTPUT.
+
+  CREATE OBJECT cust_container
+    EXPORTING
+      container_name = 'CONTAINER'.
+
+  CREATE OBJECT cust_grid
+    EXPORTING
+      i_parent = cust_container.
+
+  CALL METHOD cust_grid->set_table_for_first_display
+    EXPORTING
+      i_structure_name = 'SCARR'
+    CHANGING
+      it_outtab        = t_flight.
+ENDMODULE.

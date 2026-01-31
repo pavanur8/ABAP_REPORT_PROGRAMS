@@ -1,0 +1,146 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_SORT_CRITERIA_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_sort_criteria_641.
+
+* Global data declarations
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid,
+      gt_sflight   TYPE TABLE OF sflight,
+      gt_fieldcat  TYPE lvc_t_fcat,
+      gt_sort      TYPE lvc_t_sort.
+
+* Screen 100 PBO module
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  TRY.
+      " Create custom container (assuming 'CUSTOM_CONTROL' is the name of the custom control on screen 100)
+      IF go_container IS INITIAL.
+        CREATE OBJECT go_container
+          EXPORTING
+            container_name              = 'CUSTOM_CONTROL'
+          EXCEPTIONS
+            cntl_error                  = 1
+            cntl_system_error           = 2
+            create_error                = 3
+            lifetime_error              = 4
+            lifetime_dynpro_dynpro_link = 5.
+        IF sy-subrc <> 0.
+          MESSAGE 'Error creating container' TYPE 'E'.
+        ENDIF.
+      ENDIF.
+
+      " Create ALV grid inside the container
+      IF go_alv_grid IS INITIAL.
+        CREATE OBJECT go_alv_grid
+          EXPORTING
+            i_parent          = go_container
+          EXCEPTIONS
+            error_cntl_create = 1
+            error_cntl_init   = 2
+            error_cntl_link   = 3
+            error_dp_create   = 4
+            OTHERS            = 5.
+        IF sy-subrc <> 0.
+          MESSAGE 'Error creating ALV grid' TYPE 'E'.
+        ENDIF.
+      ENDIF.
+
+      " Fetch sample data from SFLIGHT
+      SELECT * FROM sflight INTO TABLE gt_sflight UP TO 50 ROWS.
+
+      " Build field catalog
+      CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+        EXPORTING
+          i_structure_name = 'SFLIGHT'
+        CHANGING
+          ct_fieldcat      = gt_fieldcat
+        EXCEPTIONS
+          OTHERS           = 1.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error building field catalog' TYPE 'E'.
+      ENDIF.
+
+      " Display ALV grid initially
+      CALL METHOD go_alv_grid->set_table_for_first_display
+        EXPORTING
+          i_structure_name = 'SFLIGHT'
+        CHANGING
+          it_outtab        = gt_sflight
+          it_fieldcatalog  = gt_fieldcat
+        EXCEPTIONS
+          OTHERS           = 1.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error displaying ALV grid' TYPE 'E'.
+      ENDIF.
+
+      " Set sort criteria (e.g., sort by CARRID ascending and SEATSMAX descending)
+      DATA: ls_sort TYPE lvc_s_sort.
+      ls_sort-fieldname = 'CARRID'.
+      ls_sort-spos = 1.
+      ls_sort-up = 'X'.  " Ascending
+      APPEND ls_sort TO gt_sort.
+
+      ls_sort-fieldname = 'SEATSMAX'.
+      ls_sort-spos = 2.
+      ls_sort-up = space.  " Descending
+      APPEND ls_sort TO gt_sort.
+
+      CALL METHOD go_alv_grid->set_sort_criteria
+        EXPORTING
+          it_sort                   = gt_sort
+        EXCEPTIONS
+          no_fieldcatalog_available = 1
+          OTHERS                    = 2.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error setting sort criteria' TYPE 'E'.
+      ENDIF.
+
+      " Refresh the table display to apply sort criteria
+      CALL METHOD go_alv_grid->refresh_table_display
+        EXCEPTIONS
+          finished = 1
+          OTHERS   = 2.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error refreshing ALV display' TYPE 'E'.
+      ENDIF.
+
+      " Flush to synchronize GUI
+      CALL METHOD cl_gui_cfw=>flush
+        EXCEPTIONS
+          cntl_system_error = 1
+          cntl_error        = 2.
+      IF sy-subrc <> 0.
+        MESSAGE 'Error flushing GUI controls' TYPE 'E'.
+      ENDIF.
+
+    CATCH cx_root INTO DATA(lx_error).
+      MESSAGE lx_error->get_text( ) TYPE 'E'.
+  ENDTRY.
+
+ENDMODULE.
+
+* Screen 100 PAI module (basic, for completeness)
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      " Clean up objects before leaving
+      IF go_alv_grid IS BOUND.
+        CALL METHOD go_alv_grid->free.
+        FREE go_alv_grid.
+      ENDIF.
+      IF go_container IS BOUND.
+        CALL METHOD go_container->free.
+        FREE go_container.
+      ENDIF.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Start the program
+START-OF-SELECTION.
+  CALL SCREEN 100.

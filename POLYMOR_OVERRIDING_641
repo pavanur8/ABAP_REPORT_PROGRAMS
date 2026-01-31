@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG5_POLYMOR_OVERRIDING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg5_polymor_overriding_641.
+
+DATA lo_object1 TYPE REF TO zabstract_sub_class_641.
+DATA lo_object2 TYPE REF TO zabstract_sub2_class_641.
+DATA lv_ernam TYPE ernam.
+DATA lv_erzet TYPE erzet.
+DATA lv_erdat TYPE erdat.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS p_vbeln TYPE vbeln_vl.
+  PARAMETERS pr1 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS pr2 TYPE c RADIOBUTTON GROUP r1.
+SELECTION-SCREEN END OF BLOCK b1.
+
+IF pr1 = 'X'.
+
+  CREATE OBJECT lo_object1.
+
+  CALL METHOD lo_object1->display
+    EXPORTING
+      pvbeln = p_vbeln
+    IMPORTING
+      pernam = lv_ernam
+      perzet = lv_erzet
+      perdat = lv_erdat.
+
+  WRITE sy-uline.
+  WRITE : 'Delivery Header Data',
+           / lv_ernam, lv_erzet,lv_erdat.
+ENDIF.
+
+IF pr2 = 'X'.
+
+  CREATE OBJECT lo_object2.
+
+  CALL METHOD lo_object2->display
+    EXPORTING
+      pvbeln = p_vbeln
+    IMPORTING
+      pernam = lv_ernam
+      perzet = lv_erzet
+      perdat = lv_erdat.
+
+  WRITE sy-uline.
+  WRITE : 'Delivery Item Data',
+           / lv_ernam, lv_erzet,lv_erdat.
+ENDIF.

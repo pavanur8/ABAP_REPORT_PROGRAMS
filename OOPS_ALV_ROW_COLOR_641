@@ -1,0 +1,99 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPS_ALV_ROW_COLOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoops_alv_row_color_641.
+
+* Define types for output table with color field
+TYPES: BEGIN OF ty_sflight,
+         carrid    TYPE sflight-carrid,
+         connid    TYPE sflight-connid,
+         fldate    TYPE sflight-fldate,
+         price     TYPE sflight-price,
+         currency  TYPE sflight-currency,
+         linecolor TYPE c LENGTH 4,  " Color for corresponding line
+       END OF ty_sflight.
+
+* Data declarations
+DATA: gt_sflight   TYPE TABLE OF ty_sflight,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_container TYPE REF TO cl_gui_custom_container,
+      gs_layout    TYPE lvc_s_layo,
+      lt_fieldcat  TYPE lvc_t_fcat.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_and_color_data.
+  CALL SCREEN 102.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0102 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0102 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch data and assign colors
+FORM fetch_and_color_data.
+  " Step 3: Select data and copy to output table
+  SELECT carrid, connid, fldate, price, currency
+    FROM sflight
+    INTO CORRESPONDING FIELDS OF TABLE @gt_sflight
+    UP TO 20 ROWS.
+
+  " Step 4: Loop through output table and assign color codes
+  LOOP AT gt_sflight ASSIGNING FIELD-SYMBOL(<fs_sflight>).
+    " Example: Color rows red if price > 500 (color code 'C301')
+    IF <fs_sflight>-price < 500.
+      <fs_sflight>-linecolor = 'C310'.  " Red color
+    ELSEif <fs_sflight>-price > 500.
+      <fs_sflight>-linecolor = 'C510'.
+    ELSE.
+        <fs_sflight>-linecolor = 'C410'. " Green color for contrast
+    ENDIF.
+  ENDLOOP.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  " Step 1: Define layout structure of type LVC_S_LAYO
+  gs_layout-info_fname = 'LINECOLOR'.  " Step 5: Assign color field name to INFO_FNAME
+
+  " Build field catalog
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name = 'SFLIGHT'
+    CHANGING
+      ct_fieldcat      = lt_fieldcat.
+
+  " Add linecolor to field catalog and set emphasize
+  APPEND VALUE #( fieldname = 'LINECOLOR' emphasize = 'X' ) TO lt_fieldcat.
+
+  " Step 6: Pass layout and output table to set_table_for_first_display
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = gs_layout
+    CHANGING
+      it_outtab       = gt_sflight
+      it_fieldcatalog = lt_fieldcat.
+ENDFORM.

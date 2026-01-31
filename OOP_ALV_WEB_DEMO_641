@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOP_ALV_WEB_DEMO_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoop_alv_web_demo_641.
+
+* Data declarations
+DATA: gt_sflight   TYPE TABLE OF sflight,
+      go_container TYPE REF TO cl_gui_custom_container,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      lt_fieldcat  TYPE lvc_t_fcat,
+      gs_layout    TYPE lvc_s_layo.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch sample data
+FORM fetch_data.
+  SELECT *
+    FROM sflight
+    INTO TABLE gt_sflight
+    UP TO 50 ROWS.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  " Build field catalog
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name = 'SFLIGHT'
+    CHANGING
+      ct_fieldcat      = lt_fieldcat.
+
+  " Set layout (optional for web display)
+  CLEAR gs_layout.
+  gs_layout-grid_title = 'Flight Data in Web ALV'.
+
+  " Display ALV
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = gs_layout
+    CHANGING
+      it_outtab       = gt_sflight
+      it_fieldcatalog = lt_fieldcat.
+
+  CALL METHOD cl_gui_cfw=>flush.
+ENDFORM.

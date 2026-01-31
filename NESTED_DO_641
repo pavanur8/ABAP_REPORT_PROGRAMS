@@ -1,0 +1,23 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_NESTED_DO_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_nested_do_641.
+
+DATA lv_i TYPE i VALUE 1.
+DATA lv_j TYPE i.
+
+DO 3 TIMES.
+  WRITE : / 'Outer loop iteration',lv_i.
+
+  lv_i = lv_i + 1.
+
+  lv_j = 1.
+
+  DO 5 TIMES.
+    WRITE : / ' Inner Loop',lv_j.
+    lv_j = lv_j + 1.
+
+  ENDDO.
+ENDDO.

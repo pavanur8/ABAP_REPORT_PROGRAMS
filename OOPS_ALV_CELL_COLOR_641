@@ -1,0 +1,128 @@
+REPORT ZOOPS_ALV_CELL_COLOR_641.
+
+* Define types for output table with cell color field
+TYPES: BEGIN OF ty_sflight,
+         carrid      TYPE sflight-carrid,
+         connid      TYPE sflight-connid,
+         fldate      TYPE sflight-fldate,
+         price       TYPE sflight-price,
+         currency    TYPE sflight-currency,
+         cellcolors  TYPE lvc_t_scol,  " Field for cell colors
+       END OF ty_sflight.
+
+* Data declarations
+DATA: gt_sflight       TYPE TABLE OF ty_sflight,
+      go_alv           TYPE REF TO cl_gui_alv_grid,
+      go_container     TYPE REF TO cl_gui_custom_container,
+      gs_layout        TYPE lvc_s_layo,
+      lt_fieldcat      TYPE lvc_t_fcat.
+
+* Local class for event handling
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: on_double_click FOR EVENT double_click OF cl_gui_alv_grid
+               IMPORTING e_row e_column es_row_no.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_double_click.
+    DATA: ls_sflight TYPE ty_sflight.
+
+    READ TABLE gt_sflight INTO ls_sflight INDEX es_row_no-row_id.
+    IF sy-subrc = 0.
+      MESSAGE |Double-clicked on row { es_row_no-row_id }, column { e_column-fieldname }, Carrier: { ls_sflight-carrid }| TYPE 'I'.
+    ELSE.
+      MESSAGE 'No data found for the selected row.' TYPE 'I'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+* Main program flow
+START-OF-SELECTION.
+  PERFORM fetch_and_color_data.
+  CALL SCREEN 100.  " Call custom screen with container
+
+* PBO module for screen 100
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.  " Custom container name on screen 100
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+
+    PERFORM display_alv.
+  ENDIF.
+ENDMODULE.
+
+* PAI module for screen 100
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+* Form to fetch data and assign cell colors
+FORM fetch_and_color_data.
+  SELECT carrid, connid, fldate, price, currency
+    FROM sflight
+    INTO CORRESPONDING FIELDS OF TABLE @gt_sflight
+    UP TO 20 ROWS.
+
+  DATA: ls_cellcolor TYPE lvc_s_scol.
+
+  LOOP AT gt_sflight ASSIGNING FIELD-SYMBOL(<fs_sflight>).
+    CLEAR <fs_sflight>-cellcolors.
+
+    " Example: Color PRICE cell red if price > 500
+    IF <fs_sflight>-price > 500.
+      ls_cellcolor-fname = 'PRICE'.
+      ls_cellcolor-color-col = 6.  " Red (color index 6)
+      ls_cellcolor-color-int = 1.  " Intensified
+      ls_cellcolor-color-inv = 0.  " No inverse
+      APPEND ls_cellcolor TO <fs_sflight>-cellcolors.
+    ENDIF.
+
+    " Example: Color CURRENCY cell green
+    ls_cellcolor-fname = 'CURRENCY'.
+    ls_cellcolor-color-col = 3.  " Green
+    ls_cellcolor-color-int = 0.
+    ls_cellcolor-color-inv = 0.
+    APPEND ls_cellcolor TO <fs_sflight>-cellcolors.
+  ENDLOOP.
+ENDFORM.
+
+* Form to set up and display ALV
+FORM display_alv.
+  " Build field catalog
+  data go_event_handler TYPE REF TO lcl_event_handler.
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name = 'SFLIGHT'
+    CHANGING
+      ct_fieldcat      = lt_fieldcat.
+
+  " Add cellcolors to field catalog as technical (hidden)
+  APPEND VALUE #( fieldname = 'CELLCOLORS' tech = 'X' ) TO lt_fieldcat.
+
+  " Set layout to use cell color field
+  gs_layout-ctab_fname = 'CELLCOLORS'.  " Key for cell coloring
+
+  " Display ALV
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = gs_layout
+    CHANGING
+      it_outtab       = gt_sflight
+      it_fieldcatalog = lt_fieldcat.
+
+  " Optional: Register double-click event for testing
+  CREATE OBJECT go_event_handler.
+  SET HANDLER go_event_handler->on_double_click FOR go_alv.
+ENDFORM.

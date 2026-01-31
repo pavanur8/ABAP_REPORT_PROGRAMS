@@ -1,0 +1,115 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPS_ALV_LAYOUT_EVENT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZOOPS_ALV_LAYOUT_EVENT_641.
+
+* Structure declaration for SPFLI (example data source)
+TYPES: BEGIN OF ty_spfli,
+         carrid   TYPE spfli-carrid,
+         connid   TYPE spfli-connid,
+         cityfrom TYPE spfli-cityfrom,
+         cityto   TYPE spfli-cityto,
+       END OF ty_spfli.
+
+* Work area and internal table for SPFLI
+DATA: it_spfli TYPE STANDARD TABLE OF ty_spfli,
+      wa_spfli TYPE ty_spfli.
+
+* Data declarations for ALV
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv       TYPE REF TO cl_gui_alv_grid,
+      it_fcat      TYPE lvc_t_fcat,
+      it_layout    TYPE lvc_s_layo.  " Layout structure LVC_S_LAYO
+
+* Start of selection
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  CALL SCREEN 100.
+
+* PBO module
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STANDARD'.
+  SET TITLEBAR 'TITLE_0100'.
+
+  IF go_alv IS INITIAL.
+    * Create container (assume 'CC_ALV' is the container name on screen 100)
+    CREATE OBJECT go_container.
+      EXPORTING
+        container_name = 'CC_ALV'.
+
+    * Create ALV grid
+    CREATE OBJECT go_alv.
+      EXPORTING
+        i_parent = go_container.
+
+    * Build field catalog
+    PERFORM build_fieldcat.
+
+    * Fill layout structure LVC_S_LAYO with various options
+    it_layout-grid_title = 'ALV Grid Example Using LVC_S_LAYO'.  " Set grid title
+    it_layout-zebra = 'X'.                                     " Enable zebra (striped) rows
+    it_layout-no_toolbar = ''.                                 " Show toolbar ('' = visible)
+    it_layout-no_hgridln = ''.                                 " Show horizontal grid lines
+    it_layout-no_vgridln = ''.                                 " Show vertical grid lines
+    it_layout-edit = ''.                                       " Not editable (use 'X' for editable)
+    it_layout-cwidth_opt = 'X'.                                " Optimize column widths
+    it_layout-no_totline = ''.                                 " Allow totals line
+    it_layout-sel_mode = 'A'.                                  " Selection mode: Multiple rows/columns with buttons
+    it_layout-no_rowmark = ''.                                 " Allow row selection markers
+
+    * Display ALV with layout
+    CALL METHOD go_alv->set_table_for_first_display
+      EXPORTING
+        is_layout       = it_layout
+      CHANGING
+        it_outtab       = it_spfli
+        it_fieldcatalog = it_fcat.
+  ENDIF.
+ENDMODULE.
+
+* PAI module
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Form  fetch_data
+*&---------------------------------------------------------------------*
+FORM fetch_data.
+  * Select data from SPFLI
+  SELECT carrid connid cityfrom cityto
+    FROM spfli INTO TABLE it_spfli
+    UP TO 50 ROWS.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  build_fieldcat
+*&---------------------------------------------------------------------*
+FORM build_fieldcat.
+  DATA: ls_fcat TYPE lvc_s_fcat.
+
+  ls_fcat-fieldname = 'CARRID'.
+  ls_fcat-scrtext_m = 'Carrier'.
+  ls_fcat-outputlen = 10.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'CONNID'.
+  ls_fcat-scrtext_m = 'Connection'.
+  ls_fcat-outputlen = 8.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'CITYFROM'.
+  ls_fcat-scrtext_m = 'City From'.
+  ls_fcat-outputlen = 15.
+  APPEND ls_fcat TO it_fcat.
+
+  ls_fcat-fieldname = 'CITYTO'.
+  ls_fcat-scrtext_m = 'City To'.
+  ls_fcat-outputlen = 15.
+  APPEND ls_fcat TO it_fcat.
+ENDFORM.

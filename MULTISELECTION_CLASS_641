@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG3_MULTISELECTION_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg3_multiselection_class_641.
+
+DATA lv_vbeln TYPE vbeln_va.
+DATA l_obj TYPE REF TO zprg2_usual_class_641.
+DATA itab TYPE ztabletype_usclass.
+DATA wa TYPE zstr_usclass.
+
+SELECT-OPTIONS s_vbeln FOR lv_vbeln.
+
+CREATE OBJECT l_obj.
+
+CALL METHOD l_obj->get_multiple_data
+  EXPORTING
+    svbeln    = s_vbeln[]
+  IMPORTING
+    lt_output = itab.
+
+IF sy-subrc = 0.
+  LOOP AT itab INTO wa.
+    WRITE : / wa-vbeln,wa-erdat,wa-erzet,wa-ernam,wa-posnr,wa-matnr.
+  ENDLOOP.
+ENDIF.

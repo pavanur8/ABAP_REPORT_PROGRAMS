@@ -1,0 +1,116 @@
+REPORT zdemo_alv_dragdrop.
+
+TYPE-POOLS: slis, lvc.
+
+*--- Sample Data
+TYPES: BEGIN OF ty_data,
+         carrid  TYPE sflight-carrid,
+         connid  TYPE sflight-connid,
+         fldate  TYPE sflight-fldate,
+       END OF ty_data.
+
+DATA: gt_data TYPE TABLE OF ty_data,
+      gs_data TYPE ty_data.
+
+*--- ALV Objects
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv       TYPE REF TO cl_gui_alv_grid.
+
+*--- Drag & Drop structure (manual declaration to avoid unknown types)
+TYPES: BEGIN OF ty_ddobj,
+         handle TYPE i,
+         flavor TYPE c LENGTH 10,
+         kind   TYPE c LENGTH 10,
+         row_index TYPE i, "store dragged row index
+       END OF ty_ddobj.
+
+TYPES ty_ddobj_tab TYPE STANDARD TABLE OF ty_ddobj WITH DEFAULT KEY.
+
+DATA: lt_dd TYPE ty_ddobj_tab,
+      ls_dd TYPE ty_ddobj.
+
+*--- Event Handler Class
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: on_drop FOR EVENT ondrop OF cl_gui_alv_grid
+      IMPORTING e_row e_column e_dragdropobj.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD on_drop.
+    DATA: lv_row TYPE i,
+          ls_drag TYPE ty_data.
+
+    lv_row = e_row-index.
+
+    "Get dragged row index from dragdrop object
+    ls_drag = gt_data[ e_dragdropobj-row_index ].
+
+    "Overwrite dropped row with dragged row (demo)
+    IF lv_row > 0.
+      MODIFY gt_data FROM ls_drag INDEX lv_row.
+      go_alv->refresh_table_display( ).
+      MESSAGE |Row { e_dragdropobj-row_index } dropped on { lv_row }| TYPE 'I'.
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.
+
+DATA: go_handler TYPE REF TO lcl_event_handler.
+
+START-OF-SELECTION.
+
+  "Fetch sample flight data
+  SELECT carrid,connid,fldate
+    FROM sflight
+    INTO TABLE @gt_data
+    UP TO 10 ROWS.
+
+END-OF-SELECTION.
+
+*--- Create container
+CREATE OBJECT go_container
+  EXPORTING container_name = 'CC_ALV'.
+
+*--- Create ALV
+CREATE OBJECT go_alv
+  EXPORTING i_parent = go_container.
+
+*--- Field catalog
+DATA: lt_fcat TYPE lvc_t_fcat,
+      ls_fcat TYPE lvc_s_fcat.
+
+DEFINE add_field.
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = &1.
+  ls_fcat-coltext   = &2.
+  APPEND ls_fcat TO lt_fcat.
+END-OF-DEFINITION.
+
+add_field 'CARRID' 'Carrier'.
+add_field 'CONNID' 'Connection'.
+add_field 'FLDATE' 'Flight Date'.
+
+*--- Layout
+DATA: ls_layout TYPE lvc_s_layo.
+ls_layout-grid_title = 'ALV Drag & Drop Demo'.
+
+*--- Enable Drag & Drop (row-level)
+ls_dd-handle    = 1.
+ls_dd-flavor    = 'MOVE'.
+ls_dd-kind      = 'R'.  "R = row
+ls_dd-row_index = 0.    "Initial value
+APPEND ls_dd TO lt_dd.
+
+*--- Display ALV
+CALL METHOD go_alv->set_table_for_first_display
+  EXPORTING
+    is_layout       = ls_layout
+    it_fieldcatalog = lt_fcat
+    it_dragdrop     = lt_dd
+  CHANGING
+    it_outtab       = gt_data.
+
+*--- Register event handler
+CREATE OBJECT go_handler.
+SET HANDLER go_handler->on_drop FOR go_alv.

@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_DEMO_WORKFIELD18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_DEMO_WORKFIELD18.
+
+DATA itab TYPE TABLE OF ZFORALLSTR.
+DATA : lv_veln TYPE VBELN_VA.
+SELECT-OPTIONS : lv_vb FOR lv_veln.
+FIELD-SYMBOLS : <fs_data> TYPE ZFORALLSTR.
+
+SELECT  vbeln erdat erzet ernam vbtyp
+FROM vbak
+INTO TABLE itab
+WHERE vbeln IN lv_vb.
+
+
+LOOP AT itab INTO DATA(wa).
+wa-ernam = 'TECH_54'.
+MODIFY itab FROM wa TRANSPORTING ernam.
+ENDLOOP.
+IF sy-subrc = 0.
+WRITE : / wa-vbeln,wa-erdat,wa-erzet,wa-ernam,wa-vbtyp.
+ENDIF.
+
+*READ TABLE itab ASSIGNING <fs_data> WITH KEY ERNAM = 'TECH_16'.
+*IF <fs_data> IS ASSIGNED.
+*WRITE : / <fs_data>-vbeln,<fs_data>-erdat,<fs_data>-erzet,<fs_data>-ernam,<fs_data>-vbtyp.
+*ENDIF.
+
+*LOOP AT itab ASSIGNING <fs_data>.
+*IF <fs_data> IS ASSIGNED.
+*WRITE : / <fs_data>-vbeln,<fs_data>-erdat,<fs_data>-erzet,<fs_data>-ernam,<fs_data>-vbtyp.
+*ENDIF.
+*ENDLOOP.

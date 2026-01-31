@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_BADI_TEST1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_badi_test1_641.
+
+DATA lo_badi1 TYPE REF TO zbadi_test_check.
+DATA lo_badi2 TYPE REF TO zbadi_test_check.
+
+GET BADI : lo_badi1,lo_badi2.
+
+IF lo_badi1 IS BOUND.
+CALL BADI lo_badi1->display.
+SKIP.
+ULINE.
+ENDIF.
+
+IF lo_badi2 IS BOUND.
+CALL BADI lo_badi2->display.
+ENDIF.

@@ -1,0 +1,335 @@
+*&---------------------------------------------------------------------*
+*& Report ZOOPSALV_SPLIT_DB_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zoopsalv_split_db_2_641.
+INCLUDE <icon>.
+TABLES: zorder_head18, zorder_item18.
+
+DATA: gt_head TYPE TABLE OF zorder_head18,
+      gt_item TYPE TABLE OF zorder_item18,
+      gs_head TYPE zorder_head18.
+
+DATA: g_splitter TYPE REF TO cl_gui_splitter_container,
+      g_parent   TYPE REF TO cl_gui_custom_container,
+      g_cont1    TYPE REF TO cl_gui_container,
+      g_cont2    TYPE REF TO cl_gui_container,
+      g_cont3    TYPE REF TO cl_gui_container,
+      g_cont4    TYPE REF TO cl_gui_container.
+
+DATA: g_grid1 TYPE REF TO cl_gui_alv_grid,
+      g_grid2 TYPE REF TO cl_gui_alv_grid.
+
+DATA: gs_layout TYPE lvc_s_layo,
+      gt_fcat   TYPE lvc_t_fcat.
+
+DATA: ok_code TYPE sy-ucomm.
+
+SELECT-OPTIONS  p_name FOR zorder_head18-order_number.
+
+CLASS lcl_event DEFINITION.
+  PUBLIC SECTION.
+    METHODS: handle_double_click
+      FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING e_row e_column es_row_no.
+ENDCLASS.
+
+CLASS lcl_event IMPLEMENTATION.
+  METHOD handle_double_click.
+    READ TABLE gt_head INTO gs_head INDEX es_row_no-row_id.
+    IF sy-subrc = 0.
+      SELECT *
+      FROM zorder_item18
+      INTO TABLE gt_item
+      WHERE order_number = gs_head-order_number.
+
+      PERFORM build_fcat USING 'ZORDER_ITEM18'.
+      LOOP AT gt_fcat ASSIGNING FIELD-SYMBOL(<fs_fcat>).
+        IF <fs_fcat>-fieldname = 'ORDER_ITEM_NUMBER' OR
+           <fs_fcat>-fieldname = 'ORDER_DESCRIPTION' OR
+           <fs_fcat>-fieldname = 'ITEM_COST'.
+          <fs_fcat>-edit = abap_true.
+        ENDIF.
+      ENDLOOP.
+
+      CALL METHOD g_grid2->set_table_for_first_display
+        EXPORTING
+          i_structure_name = 'ZORDER_ITEM18'
+          is_layout        = gs_layout
+        CHANGING
+          it_outtab        = gt_item
+          it_fieldcatalog  = gt_fcat.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  SELECT *
+  FROM zorder_head18
+  INTO TABLE gt_head
+    WHERE order_number IN p_name.
+
+  CALL SCREEN 100.
+
+*----------------------------------------------------------------------
+* SCREEN 100
+*----------------------------------------------------------------------
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'MAIN'.
+  DATA go_dyndoc TYPE REF TO cl_dd_document.
+  DATA g_event TYPE REF TO lcl_event.
+
+
+  IF g_splitter IS INITIAL.
+
+    CREATE OBJECT g_parent
+      EXPORTING
+        container_name = 'MAIN_CONTAINER'.
+
+    CREATE OBJECT g_splitter
+      EXPORTING
+        parent  = g_parent
+        rows    = 2
+        columns = 2.
+
+    CALL METHOD g_splitter->set_row_height
+      EXPORTING
+        id                = 1
+        height            = 33
+      EXCEPTIONS
+        cntl_error        = 1
+        cntl_system_error = 2
+        OTHERS            = 3.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+
+
+    g_cont1 = g_splitter->get_container( row = 1 column = 1 ).
+    g_cont2 = g_splitter->get_container( row = 1 column = 2 ).
+    g_cont3 = g_splitter->get_container( row = 2 column = 1 ).
+    g_cont4 = g_splitter->get_container( row = 2 column = 2 ).
+
+    DATA(lv_user) = sy-uname.
+    DATA(lv_message_user) = |User : { lv_user } |.
+
+    DATA(lv_date) = sy-datum.
+    DATA(lv_iso) = |{ lv_date DATE = ISO }|.
+    DATA(lv_message_date) = |Date : { lv_iso } |.
+
+
+    CREATE OBJECT go_dyndoc
+      EXPORTING
+        style = 'ALV_GRID'.
+
+    CALL METHOD go_dyndoc->add_text( text = 'Report Header Data' sap_style = 'HEADING' ).
+    go_dyndoc->new_line( ).
+    CALL METHOD go_dyndoc->add_picture
+      EXPORTING
+        picture_id = 'ZPICLT'
+        width      = '100px'.
+    go_dyndoc->new_line( ).
+    go_dyndoc->add_text( text = CONV sdydo_text_element( lv_message_date ) ).
+    go_dyndoc->new_line( ).
+    go_dyndoc->add_text( text = CONV sdydo_text_element( lv_message_user ) ).
+    go_dyndoc->display_document( parent = g_cont1 ).
+
+
+    CREATE OBJECT go_dyndoc
+      EXPORTING
+        style = 'ALV_GRID'.
+
+    CALL METHOD go_dyndoc->add_text( text = 'Report Item Data' sap_style = 'HEADING' ).
+    go_dyndoc->new_line( ).
+    CALL METHOD go_dyndoc->add_picture
+      EXPORTING
+        picture_id = 'ENJOYSAP_LOGO'
+        width      = '100px'.
+    go_dyndoc->new_line( ).
+    go_dyndoc->add_text( text = CONV sdydo_text_element( lv_message_date ) ).
+    go_dyndoc->new_line( ).
+    go_dyndoc->add_text( text = CONV sdydo_text_element( lv_message_user ) ).
+    go_dyndoc->display_document( parent = g_cont2 ).
+
+
+
+
+
+    CREATE OBJECT g_grid1 EXPORTING i_parent = g_cont3.
+    CREATE OBJECT g_grid2 EXPORTING i_parent = g_cont4.
+
+    PERFORM build_fcat USING 'ZORDER_HEAD18'.
+    gs_layout-zebra = abap_true.
+    CALL METHOD g_grid1->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'ZORDER_HEAD18'
+        is_layout        = gs_layout
+      CHANGING
+        it_outtab        = gt_head
+        it_fieldcatalog  = gt_fcat.
+
+
+    CREATE OBJECT g_event.
+    SET HANDLER g_event->handle_double_click FOR g_grid1.
+
+  ENDIF.
+ENDMODULE.
+
+*----------------------------------------------------------------------
+* PAI
+*----------------------------------------------------------------------
+MODULE user_command_0100 INPUT.
+  DATA lv_edit TYPE flag VALUE 'X'.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE PROGRAM.
+    WHEN 'SAVE'.
+      PERFORM save_changes.
+    WHEN 'DOWNLOAD'.
+      PERFORM download_data.
+    WHEN '&DATA_DOWN'.
+      PERFORM download_headr_data.
+    WHEN  'EDIT'.
+      IF lv_edit = abap_true.
+        g_grid2->set_ready_for_input( i_ready_for_input = 0 ).
+        lv_edit =  abap_false.
+      ELSE.
+        g_grid2->set_ready_for_input( i_ready_for_input = 1 ).
+        lv_edit =  abap_true.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+
+FORM save_changes.
+  CALL METHOD g_grid2->check_changed_data.
+
+  IF gt_item IS NOT INITIAL.
+    MODIFY zorder_item18 FROM TABLE gt_item.
+    IF sy-subrc = 0.
+      COMMIT WORK.
+      MESSAGE 'Changes saved to DB' TYPE 'S'.
+    ELSE.
+      MESSAGE 'No changes found or error during save' TYPE 'I'.
+    ENDIF.
+  ELSE.
+    MESSAGE 'No items to save' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+
+
+FORM build_fcat USING p_struct TYPE c .
+  CLEAR gt_fcat.
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name = p_struct
+    CHANGING
+      ct_fieldcat      = gt_fcat.
+ENDFORM.
+
+FORM download_data.
+  DATA: lv_filename    TYPE string,
+        lv_path        TYPE string,
+        lv_user_action TYPE i.
+
+
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title      = 'Save Item Data as CSV'
+      default_extension = 'csv'
+      file_filter       = 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*'
+    CHANGING
+      filename          = lv_filename
+      path              = lv_path
+      fullpath          = lv_filename
+      user_action       = lv_user_action.
+
+  IF lv_user_action = cl_gui_frontend_services=>action_ok.
+
+    DATA: lt_csv  TYPE TABLE OF string,
+          lv_line TYPE string.
+
+    CONCATENATE 'ORDER_NUMBER' 'ORDER_ITEM_NUMBER' 'ORDER_DESCRIPTION' 'ITEM_COST' INTO lv_line SEPARATED BY ','.
+    APPEND lv_line TO lt_csv.
+
+
+    LOOP AT gt_item ASSIGNING FIELD-SYMBOL(<ls_item>).
+      DATA(lv_order_number) = CONV string( <ls_item>-order_number ).
+      DATA(lv_order_item_number) = CONV string( <ls_item>-order_item_number ).
+      DATA(lv_order_description) = CONV string( <ls_item>-order_description ).  " Convert if not already CHAR/STRING
+      DATA(lv_item_cost) = |{ <ls_item>-item_cost }|.  " String template for numeric/decimal
+
+      CONCATENATE lv_order_number lv_order_item_number lv_order_description lv_item_cost INTO lv_line SEPARATED BY ','.
+      APPEND lv_line TO lt_csv.
+    ENDLOOP.
+
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename = lv_filename
+        filetype = 'ASC'
+      TABLES
+        data_tab = lt_csv
+      EXCEPTIONS
+        OTHERS   = 1.
+    IF sy-subrc = 0.
+      MESSAGE 'Data downloaded successfully' TYPE 'S'.
+    ELSE.
+      MESSAGE 'Error during download' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+
+FORM download_headr_data.
+  DATA: lv_filename    TYPE string,
+        lv_path        TYPE string,
+        lv_user_action TYPE i.
+
+
+  CALL METHOD cl_gui_frontend_services=>file_save_dialog
+    EXPORTING
+      window_title      = 'Save Item Data as CSV'
+      default_extension = 'csv'
+      file_filter       = 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*'
+    CHANGING
+      filename          = lv_filename
+      path              = lv_path
+      fullpath          = lv_filename
+      user_action       = lv_user_action.
+
+  IF lv_user_action = cl_gui_frontend_services=>action_ok.
+
+    DATA: lt_csv  TYPE TABLE OF string,
+          lv_line TYPE string.
+
+    CONCATENATE 'ORDER_NUMBER' 'ORDER_ODATE' 'PAYMENT_MODE' 'TOTAL_AMOUNT' 'CURRENCY' INTO lv_line SEPARATED BY ','.
+    APPEND lv_line TO lt_csv.
+
+
+    LOOP AT gt_head ASSIGNING FIELD-SYMBOL(<ls_item>).
+      DATA(lv_order_number) = CONV string( <ls_item>-order_number ).
+      DATA(lv_ORDER_ODATE) = |{ <ls_item>-order_odate }|.
+      DATA(lv_PAYMENT_MODE) = CONV string( <ls_item>-payment_mode ).
+      DATA(lv_TOTAL_AMOUNT) = |{ <ls_item>-total_amount }|.
+      DATA(lv_CURRENCY) = CONV string( <ls_item>-currency ).
+
+      CONCATENATE lv_order_number lv_ORDER_ODATE lv_PAYMENT_MODE lv_TOTAL_AMOUNT lv_CURRENCY INTO lv_line SEPARATED BY ','.
+      APPEND lv_line TO lt_csv.
+    ENDLOOP.
+
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename = lv_filename
+        filetype = 'ASC'
+      TABLES
+        data_tab = lt_csv
+      EXCEPTIONS
+        OTHERS   = 1.
+    IF sy-subrc = 0.
+      MESSAGE 'Data downloaded successfully' TYPE 'S'.
+    ELSE.
+      MESSAGE 'Error during download' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+ENDFORM.

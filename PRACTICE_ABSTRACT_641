@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRACTICE_ABSTRACT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpractice_abstract_641.
+
+INCLUDE zvbak_class."VBAK Class Defination and Implimentation..
+
+INCLUDE zvbap_class."VBAP Class Defination and Implimentation..
+
+INCLUDE zvbpa_class."VBPA Class Defination and Implimentation..
+
+
+START-OF-SELECTION.
+
+  INCLUDE zcalling_class."Creating object and calling object.
+
+
+  "Module_Pool Screen Includes....
+  INCLUDE zpractice_abstract_641_stato01.
+
+  INCLUDE zpractice_abstract_641_useri01.
+
+  INCLUDE zpractice_abstract_641_stato02.
+
+  INCLUDE zpractice_abstract_641_useri02.
+
+  INCLUDE zpractice_abstract_641_stato03.
+
+  INCLUDE zpractice_abstract_641_useri03.

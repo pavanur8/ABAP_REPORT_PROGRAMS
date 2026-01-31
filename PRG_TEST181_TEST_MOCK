@@ -1,0 +1,359 @@
+**&---------------------------------------------------------------------*
+**& Report ZPRG_TEST181_TEST
+**&---------------------------------------------------------------------*
+**&
+**&---------------------------------------------------------------------*
+REPORT ZPRG_TEST181_TEST.
+
+TABLES: lfa1, ekko, ekpo.
+
+TYPES: BEGIN OF ty_vendor_summary,
+         lifnr TYPE lfa1-lifnr,
+         name1 TYPE lfa1-name1,
+         total_po TYPE i,
+         total_value TYPE ekpo-netwr,
+       END OF ty_vendor_summary.
+
+TYPES: BEGIN OF ty_po_details,
+         ebeln TYPE ekko-ebeln,
+         bedat TYPE ekko-bedat,
+         matnr TYPE ekpo-matnr,
+         menge TYPE ekpo-menge,
+         netpr TYPE ekpo-netpr,
+         waers TYPE ekko-waers,
+       END OF ty_po_details.
+
+TYPES: BEGIN OF ty_ekpo_summary,
+         ebeln TYPE ekpo-ebeln,
+         netwr TYPE ekpo-netwr,
+       END OF ty_ekpo_summary.
+
+DATA: gt_summary TYPE STANDARD TABLE OF ty_vendor_summary,
+      gs_summary TYPE ty_vendor_summary,
+      gt_details TYPE STANDARD TABLE OF ty_po_details,
+      gs_details TYPE ty_po_details,
+      lt_ekpo TYPE STANDARD TABLE OF ty_ekpo_summary,
+      lt_ekko TYPE STANDARD TABLE OF ekko,
+      lt_lfa1 TYPE STANDARD TABLE OF lfa1.
+
+DATA: lv_on TYPE lfa1-lifnr.
+
+DATA: ls_fieldcat TYPE slis_fieldcat_alv,
+      lt_fieldcat TYPE slis_t_fieldcat_alv.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+PARAMETERS: c_region AS CHECKBOX.
+PARAMETERS: p_land1 TYPE lfa1-land1 MODIF ID reg.
+SELECT-OPTIONS: p_lifnr FOR lv_on.
+SELECTION-SCREEN END OF BLOCK b1.
+
+AT SELECTION-SCREEN OUTPUT.
+  LOOP AT SCREEN.
+    IF screen-name = 'P_LAND1'.
+      screen-active = c_region.
+      MODIFY SCREEN.
+    ENDIF.
+  ENDLOOP.
+
+AT SELECTION-SCREEN.
+  IF c_region = '' AND p_land1 IS NOT INITIAL.
+    MESSAGE 'Please check Region checkbox to use Region Key' TYPE 'E'.
+  ENDIF.
+
+START-OF-SELECTION.
+  PERFORM get_vendor_data.
+  PERFORM display_main_alv.
+
+FORM get_vendor_data.
+  DATA: lv_total_value TYPE ekpo-netwr,
+        lv_total_po    TYPE i.
+
+  CLEAR gt_summary.
+
+  SELECT lifnr,name1,land1
+  FROM lfa1
+  INTO TABLE @lt_lfa1
+  WHERE lifnr IN @p_lifnr.
+
+  IF c_region = 'X' AND p_land1 IS NOT INITIAL.
+    DELETE lt_lfa1 WHERE land1 <> p_land1.
+  ENDIF.
+
+  IF lt_lfa1 IS INITIAL.
+    MESSAGE 'No vendors found.' TYPE 'I'.
+    EXIT.
+  ENDIF.
+
+  LOOP AT lt_lfa1 INTO DATA(ls_lfa1).
+    CLEAR: lv_total_po, lv_total_value.
+
+    SELECT * FROM ekko INTO TABLE @lt_ekko WHERE lifnr = @ls_lfa1-lifnr.
+    lv_total_po = lines( lt_ekko ).
+
+    IF lv_total_po > 0.
+      SELECT ebeln, netwr INTO TABLE @lt_ekpo
+        FROM ekpo
+        FOR ALL ENTRIES IN @lt_ekko
+        WHERE ebeln = @lt_ekko-ebeln.
+
+      LOOP AT lt_ekpo INTO DATA(ls_ekpo).
+        lv_total_value = lv_total_value + ls_ekpo-netwr.
+      ENDLOOP.
+    ENDIF.
+
+    gs_summary-lifnr       = ls_lfa1-lifnr.
+    gs_summary-name1       = ls_lfa1-name1.
+    gs_summary-total_po    = lv_total_po.
+    gs_summary-total_value = lv_total_value.
+    APPEND gs_summary TO gt_summary.
+  ENDLOOP.
+ENDFORM.
+
+FORM display_main_alv.
+  DATA: lt_fieldcat TYPE slis_t_fieldcat_alv,
+        ls_fieldcat TYPE slis_fieldcat_alv.
+
+  CLEAR lt_fieldcat.
+
+  DEFINE add_field.
+    ls_fieldcat-fieldname = &1.
+    ls_fieldcat-seltext_m = &2.
+    APPEND ls_fieldcat TO lt_fieldcat.
+  END-OF-DEFINITION.
+
+  add_field 'LIFNR'       'Vendor Number'.
+  add_field 'NAME1'       'Vendor Name'.
+  add_field 'TOTAL_PO'    'Total POs'.
+  add_field 'TOTAL_VALUE' 'Total Value'.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      i_callback_user_command = 'USER_COMMAND'
+      it_fieldcat             = lt_fieldcat
+    TABLES
+      t_outtab                = gt_summary.
+ENDFORM.
+
+FORM user_command USING r_ucomm LIKE sy-ucomm
+                        rs_selfield TYPE slis_selfield.
+  READ TABLE gt_summary INTO gs_summary INDEX rs_selfield-tabindex.
+  IF sy-subrc = 0.
+    PERFORM get_po_details USING gs_summary-lifnr.
+    PERFORM display_po_alv.
+  ENDIF.
+ENDFORM.
+
+FORM get_po_details USING p_lifnr TYPE lfa1-lifnr.
+  CLEAR gt_details.
+  SELECT a~ebeln, a~bedat, b~matnr, b~menge, b~netpr, a~waers
+    INTO TABLE @gt_details
+    FROM ekko AS a
+    INNER JOIN ekpo AS b ON a~ebeln = b~ebeln
+    WHERE a~lifnr = @p_lifnr.
+ENDFORM.
+
+FORM display_po_alv.
+  DATA: lt_fieldcat TYPE slis_t_fieldcat_alv,
+        ls_fieldcat TYPE slis_fieldcat_alv.
+
+  CLEAR lt_fieldcat.
+
+  DEFINE add_field2.
+    ls_fieldcat-fieldname = &1.
+    ls_fieldcat-seltext_m = &2.
+    APPEND ls_fieldcat TO lt_fieldcat.
+  END-OF-DEFINITION.
+
+  add_field2 'EBELN' 'PO Number'.
+  add_field2 'BEDAT' 'PO Date'.
+  add_field2 'MATNR' 'Material'.
+  add_field2 'MENGE' 'Quantity'.
+  add_field2 'NETPR' 'Net Price'.
+  add_field2 'WAERS' 'Currency'.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      it_fieldcat        = lt_fieldcat
+    TABLES
+      t_outtab           = gt_details.
+ENDFORM.
+
+
+
+
+
+
+
+*
+*TABLES: lfa1, ekko, ekpo.
+*
+*TYPES: BEGIN OF ty_vendor_summary,
+*         lifnr TYPE lfa1-lifnr,
+*         name1 TYPE lfa1-name1,
+*         total_po TYPE i,
+*         total_value TYPE ekpo-netwr,
+*       END OF ty_vendor_summary.
+*
+*TYPES: BEGIN OF ty_po_details,
+*         ebeln TYPE ekko-ebeln,
+*         bedat TYPE ekko-bedat,
+*         matnr TYPE ekpo-matnr,
+*         menge TYPE ekpo-menge,
+*         netpr TYPE ekpo-netpr,
+*         waers TYPE ekko-waers,
+*       END OF ty_po_details.
+*
+*DATA: gt_summary TYPE STANDARD TABLE OF ty_vendor_summary,
+*      gs_summary TYPE ty_vendor_summary,
+*      gt_details TYPE STANDARD TABLE OF ty_po_details,
+*      gs_details TYPE ty_po_details.
+*
+*DATA: lv_on TYPE lfa1-lifnr.
+*
+*DATA: ls_fieldcat TYPE slis_fieldcat_alv,
+*      lt_fieldcat TYPE slis_t_fieldcat_alv.
+*
+*SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+*PARAMETERS: c_region AS CHECKBOX.
+*PARAMETERS: p_land1 TYPE lfa1-land1 MODIF ID reg.
+*SELECT-OPTIONS: p_lifnr FOR lv_on.
+*SELECTION-SCREEN END OF BLOCK b1.
+*
+*AT SELECTION-SCREEN OUTPUT.
+*  LOOP AT SCREEN.
+*    IF screen-name = 'P_LAND1'.
+*      screen-active = c_region.
+*      MODIFY SCREEN.
+*    ENDIF.
+*  ENDLOOP.
+*
+*AT SELECTION-SCREEN.
+*  IF c_region = '' AND p_land1 IS NOT INITIAL.
+*    MESSAGE 'Please check Region checkbox to use Region Key' TYPE 'E'.
+*  ENDIF.
+*
+*START-OF-SELECTION.
+*  PERFORM get_vendor_data.
+*  PERFORM display_main_alv.
+*
+*FORM get_vendor_data.
+*  DATA: lt_lfa1 TYPE STANDARD TABLE OF lfa1,
+*        lt_ekko TYPE STANDARD TABLE OF ekko,
+*        lt_ekpo TYPE STANDARD TABLE OF ekpo,
+*        lv_total_value TYPE ekpo-netwr,
+*        lv_total_po    TYPE i.
+*
+*  CLEAR gt_summary.
+*
+*  SELECT lifnr,name1,land1
+*  FROM lfa1
+*  INTO TABLE @lt_lfa1
+*  WHERE lifnr IN @p_lifnr.
+*
+*  IF c_region = 'X' AND p_land1 IS NOT INITIAL.
+*    DELETE lt_lfa1 WHERE land1 <> p_land1.
+*  ENDIF.
+*
+*  IF lt_lfa1 IS INITIAL.
+*    MESSAGE 'No vendors found.' TYPE 'I'.
+*    EXIT.
+*  ENDIF.
+*
+*  LOOP AT lt_lfa1 INTO DATA(ls_lfa1).
+*    CLEAR: lv_total_po, lv_total_value.
+*
+*    SELECT * FROM ekko INTO TABLE @lt_ekko WHERE lifnr = @ls_lfa1-lifnr.
+*    lv_total_po = lines( lt_ekko ).
+*
+*    IF lv_total_po > 0.
+*      SELECT ebeln,netwr
+*      INTO TABLE @lt_ekpo
+*        FROM ekpo
+*        FOR ALL ENTRIES IN @lt_ekko
+*        WHERE ebeln = @lt_ekko-ebeln.
+*
+*      LOOP AT lt_ekpo INTO DATA(ls_ekpo).
+*        lv_total_value = lv_total_value + ls_ekpo-netwr.
+*      ENDLOOP.
+*    ENDIF.
+*
+*    gs_summary-lifnr       = ls_lfa1-lifnr.
+*    gs_summary-name1       = ls_lfa1-name1.
+*    gs_summary-total_po    = lv_total_po.
+*    gs_summary-total_value = lv_total_value.
+*    APPEND gs_summary TO gt_summary.
+*  ENDLOOP.
+*ENDFORM.
+*
+*FORM display_main_alv.
+*  DATA: lt_fieldcat TYPE slis_t_fieldcat_alv,
+*        ls_fieldcat TYPE slis_fieldcat_alv.
+*
+*  CLEAR lt_fieldcat.
+*
+*  DEFINE add_field.
+*    ls_fieldcat-fieldname = &1.
+*    ls_fieldcat-seltext_m = &2.
+*    APPEND ls_fieldcat TO lt_fieldcat.
+*  END-OF-DEFINITION.
+*
+*  add_field 'LIFNR'       'Vendor Number'.
+*  add_field 'NAME1'       'Vendor Name'.
+*  add_field 'TOTAL_PO'    'Total POs'.
+*  add_field 'TOTAL_VALUE' 'Total Value'.
+*
+*  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+*    EXPORTING
+*      i_callback_program      = sy-repid
+*      i_callback_user_command = 'USER_COMMAND'
+*      it_fieldcat             = lt_fieldcat
+*    TABLES
+*      t_outtab                = gt_summary.
+*ENDFORM.
+*
+*FORM user_command USING r_ucomm LIKE sy-ucomm
+*                        rs_selfield TYPE slis_selfield.
+*  READ TABLE gt_summary INTO gs_summary INDEX rs_selfield-tabindex.
+*  IF sy-subrc = 0.
+*    PERFORM get_po_details USING gs_summary-lifnr.
+*    PERFORM display_po_alv.
+*  ENDIF.
+*ENDFORM.
+*
+*FORM get_po_details USING p_lifnr TYPE lfa1-lifnr.
+*  CLEAR gt_details.
+*  SELECT a~ebeln, a~bedat, b~matnr, b~menge, b~netpr, a~waers
+*    INTO TABLE @gt_details
+*    FROM ekko AS a
+*    INNER JOIN ekpo AS b ON a~ebeln = b~ebeln
+*    WHERE a~lifnr = @p_lifnr.
+*ENDFORM.
+*
+*FORM display_po_alv.
+*  DATA: lt_fieldcat TYPE slis_t_fieldcat_alv,
+*        ls_fieldcat TYPE slis_fieldcat_alv.
+*
+*  CLEAR lt_fieldcat.
+*
+*  DEFINE add_field2.
+*    ls_fieldcat-fieldname = &1.
+*    ls_fieldcat-seltext_m = &2.
+*    APPEND ls_fieldcat TO lt_fieldcat.
+*  END-OF-DEFINITION.
+*
+*  add_field2 'EBELN' 'PO Number'.
+*  add_field2 'BEDAT' 'PO Date'.
+*  add_field2 'MATNR' 'Material'.
+*  add_field2 'MENGE' 'Quantity'.
+*  add_field2 'NETPR' 'Net Price'.
+*  add_field2 'WAERS' 'Currency'.
+*
+*  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+*    EXPORTING
+*      i_callback_program = sy-repid
+*      it_fieldcat        = lt_fieldcat
+*    TABLES
+*      t_outtab           = gt_details.
+*ENDFORM.

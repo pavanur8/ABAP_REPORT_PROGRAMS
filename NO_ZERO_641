@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_NO_ZERO_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_no_zero_641.
+
+DATA lv_var1(10) TYPE n VALUE 70.
+DATA lv_var2(10) TYPE n VALUE 88.
+
+WRITE : 'Displaying output With Zero :',lv_var1.
+
+SKIP 2.
+WRITE : 'Displaying output With Zero :',lv_var2 NO-ZERO.

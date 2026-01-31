@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRINT_PATTERN_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprint_pattern_641.
+
+DATA: lv_row TYPE i,
+      lv_col TYPE i.
+
+DO 5 TIMES.
+  " lv_row goes: 5,4,3,2,1
+  lv_row = 6 - sy-index .
+
+  " Print lv_row times the digit lv_row
+  DO lv_row TIMES.
+    WRITE lv_row NO-GAP.
+  ENDDO.
+
+  NEW-LINE.
+ENDDO.
+
+*
+*DATA: lv_row TYPE i,
+*      lv_col TYPE i.
+*
+*DO 5 TIMES.
+*  lv_row = 6 - sy-index. " 5,4,3,2,1
+*
+*  DO lv_row TIMES.
+*    lv_col = lv_row - sy-index + 1. " lv_col goes lv_row # 1
+*    WRITE lv_row NO-GAP.
+*  ENDDO.
+*
+*  NEW-LINE.
+*ENDDO.

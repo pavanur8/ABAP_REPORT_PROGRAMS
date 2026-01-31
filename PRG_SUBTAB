@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SUBTAB
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_SUBTAB.
+
+TYPES : BEGIN OF lty,
+        ORDER_NUMBER TYPE ZORDER_ONO,
+        PAYMENT_MODE TYPE ZORDER_PM,
+        END OF lty.
+
+DATA : lt_data TYPE TABLE oF lty,
+       ls_data TYPE lty.
+
+PERFORM set_data USING '1' 'D' CHANGING lt_data.
+PERFORM set_data USING '1' 'C' CHANGING lt_data.
+PERFORM set_data USING '2' 'D' CHANGING lt_data.
+PERFORM set_data USING '2' 'C' CHANGING lt_data.
+PERFORM set_data USING '3' 'D' CHANGING lt_data.
+
+LOOP AT lt_data INTO ls_data.
+WRITE : / ls_data-order_number,ls_data-payment_mode.
+ENDLOOP.
+
+INCLUDE zg_subtab_set_dataf01.

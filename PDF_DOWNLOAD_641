@@ -1,0 +1,225 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_PDF_DOWNLOAD_641
+*&---------------------------------------------------------------------*
+REPORT zpro_pdf_download_641.
+
+TYPES: BEGIN OF ty_vbpa,
+         vbeln TYPE vbpa-vbeln,
+         posnr TYPE vbpa-posnr,
+         parvw TYPE vbpa-parvw,
+         kunnr TYPE vbpa-kunnr,
+         adrnr TYPE vbpa-adrnr,
+       END OF ty_vbpa.
+
+TYPES: BEGIN OF ty_t001w,
+         kunnr TYPE t001w-kunnr,
+         name1 TYPE t001w-name1,
+         stras TYPE t001w-stras,
+         ort01 TYPE t001w-ort01,
+         land1 TYPE t001w-land1,
+         pstlz TYPE t001w-pstlz,
+       END OF ty_t001w.
+
+TYPES: BEGIN OF ty_knb1,
+         bukrs TYPE knb1-bukrs,
+         kunnr TYPE knb1-kunnr,
+       END OF ty_knb1.
+
+TYPES: BEGIN OF ty_t001,
+         bukrs TYPE t001-bukrs,
+         butxt TYPE t001-butxt,
+       END OF ty_t001.
+
+TYPES: BEGIN OF zst_vbak1,
+         vbeln TYPE vbak-vbeln,
+         audat TYPE vbak-audat,
+         kunnr TYPE vbak-kunnr,
+       END OF zst_vbak1.
+
+TYPES: BEGIN OF zst_vbap1,
+         vbeln  TYPE vbap-vbeln,
+         posnr  TYPE vbap-posnr,
+         kwmeng TYPE vbap-kwmeng,
+         netwr  TYPE vbap-netwr,
+         total  TYPE vbap-netwr,  " Or p DECIMALS 2 for calculated total
+       END OF zst_vbap1.
+
+TYPES: BEGIN OF zst_billadd,
+         addrnumber TYPE adrc-addrnumber,
+         name1      TYPE adrc-name1,
+         city1      TYPE adrc-city1,
+         post_code1 TYPE adrc-post_code1,
+       END OF zst_billadd.
+
+TYPES: BEGIN OF zst_shipadd,
+         addrnumber TYPE adrc-addrnumber,
+         name1      TYPE adrc-name1,
+         city1      TYPE adrc-city1,
+         post_code1 TYPE adrc-post_code1,
+       END OF zst_shipadd.
+
+TYPES: BEGIN OF zst_comp,
+         bukrs TYPE t001-bukrs,
+         butxt TYPE t001-butxt,
+         kunnr TYPE t001w-kunnr,
+         name1 TYPE t001w-name1,
+         stras TYPE t001w-stras,
+         ort01 TYPE t001w-ort01,
+         land1 TYPE t001w-land1,
+         pstlz TYPE t001w-pstlz,
+       END OF zst_comp.
+
+DATA: it_vbpa TYPE TABLE OF ty_vbpa,
+      wa_vbpa TYPE ty_vbpa.
+
+DATA: it_vbpa1 TYPE TABLE OF ty_vbpa,
+      wa_vbpa1 TYPE ty_vbpa.
+
+DATA: it_final TYPE TABLE OF zst_vbap1,
+      wa_final TYPE zst_vbap1.
+
+DATA: wa_t001w TYPE ty_t001w.
+
+DATA: wa_knb1 TYPE ty_knb1.
+
+DATA: wa_t001 TYPE ty_t001.
+
+DATA: it_vbak TYPE TABLE OF zst_vbak1,
+      wa_vbak TYPE zst_vbak1.
+
+DATA: it_vbap TYPE TABLE OF zst_vbap1,
+      wa_vbap TYPE zst_vbap1.
+
+DATA: it_billadd TYPE TABLE OF zst_billadd,
+      wa_billadd TYPE zst_billadd.
+
+DATA: it_shipadd TYPE TABLE OF zst_shipadd,
+      wa_shipadd TYPE zst_shipadd.
+
+DATA: wa_comp TYPE zst_comp.
+
+DATA: bin_filesize TYPE i.
+
+DATA: file  TYPE localfile,
+      file1 TYPE string.
+
+DATA: it_pdf TYPE TABLE OF tline.  " For PDF lines
+
+DATA: spool_id TYPE tsp01-rqident.  " Spool ID
+
+PARAMETERS: p_vbeln TYPE vbak-vbeln.
+
+* Data Fetching (same as original)
+SELECT SINGLE vbeln audat kunnr FROM vbak INTO wa_vbak WHERE vbeln = p_vbeln.
+IF sy-subrc = 0.
+  SELECT SINGLE vbeln posnr parvw kunnr adrnr FROM vbpa INTO wa_vbpa WHERE vbeln = wa_vbak-vbeln AND parvw = 'AG'.
+  IF sy-subrc = 0.
+    SELECT SINGLE addrnumber name1 city1 post_code1 FROM adrc INTO wa_billadd WHERE addrnumber = wa_vbpa-adrnr.
+  ENDIF.
+
+  SELECT SINGLE vbeln posnr parvw kunnr adrnr FROM vbpa INTO wa_vbpa1 WHERE vbeln = wa_vbak-vbeln AND parvw = 'WE'.
+  IF sy-subrc = 0.
+    SELECT SINGLE addrnumber name1 city1 post_code1 FROM adrc INTO wa_shipadd WHERE addrnumber = wa_vbpa1-adrnr.
+  ENDIF.
+
+  SELECT SINGLE bukrs kunnr FROM knb1 INTO wa_knb1 WHERE kunnr = wa_vbak-kunnr.
+  IF sy-subrc = 0.
+    SELECT SINGLE kunnr name1 stras ort01 land1 pstlz FROM t001w INTO wa_t001w WHERE kunnr = wa_knb1-kunnr.
+    SELECT SINGLE bukrs butxt FROM t001 INTO wa_t001 WHERE bukrs = wa_knb1-bukrs.
+  ENDIF.
+
+  SELECT vbeln posnr kwmeng netwr FROM vbap INTO TABLE it_vbap WHERE vbeln = wa_vbak-vbeln.
+ENDIF.
+
+wa_comp-bukrs = wa_knb1-bukrs.
+wa_comp-butxt = wa_t001-butxt.
+wa_comp-kunnr = wa_t001w-kunnr.
+wa_comp-name1 = wa_t001w-name1.
+wa_comp-stras = wa_t001w-stras.
+wa_comp-ort01 = wa_t001w-ort01.
+wa_comp-land1 = wa_t001w-land1.
+wa_comp-pstlz = wa_t001w-pstlz.
+
+LOOP AT it_vbap INTO wa_vbap.
+  wa_final-vbeln = wa_vbap-vbeln.
+  wa_final-posnr = wa_vbap-posnr.
+  wa_final-kwmeng = wa_vbap-kwmeng.
+  wa_final-netwr = wa_vbap-netwr.
+  wa_final-total = wa_vbap-kwmeng * wa_vbap-netwr.
+  APPEND wa_final TO it_final.
+  CLEAR wa_final.
+ENDLOOP.
+
+* Step 1: Generate Spool from Classical Report Output
+DATA: print_params TYPE pri_params,
+      valid        TYPE c.
+
+CALL FUNCTION 'GET_PRINT_PARAMETERS'
+  EXPORTING
+    mode           = 'BATCH'
+    report         = sy-repid
+    no_dialog      = 'X'
+  IMPORTING
+    out_parameters = print_params
+    valid          = valid.
+
+IF valid <> space.
+  SUBMIT (sy-repid) TO SAP-SPOOL
+    SPOOL PARAMETERS print_params
+    WITHOUT SPOOL DYNPRO
+    AND RETURN.
+ENDIF.
+
+* Step 2: Get the Latest Spool ID
+SELECT MAX( rqident ) FROM tsp01 INTO spool_id
+  WHERE rqowner = sy-uname AND rqclient = sy-mandt.
+
+* Step 3: Convert Spool to PDF
+CALL FUNCTION 'CONVERT_ABAPSPOOLJOB_2_PDF'
+  EXPORTING
+    src_spoolid   = spool_id
+    no_dialog     = 'X'
+  IMPORTING
+    pdf_bytecount = bin_filesize
+  TABLES
+    pdf           = it_pdf.
+
+* Step 4: Get File Path and Download PDF
+CALL FUNCTION 'F4_FILENAME'
+  EXPORTING
+    program_name = syst-cprog
+  IMPORTING
+    file_name    = file.
+
+file1 = file.
+
+CALL FUNCTION 'GUI_DOWNLOAD'
+  EXPORTING
+    bin_filesize = bin_filesize
+    filename     = file1
+    filetype     = 'BIN'
+  TABLES
+    data_tab     = it_pdf.
+
+IF sy-subrc <> 0.
+  MESSAGE 'Error in downloading PDF' TYPE 'E'.
+ELSE.
+  MESSAGE 'PDF downloaded successfully' TYPE 'S'.
+ENDIF.
+
+* Step 5: Classical Report Output Logic (for Spool Generation)
+START-OF-SELECTION.
+  WRITE: / 'Sales Order:', p_vbeln.
+  WRITE: / 'Document Date:', wa_vbak-audat.
+  WRITE: / 'Customer:', wa_vbak-kunnr.
+  WRITE: / 'Bill To:', wa_billadd-name1, wa_billadd-city1, wa_billadd-post_code1.
+  WRITE: / 'Ship To:', wa_shipadd-name1, wa_shipadd-city1, wa_shipadd-post_code1.
+  WRITE: / 'Company:', wa_comp-butxt, wa_comp-name1, wa_comp-stras, wa_comp-ort01, wa_comp-land1, wa_comp-pstlz.
+
+  ULINE.
+  WRITE: / 'Item', 'Quantity', 'Net Value', 'Total'.
+  ULINE.
+
+  LOOP AT it_final INTO wa_final.
+    WRITE: / wa_final-posnr, wa_final-kwmeng, wa_final-netwr, wa_final-total.
+  ENDLOOP.

@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_INTERACTIVE1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_INTERACTIVE1.
+
+DATA : lt_oh TYPE TABLE OF ZGSTROH.
+DATA : lw_oh TYPE ZGSTROH.
+DATA : lt_it TYPE TABLE oF ZGSTROI.
+DATA : lw_it TYPE ZGSTROI.
+DATA : lv_ono TYPE ZORDER_ONO.
+
+*AT SELECTION-SCREEN.
+SELECT-OPTIONS : s_ono FOR lv_ono OBLIGATORY  NO-EXTENSION.
+
+START-OF-SELECTION.
+SELECT order_number ORDER_ODATE payment_mode currency
+FROM ZORDER_HEAD18
+INTO TABLE lt_oh
+WHERE order_number IN s_ono.
+
+LOOP AT lt_oh INTO lw_oh.
+WRITE : / lw_oh-order_number,lw_oh-ORDER_ODATE,lw_oh-payment_mode,lw_oh-currency.
+HIDE :  lw_oh-order_number,lw_oh-ORDER_ODATE,lw_oh-payment_mode,lw_oh-currency.
+ENDLOOP.
+
+AT LINE-SELECTION.
+SELECT order_number ORDER_ITEM_NUMBER item_cost
+FROM ZORDER_ITEM18
+INTO TABLE lt_it
+WHERE order_number = lw_oh-order_number.
+
+LOOP AT lt_it INTO lw_it.
+WRITE : / lw_it-order_number,lw_it-ORDER_ITEM_NUMBER,lw_it-item_cost.
+ENDLOOP.
