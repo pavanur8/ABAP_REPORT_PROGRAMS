@@ -1,0 +1,199 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO5_ALVOOPS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro6_alvoops_hotspot_641.
+
+TABLES vbak.
+
+TYPES : BEGIN OF lsvbak,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+          vbtyp TYPE vbtypl,
+        END OF lsvbak.
+
+TYPES : BEGIN OF lsvbap,
+          vbeln TYPE vbeln_va,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+        END OF lsvbap.
+
+DATA itab_vbak TYPE TABLE OF lsvbak.
+DATA wa_vbak TYPE lsvbak.
+DATA itab_vbap TYPE TABLE OF lsvbap.
+DATA wa_vbap TYPE lsvbap.
+DATA itab_field1 TYPE lvc_t_fcat.
+DATA wa_field1 TYPE lvc_s_fcat.
+DATA itab_field2 TYPE lvc_t_fcat.
+DATA wa_field2 TYPE lvc_s_fcat.
+DATA lo_container1 TYPE REF TO cl_gui_custom_container.
+DATA lo_container2 TYPE REF TO cl_gui_custom_container.
+DATA lo_alv1 TYPE REF TO cl_gui_alv_grid.
+DATA lo_alv2 TYPE REF TO cl_gui_alv_grid.
+DATA itab_rows TYPE lvc_t_row.
+DATA wa_rows TYPE lvc_s_row.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  SELECT-OPTIONS : s_vbeln FOR vbak-vbeln.
+SELECTION-SCREEN END OF BLOCK b1.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS handle FOR EVENT hotspot_click OF cl_gui_alv_grid.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD handle.
+    CALL METHOD lo_alv1->get_selected_rows
+      IMPORTING
+        et_index_rows = itab_rows.
+
+    READ TABLE itab_rows INTO wa_rows INDEX 1.
+    IF sy-subrc = 0.
+      READ TABLE itab_vbak INTO wa_vbak INDEX wa_rows-index.
+      IF sy-subrc = 0.
+        SELECT vbeln posnr matnr
+        FROM vbap
+        INTO TABLE itab_vbap
+        WHERE vbeln = wa_vbak-vbeln.
+
+        CALL METHOD lo_alv2->set_table_for_first_display
+          CHANGING
+            it_outtab                     = itab_vbap
+            it_fieldcatalog               = itab_field2
+*           it_sort                       =
+*           it_filter                     =
+          EXCEPTIONS
+            invalid_parameter_combination = 1
+            program_error                 = 2
+            too_many_lines                = 3
+            OTHERS                        = 4.
+        IF sy-subrc <> 0.
+*        Implement suitable error handling here
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  SELECT vbeln erdat erzet ernam vbtyp
+  FROM vbak
+  INTO TABLE itab_vbak
+  WHERE vbeln IN s_vbeln.
+
+  wa_field1-col_pos = 1.
+  wa_field1-fieldname = 'VBELN'.
+  wa_field1-hotspot = 'X'.
+  wa_field1-tabname = 'ITAB_VBAK'.
+  wa_field1-scrtext_l = 'Sales Document Number'.
+  APPEND wa_field1 TO itab_field1.
+  CLEAR wa_field1.
+
+  wa_field1-col_pos = 2.
+  wa_field1-fieldname = 'ERDAT'.
+  wa_field1-tabname = 'ITAB_VBAK'.
+  wa_field1-scrtext_l = 'Creation Date'.
+  APPEND wa_field1 TO itab_field1.
+  CLEAR wa_field1.
+
+  wa_field1-col_pos = 3.
+  wa_field1-fieldname = 'ERZET'.
+  wa_field1-tabname = 'ITAB_VBAK'.
+  wa_field1-scrtext_l = 'Time'.
+  APPEND wa_field1 TO itab_field1.
+  CLEAR wa_field1.
+
+  wa_field1-col_pos = 4.
+  wa_field1-fieldname = 'ERNAM'.
+  wa_field1-tabname = 'ITAB_VBAK'.
+  wa_field1-scrtext_l = 'User Name'.
+  APPEND wa_field1 TO itab_field1.
+  CLEAR wa_field1.
+
+  wa_field1-col_pos = 5.
+  wa_field1-fieldname = 'VBTYP'.
+  wa_field1-tabname = 'ITAB_VBAK'.
+  wa_field1-scrtext_l = 'Category'.
+  APPEND wa_field1 TO itab_field1.
+  CLEAR wa_field1.
+
+  CREATE OBJECT lo_container1
+    EXPORTING
+      container_name = 'CONT1'.
+
+  CREATE OBJECT lo_alv1
+    EXPORTING
+      i_parent = lo_container1.
+
+  CALL METHOD lo_alv1->set_table_for_first_display
+    CHANGING
+      it_outtab                     = itab_vbak
+      it_fieldcatalog               = itab_field1
+*     it_sort                       =
+*     it_filter                     =
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  wa_field2-col_pos = 1.
+  wa_field2-fieldname = 'VBELN'.
+  wa_field2-tabname = 'ITAB_VBAP'.
+  wa_field2-scrtext_l = 'Sales Document Number'.
+  APPEND wa_field2 TO itab_field2.
+  CLEAR wa_field2.
+
+  wa_field2-col_pos = 2.
+  wa_field2-fieldname = 'POSNR'.
+  wa_field2-tabname = 'ITAB_VBAP'.
+  wa_field2-scrtext_l = 'Item Number'.
+  APPEND wa_field2 TO itab_field2.
+  CLEAR wa_field2.
+
+  wa_field2-col_pos = 3.
+  wa_field2-fieldname = 'MATNR'.
+  wa_field2-tabname = 'ITAB_VBAP'.
+  wa_field2-scrtext_l = 'Material Number'.
+  APPEND wa_field2 TO itab_field2.
+  CLEAR wa_field2.
+
+  CREATE OBJECT lo_container2
+    EXPORTING
+      container_name = 'CONT2'.
+
+  CREATE OBJECT lo_alv2
+    EXPORTING
+      i_parent = lo_container2.
+
+  CALL METHOD lo_alv2->set_table_for_first_display
+    CHANGING
+      it_outtab                     = itab_vbap
+      it_fieldcatalog               = itab_field2
+*     it_sort                       =
+*     it_filter                     =
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  DATA(lo_obj) = NEW class1( ).
+  SET HANDLER lo_obj->handle FOR lo_alv1.
+
+  CALL SCREEN 0118.
+
+  INCLUDE zpro5_alvoops_641_status_01o01.
+
+  INCLUDE zpro5_alvoops_641_user_commi01.
