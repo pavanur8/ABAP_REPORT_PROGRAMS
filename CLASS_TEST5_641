@@ -1,0 +1,100 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_TEST5_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_test5_641.
+
+CLASS cl_abstract DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    METHODS m1 ABSTRACT.
+
+  PROTECTED SECTION.
+    METHODS m2 ABSTRACT.
+
+  PRIVATE SECTION.
+    CLASS-METHODS m3.  " Moved to PROTECTED for subclass access (private methods aren't inherited)
+ENDCLASS.
+
+CLASS cl_abstract IMPLEMENTATION.
+  METHOD m3.
+    WRITE :/ 'Private Method from Abstract classs' COLOR 2.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS cl_demo DEFINITION INHERITING FROM cl_abstract.
+  PUBLIC SECTION.
+    METHODS: m1 REDEFINITION.
+    " New method to demonstrate access to m3
+  PROTECTED SECTION.
+    METHODS m2 REDEFINITION.
+  PRIVATE SECTION.
+    CLASS-METHODS : call_protected_m3.
+ENDCLASS.
+
+CLASS cl_demo IMPLEMENTATION.
+  METHOD m1.
+    WRITE : / 'child class 1 method' COLOR 3.
+  ENDMETHOD.
+
+  METHOD m2.
+    WRITE : / 'child class 2 method' COLOR 4.
+  ENDMETHOD.
+
+  METHOD call_protected_m3.
+    CALL METHOD cl_abstract=>m3.  " Access protected static method from superclass
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA: lo_demo TYPE REF TO cl_demo.
+
+  CREATE OBJECT lo_demo.
+  lo_demo->call_protected_m3( ).  " Calls m3 via subclass method
+  lo_demo->m1( ).
+*  lo_demo->m2( ).
+
+
+*CLASS cl_abstract DEFINITION ABSTRACT.
+*  PUBLIC SECTION.
+*    METHODS  m1 ABSTRACT.
+*
+*  PROTECTED SECTION.
+*    METHODS m2 ABSTRACT.
+*
+*  PRIVATE SECTION.
+*    CLASS-METHODS m3.
+*ENDCLASS.
+*
+*CLASS cl_abstract IMPLEMENTATION.
+*  METHOD m3.
+*    WRITE :/ 'Private Method from Abstract classs' COLOR 2.
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*CLASS cl_demo DEFINITION INHERITING FROM cl_abstract.
+*  PUBLIC SECTION.
+*    METHODS: m1 REDEFINITION.
+*  PROTECTED SECTION.
+*    METHODS m2 REDEFINITION.
+*  PRIVATE SECTION.
+*    CLASS-METHODS m3.
+*
+*ENDCLASS.
+*
+*CLASS cl_demo IMPLEMENTATION.
+*  METHOD m1.
+*    WRITE : / 'child class 1 method' COLOR 3.
+*  ENDMETHOD.
+*
+*  METHOD m2.
+*    WRITE : / 'child class 2 method' COLOR 4.
+*  ENDMETHOD.
+*
+*  METHOD m3.
+*    CALL METHOD cl_abstract=>m3( ).
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*START-OF-SELECTION.
+**  cl_abstract=>m3( ).

@@ -1,0 +1,68 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG17_LOCAL_FRIEND_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg17_local_friend_class_641.
+
+
+*class pqr definition.
+*  public section.
+*      methods m4.
+*endclass.
+CLASS pqr DEFINITION DEFERRED.
+
+CLASS abc DEFINITION FRIENDS pqr.
+  PUBLIC SECTION.
+    METHODS m1.
+  PROTECTED SECTION.
+    METHODS m2.
+  PRIVATE SECTION.
+    METHODS m3.
+ENDCLASS.
+
+CLASS abc IMPLEMENTATION.
+  METHOD m1.
+    WRITE :/ 'inside public method m1 of abc'.
+  ENDMETHOD.
+
+  METHOD m2.
+    WRITE :/ 'inside protected method m2 of abc'.
+  ENDMETHOD.
+
+  METHOD m3.
+    WRITE :/ 'inside private method m3 of abc'.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS pqr DEFINITION.
+  PUBLIC SECTION.
+    METHODS m4.
+ENDCLASS.
+
+CLASS pqr IMPLEMENTATION.
+  METHOD m4.
+    WRITE :/ 'inside public method m4 of class pqr'.
+    DATA k TYPE REF TO abc.
+    CREATE OBJECT k.
+    WRITE :/ 'using object k of class abc'.
+    CALL METHOD k->m1.
+    CALL METHOD k->m2.
+    CALL METHOD k->m3.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA ob TYPE REF TO abc.
+  CREATE OBJECT ob.
+
+  CALL METHOD ob->m1.
+*call method ob->m2.
+*call method ob->m3.
+
+  ULINE.
+  DATA ob1 TYPE REF TO pqr.
+  CREATE OBJECT ob1.
+
+  ULINE.
+  CALL METHOD ob1->m4.

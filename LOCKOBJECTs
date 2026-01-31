@@ -1,0 +1,43 @@
+*&---------------------------------------------------------------------*
+*& Report ZLOCKOBJECT18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zlockobject18.
+
+PARAMETERS : Pono TYPE zorder_ono.
+PARAMETERS : ppm TYPE zorder_pm.
+
+CALL FUNCTION 'ENQUEUE_EZLOCKLOGDETAILS'
+  EXPORTING
+    mode_zorder_head18 = 'X'
+    mandt              = sy-mandt
+    order_number       = Pono
+    x_order_number     = ' '
+    _scope             = '2'
+    _wait              = ' '
+    _collect           = ' '
+  EXCEPTIONS
+    foreign_lock       = 1
+    system_failure     = 2
+    OTHERS             = 3.
+IF sy-subrc <> 0.
+  MESSAGE e003(zmessge_1).
+ELSE.
+  UPDATE zorder_head18 SET  payment_mode = ppm WHERE order_number = Pono.
+  IF sy-subrc = 0.
+    WRITE TEXT-000.
+  ELSE.
+    WRITE TEXT-001.
+  ENDIF.
+  CALL FUNCTION 'DEQUEUE_EZLOCKLOGDETAILS'
+    EXPORTING
+      mode_zorder_head18 = 'X'
+      mandt              = sy-mandt
+      order_number       = Pono
+      x_order_number     = ' '
+      _scope             = '3'
+      _synchron          = ' '
+      _collect           = ' '.
+
+ENDIF.

@@ -1,0 +1,83 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERNAL_SORTED_TABLE18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zinternal_sorted_table18.
+
+*Creating the structure.
+TYPES : BEGIN OF ls_data,
+          cid     TYPE n,
+          cname   TYPE string,
+          cage(2) TYPE n,
+          cloc    TYPE string,
+        END OF ls_data.
+
+*Declaring the "IT WILL ACCEPT ONLY UNIQUE VALUES".
+DATA : lt_data TYPE SORTED TABLE OF ls_data WITH UNIQUE  KEY cid cname cage cloc,
+       lw      TYPE ls_data.
+
+*"IT WILL ACCEPT DUPICATE VALUES ALSO .
+*DATA : lt_data TYPE SORTED TABLE OF ls_data WITH NON-UNIQUE  KEY cid cname cage cloc,
+*       lw      TYPE ls_data.
+
+*Inserting the values to the sorted internal table,
+lw-cid = '1'.
+lw-cname = 'PAVAN'.
+lw-cage = '24'.
+lw-cloc = 'BENGALURU'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+lw-cid = '1'.
+lw-cname = 'PAVAN'.
+lw-cage = '24'.
+lw-cloc = 'BENGALURU'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+
+lw-cid = '4'.
+lw-cname = 'NAVEEN'.
+lw-cage = '25'.
+lw-cloc = 'BENGALURU'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+lw-cid = '3'.
+lw-cname = 'VARUN'.
+lw-cage = '26'.
+lw-cloc = 'DUBAI'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+lw-cid = '2'.
+lw-cname = 'CHAWDA'.
+lw-cage = '28'.
+lw-cloc = 'DAVANGERE'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+lw-cid = '2'.
+lw-cname = 'CHAWDA'.
+lw-cage = '28'.
+lw-cloc = 'DAVANGERE'.
+INSERT lw INTO TABLE lt_data.
+CLEAR : lw.
+
+*Displaying the content of sorted table.
+*LOOP AT lt_data INTO lw.
+*  WRITE : / lw-cid,lw-cname,lw-cage,lw-cloc.
+*ENDLOOP.
+
+*READING THE Table Using  KEY.
+READ TABLE lt_data INTO lw WITH KEY cid = '1'.
+IF sy-subrc = 0.
+  WRITE :/ lw-cid,lw-cname,lw-cage,lw-cloc.
+ENDIF.
+
+*Reading te table using index of internal table
+READ TABLE lt_data INTO lw INDEX 3.
+IF sy-subrc = 0.
+  WRITE :/ lw-cid,lw-cname,lw-cage,lw-cloc.
+ENDIF.

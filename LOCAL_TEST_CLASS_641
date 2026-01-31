@@ -1,0 +1,68 @@
+REPORT zpro_local_test_class_641.
+
+* Production class to be tested
+CLASS lcl_calculator DEFINITION.
+  PUBLIC SECTION.
+    METHODS add
+      IMPORTING
+        iv_num1          TYPE i
+        iv_num2          TYPE i
+      RETURNING
+        VALUE(rv_result) TYPE i.
+ENDCLASS.
+
+CLASS lcl_calculator IMPLEMENTATION.
+  METHOD add.
+    rv_result = iv_num1 + iv_num2.
+  ENDMETHOD.
+ENDCLASS.
+
+* Unit test class
+CLASS ltc_calculator_test DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    DATA: mo_calculator TYPE REF TO lcl_calculator.
+
+    METHODS: setup,          " Runs before each test method
+      teardown,       " Runs after each test method
+      test_add_positive FOR TESTING,  " Test method
+      test_add_negative FOR TESTING.  " Another test method
+ENDCLASS.
+
+CLASS ltc_calculator_test IMPLEMENTATION.
+
+  METHOD setup.
+    CREATE OBJECT mo_calculator.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR mo_calculator.
+  ENDMETHOD.
+
+  METHOD test_add_positive.
+    DATA(lv_result) = mo_calculator->add( iv_num1 = 5 iv_num2 = 3 ).
+    cl_abap_unit_assert=>assert_equals( act = lv_result exp = 8 ).
+  ENDMETHOD.
+
+  METHOD test_add_negative.
+    DATA(lv_result) = mo_calculator->add( iv_num1 = -1 iv_num2 = 1 ).
+    cl_abap_unit_assert=>assert_equals( act = lv_result exp = 0 ).
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  PARAMETERS p1 TYPE i.
+  PARAMETERS p2 TYPE i.
+
+  DATA out TYPE i.
+  DATA lo_obj TYPE REF TO lcl_calculator.
+  CREATE OBJECT lo_obj.
+
+  lo_obj->add( EXPORTING iv_num1  = p1
+                      iv_num2 = p2
+           RECEIVING rv_result = out ).
+
+  cl_demo_output=>display( out ).

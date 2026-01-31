@@ -1,0 +1,107 @@
+*&---------------------------------------------------------------------*
+*& Report ZALVOOP_SPLIT_FACCLICK_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zalvoop_split_facclick_641.
+TABLES vbak.
+
+DATA: gt_vbak            TYPE TABLE OF vbak,
+      gt_vbap            TYPE TABLE OF vbap,
+      go_splitter        TYPE REF TO cl_gui_splitter_container,
+      go_container_left  TYPE REF TO cl_gui_container,
+      go_container_right TYPE REF TO cl_gui_container,
+      go_alv_vbak        TYPE REF TO cl_salv_table,
+      go_alv_vbap        TYPE REF TO cl_salv_table.
+
+
+SELECT-OPTIONS : s_vb FOR vbak-vbeln.
+
+
+CLASS lcl_event_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: handle_double_click FOR EVENT double_click OF cl_salv_events_table
+      IMPORTING row column.
+ENDCLASS.
+
+CLASS lcl_event_handler IMPLEMENTATION.
+  METHOD handle_double_click.
+    DATA lo_refresh TYPE lvc_s_stbl.
+    lo_refresh-row = 'X'.
+    lo_refresh-col = 'X'.
+
+    READ TABLE gt_vbak INDEX row INTO DATA(ls_vbak).
+    IF sy-subrc = 0.
+      SELECT * FROM vbap INTO TABLE gt_vbap
+        WHERE vbeln = ls_vbak-vbeln.
+      TRY.
+          cl_salv_table=>factory(
+            EXPORTING
+              r_container = go_container_right
+            IMPORTING
+              r_salv_table = go_alv_vbap
+            CHANGING
+              t_table = gt_vbap ).
+
+          CALL METHOD go_alv_vbap->if_salv_gui_om_table_action~refresh
+            EXPORTING
+              s_stable     = lo_refresh
+              refresh_mode = if_salv_c_refresh=>soft.
+*            IMPORTING
+*             exit_caused_by_caller =
+*              exit_caused_by_user   =.
+          go_alv_vbap->display( ).
+        CATCH cx_salv_msg.
+          MESSAGE 'Error creating VBAP ALV' TYPE 'E'.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  SELECT * FROM vbak INTO TABLE gt_vbak
+    WHERE vbeln IN s_vb.
+
+  DATA(go_custom) = NEW cl_gui_custom_container( container_name = 'CUSTOM_CONTAINER' ).
+
+  go_splitter = NEW cl_gui_splitter_container( parent = go_custom
+                                               rows = 1
+                                               columns = 2 ).
+  go_splitter->set_column_mode( mode = cl_gui_splitter_container=>mode_absolute ).
+  go_splitter->set_column_width( id = 1 width = 400 ). " Adjust widths as needed
+
+  go_container_left = go_splitter->get_container( row = 1 column = 1 ).
+  go_container_right = go_splitter->get_container( row = 1 column = 2 ).
+
+  TRY.
+      cl_salv_table=>factory(
+        EXPORTING
+          r_container = go_container_left
+        IMPORTING
+          r_salv_table = go_alv_vbak
+        CHANGING
+          t_table = gt_vbak ).
+
+      DATA(go_events) = go_alv_vbak->get_event( ).
+      DATA(go_handler) = NEW lcl_event_handler( ).
+      SET HANDLER go_handler->handle_double_click FOR go_events.
+
+      go_alv_vbak->display( ).
+    CATCH cx_salv_msg.
+      MESSAGE 'Error creating VBAK ALV' TYPE 'E'.
+  ENDTRY.
+
+  CALL SCREEN 100.
+
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS_100'.
+  SET TITLEBAR 'TITLE_100'.
+ENDMODULE.
+
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.

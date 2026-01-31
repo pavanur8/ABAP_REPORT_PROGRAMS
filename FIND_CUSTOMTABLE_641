@@ -1,0 +1,13 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_FIND_CUSTOMTABLE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRO_FIND_CUSTOMTABLE_641.
+
+SELECT tabname, tabclass, contflag
+  FROM dd02l
+  INTO TABLE @DATA(lt_tables)
+  WHERE tabname LIKE 'Z%'.
+
+cl_demo_output=>display( lt_tables ).

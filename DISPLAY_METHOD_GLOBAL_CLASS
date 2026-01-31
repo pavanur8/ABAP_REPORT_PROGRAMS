@@ -1,0 +1,18 @@
+  METHOD display.
+    "Global Method..
+    SKIP.
+    WRITE :/ 'This is Global Method' COLOR 5.
+
+    "Creating Local Class Object..
+    DATA(obj) = NEW zcl_helper_demo( ).
+
+    "Calling Local Class Method..
+    obj->m1( iv_data = sy-uname ).
+    obj->m1( iv_data = 'SAP-ABAP' ).
+    obj->m1( iv_data = sy-datum ).
+    obj->m1( iv_data = 74832569 ).
+
+
+
+
+  ENDMETHOD.

@@ -1,0 +1,76 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERNAL_HASHINGTABLE18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZINTERNAL_HASHINGTABLE18.
+
+*[[  Tech_54_0641  ]].
+
+*Creating the Structure.
+TYPES : BEGIN OF ls_data,
+        pro_id(3) TYPE N,
+        pro_name TYPE string,
+        pro_amount(8) TYPE N,
+        pro_date TYPE D,
+        END OF ls_data.
+
+*Declaring the Internal Table.
+DATA it_data TYPE HASHED TABLE OF ls_data WITH UNIQUE KEY pro_id .
+DATA wa TYPE ls_data.
+
+*Inserting the Values into Hashing Table.
+wa-pro_id = '8001'.
+wa-pro_name = 'MOOHAN'.
+wa-pro_amount = '987602'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+wa-pro_id = '8002'.
+wa-pro_name = 'MOON'.
+wa-pro_amount = '6000102'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+wa-pro_id = '8003'.
+wa-pro_name = 'CHANDRAYAN-2'.
+wa-pro_amount = '3000098'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+wa-pro_id = '8004'.
+wa-pro_name = 'COOCON'.
+wa-pro_amount = '80022'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+wa-pro_id = '8005'.
+wa-pro_name = 'ADHI'.
+wa-pro_amount = '680028'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+wa-pro_id = '8006'.
+wa-pro_name = 'MARCO'.
+wa-pro_amount = '32022'.
+wa-pro_date = sy-datum.
+INSERT wa INTO TABLE it_data.
+CLEAR : wa.
+
+*Accessing data using key not index.
+READ TABLE it_data INTO wa WITH KEY pro_id = 8003.
+IF sy-subrc = 0.
+  WRITE : / sy-uline,wa-pro_id,sy-vline,wa-pro_name,sy-vline,wa-pro_amount,sy-vline,wa-pro_date,sy-vline.
+
+ENDIF.
+
+*LOOP AT it_data INTO wa.
+*  WRITE : / sy-uline,wa-pro_id,sy-vline,wa-pro_name,sy-vline,wa-pro_amount,sy-vline,wa-pro_date,sy-vline.
+*ENDLOOP.
+*
+*WRITE sy-uline.

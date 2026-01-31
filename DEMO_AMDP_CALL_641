@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_AMDP_CALL_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_amdp_call_641.
+
+DATA(obj) = NEW ztest_amdp_641( ).
+
+CALL METHOD ztest_amdp_641=>get_sales_details
+  EXPORTING
+    im_auart         = 'YPOR'
+  IMPORTING
+    ex_sales_details = DATA(it_sales).
+
+CALL METHOD obj->get_material
+  IMPORTING
+    ex_mat_details = DATA(it_mat).
+
+cl_demo_output=>display( it_sales ).

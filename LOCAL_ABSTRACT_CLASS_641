@@ -1,0 +1,54 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG5_LOCAL_ABSTRACT_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg5_local_abstract_class_641.
+
+" Abstract class definition
+CLASS lcl_animal DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    METHODS: speak ABSTRACT.
+ENDCLASS.
+
+" Concrete subclass definition
+CLASS lcl_dog DEFINITION INHERITING FROM lcl_animal.
+  PUBLIC SECTION.
+    METHODS: speak REDEFINITION.
+ENDCLASS.
+
+" Implementation of subclass
+CLASS lcl_dog IMPLEMENTATION.
+  METHOD speak.
+    WRITE: / 'Woof!'.
+  ENDMETHOD.
+ENDCLASS.
+
+" Main program
+START-OF-SELECTION.
+  DATA lo_obj TYPE REF TO lcl_dog.
+  CREATE OBJECT lo_obj.
+  lo_obj->speak( ).
+
+
+*DATA lo_obj TYPE REF TO lcl_dog.
+*
+*CREATE OBJECT lo_obj.
+*
+*CLASS lcl_animal DEFINITION ABSTRACT.
+*  PUBLIC SECTION.
+*    METHODS: speak ABSTRACT.
+*ENDCLASS.
+*
+*CLASS lcl_dog DEFINITION INHERITING FROM lcl_animal.
+*  PUBLIC SECTION.
+*    METHODS: speak REDEFINITION.
+*ENDCLASS.
+*
+*CLASS lcl_dog IMPLEMENTATION.
+*  METHOD speak.
+*    WRITE: / 'Woof!'.
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*lo_dog->speak( ).

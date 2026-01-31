@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMOOPERATION_MACRO_PRG
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZDEMOOPERATION_MACRO_PRG.
+
+DATA : lv_output TYPE numc3.
+
+PARAMETERS : input1 TYPE numc2.
+PARAMETERS : input2 TYPE numc2.
+PARAMETERS : p_r1 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS : p_r2 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS : p_r3 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS : p_r4 TYPE c RADIOBUTTON GROUP r1.
+
+DEFINE CALLING_FOPERATIONS.
+CALL FUNCTION &1
+EXPORTING
+input1 = &2
+input2 = &3
+IMPORTING
+output = &4.
+WRITE : &4.
+END-OF-DEFINITION.
+
+IF p_r1 = 'X'.
+CALLING_FOPERATIONS 'ZFMMACRO_ADD' input1 input2 lv_output.
+ENDIF.
+
+IF p_r2 = 'X'.
+CALLING_FOPERATIONS 'ZFMMACRO_SUB' input1 input2 lv_output.
+ENDIF.
+
+IF p_r3 = 'X'.
+CALLING_FOPERATIONS 'ZFMMACRO_MULT' input1 input2 lv_output.
+ENDIF.
+
+IF p_r4 = 'X'.
+CALLING_FOPERATIONS 'ZFMMACRO_DIVI' input1 input2 lv_output.
+ENDIF.
+
+
+*IF p_r1 = 'X'.
+*  CALL FUNCTION 'ZFMMACRO_ADD'
+*    EXPORTING
+*      input1        =
+*      input2        =
+**   IMPORTING
+**     OUTPUT        =
+*            .
+*ENDIF.

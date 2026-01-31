@@ -1,0 +1,10 @@
+*&---------------------------------------------------------------------*
+*& Report zconsume_cds_parameters_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zconsume_cds_parameters_641.
+
+select * fROM zcds1_with_parameters_641( order_id = '10',pay_mode = 'N' ) into tABLE @daTA(itab_cds).
+
+cl_demo_output=>display(  itab_cds ).

@@ -1,0 +1,46 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_CUSTOM_EVENTS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_custom_events_641.
+
+CLASS abc DEFINITION.
+  PUBLIC SECTION.
+    EVENTS e1 EXPORTING VALUE(e_kunnr) TYPE kunnr OPTIONAL.
+    METHODS : m1 FOR EVENT e1 OF abc IMPORTING e_kunnr,
+      m2 IMPORTING i_kunnr TYPE kunnr.
+ENDCLASS.
+
+CLASS abc IMPLEMENTATION.
+  METHOD m1.
+    DATA : lv_land1 TYPE kna1-land1,
+           lv_name1 TYPE kna1-name1.
+    SELECT SINGLE land1 name1 FROM kna1
+       INTO (lv_land1,lv_name1) WHERE kunnr = e_kunnr.
+    IF sy-subrc EQ 0.
+      WRITE :/ 'customer country :',lv_land1,
+             / 'customer name    :',lv_name1.
+    ELSE.
+      MESSAGE 'No customer data found' TYPE 'I'.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD m2.
+    WRITE :/ 'inside m2-about to raise event'.
+    RAISE EVENT e1
+    EXPORTING
+       e_kunnr = i_kunnr.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  PARAMETERS p_kunnr TYPE kna1-kunnr.
+
+  DATA ob1 TYPE REF TO abc.
+  CREATE OBJECT ob1.
+
+  SET HANDLER ob1->m1 FOR ob1.
+  CALL METHOD ob1->m2
+    EXPORTING
+      i_kunnr = p_kunnr.

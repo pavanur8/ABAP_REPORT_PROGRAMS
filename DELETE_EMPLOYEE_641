@@ -1,0 +1,39 @@
+*&---------------------------------------------------------------------*
+*& Modulpool Z_DELETE_EMPLOYEE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM z_delete_employee_641.
+
+TABLES  zemployeeproj641.
+
+DATA: it_data TYPE TABLE OF zemployeeproj641,
+      is_data TYPE zemployeeproj641.
+
+INCLUDE z_delete_employee_641_statuo01.
+
+INCLUDE z_delete_employee_641_user_i01.
+
+INCLUDE z_delete_employee_641_user_i02.
+
+INCLUDE z_delete_employee_641_user_i03.
+
+*&SPWIZARD: DECLARATION OF TABLECONTROL 'TABSTRIP1' ITSELF
+CONTROLS: TABSTRIP1 TYPE TABLEVIEW USING SCREEN 0300.
+
+*&SPWIZARD: OUTPUT MODULE FOR TC 'TABSTRIP1'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: UPDATE LINES FOR EQUIVALENT SCROLLBAR
+MODULE TABSTRIP1_CHANGE_TC_ATTR OUTPUT.
+  DESCRIBE TABLE IT_DATA LINES TABSTRIP1-lines.
+ENDMODULE.
+
+INCLUDE z_delete_employee_641_user_i04.
+
+*&SPWIZARD: DECLARATION OF TABLECONTROL 'TABSTRIP2' ITSELF
+CONTROLS: TABSTRIP2 TYPE TABLEVIEW USING SCREEN 0200.
+
+*&SPWIZARD: OUTPUT MODULE FOR TC 'TABSTRIP2'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: UPDATE LINES FOR EQUIVALENT SCROLLBAR
+MODULE TABSTRIP2_CHANGE_TC_ATTR OUTPUT.
+  DESCRIBE TABLE IT_DATA LINES TABSTRIP2-lines.
+ENDMODULE.

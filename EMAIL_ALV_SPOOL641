@@ -1,0 +1,542 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_EMAIL_ALV_SPOOL641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zreport_email_alv_spool641.
+
+
+TABLES: pa0001,  pa0000.
+
+SELECTION-SCREEN BEGIN OF BLOCK block1 WITH FRAME TITLE TEXT-001.
+  SELECT-OPTIONS:   so_pernr FOR pa0001-pernr.
+  PARAMETERS:       p_keydat TYPE datum DEFAULT sy-datum.
+  PARAMETERS:       p_email  TYPE ad_smtpadr DEFAULT 'myemail@mydomain.com'.
+
+SELECTION-SCREEN END OF BLOCK block1.
+
+*Data Declaration
+*----------------
+DATA: r_objid TYPE RANGE OF hrp1001-objid.
+DATA: wa_objid LIKE LINE OF r_objid.
+
+TYPES: BEGIN OF t_report,
+         pernr       TYPE p0000-pernr,
+         vorna       TYPE p0002-vorna,
+         nachn       TYPE p0002-nachn,
+         ename       TYPE p0001-ename,
+         begda       TYPE p0000-begda,
+         orgeh       TYPE p0001-orgeh,
+         details(20) TYPE c,
+         color       TYPE lvc_t_scol, "table for cell colouring
+       END OF t_report.
+DATA: it_report TYPE STANDARD TABLE OF t_report INITIAL SIZE 0,
+      wa_report TYPE                   t_report.
+
+DATA alv_table TYPE REF TO cl_salv_table.
+DATA alv_columns TYPE REF TO cl_salv_columns_table.
+DATA single_column TYPE REF TO cl_salv_column.
+
+DATA: objec_tab TYPE STANDARD TABLE OF objec,
+      it_dept   TYPE STANDARD TABLE OF objec,
+      wa_objtab LIKE LINE OF           objec_tab,
+      struc_tab TYPE STANDARD TABLE OF struc,
+      wa_struc  LIKE LINE OF           struc_tab,
+      ld_orgeh  TYPE                   orgeh.
+
+DATA: gd_recsize TYPE i.
+
+DATA: gd_eventid                 LIKE tbtcm-eventid,
+      gd_eventparm               LIKE tbtcm-eventparm,
+      gd_external_program_active LIKE tbtcm-xpgactive,
+      gd_jobcount                LIKE tbtcm-jobcount,
+      gd_jobname                 LIKE tbtcm-jobname,
+      gd_stepcount               LIKE tbtcm-stepcount,
+      gd_error                   TYPE sy-subrc,
+      gd_reciever                TYPE sy-subrc.
+
+DATA send_request TYPE REF TO cl_bcs.
+DATA document TYPE REF TO cl_document_bcs.
+DATA recipient TYPE REF TO if_recipient_bcs.
+DATA bcs_exception TYPE REF TO cx_bcs.
+DATA sent_to_all TYPE os_boolean.
+DATA: pdf_content TYPE solix_tab.
+DATA: pdf_xstring TYPE xstring.
+DATA: bin_size TYPE i.
+DATA pdf_size TYPE so_obj_len.
+
+
+DATA:  w_recsize TYPE i.
+
+DATA: gd_subject         LIKE sodocchgi1-obj_descr,
+      it_mess_bod        LIKE solisti1 OCCURS 0 WITH HEADER LINE,
+      it_mess_att        LIKE solisti1 OCCURS 0 WITH HEADER LINE,
+      gd_sender_type     LIKE soextreci1-adr_typ,
+      gd_attachment_desc TYPE so_obj_nam,
+      gd_attachment_name TYPE so_obj_des.
+
+* Spool to PDF conversions
+DATA: gd_spool_nr    LIKE tsp01-rqident,
+      gd_destination LIKE rlgrap-filename,
+      gd_bytecount   LIKE tst01-dsize,
+      gd_buffer      TYPE string.
+
+* Spool IDs
+TYPES: BEGIN OF t_tbtcp.
+         INCLUDE STRUCTURE tbtcp.
+TYPES: END OF t_tbtcp.
+DATA: it_tbtcp TYPE STANDARD TABLE OF t_tbtcp INITIAL SIZE 0,
+      wa_tbtcp TYPE                   t_tbtcp.
+
+* Binary store for PDF
+DATA: BEGIN OF it_pdf_output OCCURS 0.
+        INCLUDE STRUCTURE tline.
+DATA: END OF it_pdf_output.
+
+DATA: seltab    TYPE TABLE OF rsparams,
+      seltab_wa LIKE LINE OF  seltab.
+
+DATA: gd_email  TYPE somlreci1-receiver,
+      gd_email2 TYPE somlreci1-receiver,  "just for test/demo
+      gd_email3 TYPE ad_smtpadr.          "just for test/demo
+
+DATA: wa_addreess TYPE sx_address.
+
+************************************************************************
+* START-OF-SELECTION
+START-OF-SELECTION.
+  gd_email = p_email.
+  gd_email2 = '#myemail@mydomain.com'.
+  gd_email3 = '#myemail@mydomain.com'.
+
+  PERFORM data_retrieval.
+  PERFORM display_settings.
+  PERFORM set_row_colors.
+
+************************************************************************
+* END-OF-SELECTION
+END-OF-SELECTION.
+  PERFORM display_alv_report.
+
+  IF sy-batch EQ 'X'.
+    PERFORM get_job_details.
+    PERFORM obtain_spool_id.
+    PERFORM convert_spool_to_pdf.
+    PERFORM send.
+
+  ELSE.
+    PERFORM submit_report_in_background.
+  ENDIF.
+
+
+*&-------------------------------*
+*& FORM data_retrieval.
+*&-------------------------------*
+FORM data_retrieval.
+  DATA: ld_deptlines TYPE i.
+
+  SELECT a~pernr a~begda b~vorna b~nachn c~ename  c~orgeh
+    FROM pa0000 AS a INNER JOIN pa0002 AS b
+      ON b~pernr EQ a~pernr
+     INNER JOIN pa0001 AS c
+    ON c~pernr EQ b~pernr
+    INTO CORRESPONDING FIELDS OF TABLE it_report
+   "for ALL ENTRIES IN it_emps
+   WHERE "a~pernr eq it_emps-pernr
+       a~pernr IN so_pernr
+     AND a~begda LE p_keydat
+     AND a~endda GE p_keydat
+     AND b~begda LE p_keydat
+     AND b~endda GE p_keydat
+     AND c~begda LE p_keydat
+     AND c~endda GE p_keydat.
+ENDFORM.                    " DATA_RETRIEVAL
+
+*&-------------------------------*
+*& FORM display_settings.
+*&-------------------------------*
+FORM display_settings.
+  DATA: err_message TYPE REF TO cx_salv_msg.
+
+  TRY.
+      cl_salv_table=>factory(
+      IMPORTING
+        r_salv_table = alv_table
+      CHANGING
+        t_table      = it_report ).
+
+      alv_columns = alv_table->get_columns( ).
+
+      PERFORM build_layout.
+      PERFORM build_fieldcatalog.
+      PERFORM build_toolbar.
+      PERFORM hide_columns.
+      PERFORM report_settings.
+
+    CATCH cx_salv_msg INTO err_message.
+*   Add error processing
+  ENDTRY.
+ENDFORM.
+
+*&-------------------------------*
+*& FORM display_alv_report.
+*&-------------------------------*
+FORM display_alv_report.
+  alv_table->display( ).
+ENDFORM.
+
+*&-------------------------------*
+*& FORM build_layout.
+*&-------------------------------*
+FORM build_layout.
+  DATA: layout TYPE REF TO cl_salv_layout.
+  DATA: layout_key TYPE salv_s_layout_key.
+
+  layout = alv_table->get_layout( ).
+
+  layout_key-report = sy-repid.
+  layout->set_key( layout_key ).
+
+  layout->set_save_restriction( if_salv_c_layout=>restrict_none ).
+ENDFORM.                    "BUILD_LAYOUT
+
+*&-------------------------------*
+*& FORM hide_columns.
+*&-------------------------------*
+FORM hide_columns.
+  DATA: err_notfound TYPE REF TO cx_salv_not_found.
+
+  TRY.
+      single_column = alv_columns->get_column( 'VORNA' ).
+      single_column->set_visible( if_salv_c_bool_sap=>false ).
+      single_column = alv_columns->get_column( 'NACHN' ).
+      single_column->set_visible( if_salv_c_bool_sap=>false ).
+
+    CATCH cx_salv_not_found INTO err_notfound.
+*   Add error processing
+  ENDTRY.
+ENDFORM.
+
+*&-------------------------------*
+*& FORM build_fieldcatalog.
+*&-------------------------------*
+*  Your ALV report should get texts from the internal table used but you
+*  overwrite them here if you require
+*&-------------------------------*
+FORM build_fieldcatalog.
+  DATA: err_notfound TYPE REF TO cx_salv_not_found.
+
+  TRY.
+      single_column = alv_columns->get_column( 'BEGDA' ).
+      single_column->set_short_text( 'Start Date' ).  "Will cause syntax error if text is too long
+      single_column->set_medium_text( 'Start Date' ).
+      single_column->set_long_text( 'Employee Start Date' ).
+      single_column->set_output_length( '10' ). "Force column to be wider to accomodate heading
+
+    CATCH cx_salv_not_found INTO err_notfound.
+*   Add error processing
+  ENDTRY.
+ENDFORM.
+
+*&-------------------------------*
+*& FORM build_toolbar.
+*&-------------------------------*
+FORM build_toolbar.
+  DATA: toolbar_functions TYPE REF TO cl_salv_functions_list.
+
+  toolbar_functions = alv_table->get_functions( ).
+  toolbar_functions->set_all( ).
+ENDFORM.
+
+*&-------------------------------*
+*& FORM report_settings.
+*&-------------------------------*
+FORM report_settings.
+  DATA: report_settings TYPE REF TO cl_salv_display_settings.
+
+  report_settings = alv_table->get_display_settings( ).
+  report_settings->set_striped_pattern( if_salv_c_bool_sap=>true ).
+  report_settings->set_list_header( 'Demo SAP ALV Report and PDF email' ).
+ENDFORM.
+
+*&-------------------------------*
+*&      Form  SET_ROW_COLORS
+*&-------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM set_row_colors .
+  DATA: lo_cols_tab TYPE REF TO cl_salv_columns_table,
+        lo_col_tab  TYPE REF TO cl_salv_column_table.
+  DATA: ls_color TYPE lvc_s_colo.    " Colors strucutre
+
+  DATA: lt_s_color TYPE lvc_t_scol,
+        ls_s_color TYPE lvc_s_scol,
+        ld_tabix   TYPE sy-tabix.
+
+  lo_cols_tab = alv_table->get_columns( ).
+
+
+  LOOP AT it_report INTO wa_report.
+    ld_tabix = sy-tabix.
+
+    IF wa_report-begda(4) EQ sy-datum(4). "this year.
+      ls_s_color-color-col = col_negative.
+      ls_s_color-color-int = 1.
+      ls_s_color-color-inv = 0.
+      APPEND ls_s_color TO lt_s_color.
+      CLEAR  ls_s_color.
+    ELSE." eq other year
+      ls_s_color-color-col =  7.
+      ls_s_color-color-int = 1.
+      ls_s_color-color-inv = 0.
+      APPEND ls_s_color TO lt_s_color.
+      CLEAR  ls_s_color.
+    ENDIF.
+
+    wa_report-color = lt_s_color.
+    MODIFY it_report FROM wa_report INDEX ld_tabix.
+
+    CLEAR  lt_s_color.
+  ENDLOOP.
+
+  TRY.
+      lo_cols_tab->set_color_column( 'COLOR' ).
+    CATCH cx_salv_data_error.                           "#EC NO_HANDLER
+  ENDTRY.
+ENDFORM.                    " SET_ROW_COLORS
+
+*---------------------------------------------------------------------*
+*       FORM get_job_details                                          *
+*---------------------------------------------------------------------*
+FORM get_job_details.
+* Get current job details
+  CALL FUNCTION 'GET_JOB_RUNTIME_INFO'
+    IMPORTING
+      eventid                 = gd_eventid
+      eventparm               = gd_eventparm
+      external_program_active = gd_external_program_active
+      jobcount                = gd_jobcount
+      jobname                 = gd_jobname
+      stepcount               = gd_stepcount
+    EXCEPTIONS
+      no_runtime_info         = 1
+      OTHERS                  = 2.
+ENDFORM.
+
+*---------------------------------------------------------------------*
+*       FORM obtain_spool_id                                          *
+*---------------------------------------------------------------------*
+FORM obtain_spool_id.
+  CHECK NOT ( gd_jobname IS INITIAL ).
+  CHECK NOT ( gd_jobcount IS INITIAL ).
+
+  SELECT * FROM  tbtcp
+                 INTO TABLE it_tbtcp
+                 WHERE      jobname     = gd_jobname
+                 AND        jobcount    = gd_jobcount
+                 AND        stepcount   = gd_stepcount
+                 AND        listident  = '0000000000'
+                 ORDER BY   jobname
+                            jobcount
+                            stepcount.
+
+  READ TABLE it_tbtcp INTO wa_tbtcp INDEX 1.
+  IF sy-subrc = 0.
+    gd_spool_nr = wa_tbtcp-listident.
+    MESSAGE s004(zdd) WITH gd_spool_nr.
+  ELSE.
+    MESSAGE s005(zdd).
+  ENDIF.
+ENDFORM.
+
+
+*---------------------------------------------------------------------*
+*       FORM convert_spool_to_pdf                                     *
+*---------------------------------------------------------------------*
+FORM convert_spool_to_pdf.
+
+  CALL FUNCTION 'CONVERT_ABAPSPOOLJOB_2_PDF'
+    EXPORTING
+      src_spoolid              = gd_spool_nr
+      no_dialog                = 'X'
+      pdf_destination          = 'X'
+      no_background            = 'X'
+    IMPORTING
+      pdf_bytecount            = bin_size
+      bin_file                 = pdf_xstring
+    EXCEPTIONS
+      err_no_abap_spooljob     = 1
+      err_no_spooljob          = 2
+      err_no_permission        = 3
+      err_conv_not_possible    = 4
+      err_bad_destdevice       = 5
+      user_cancelled           = 6
+      err_spoolerror           = 7
+      err_temseerror           = 8
+      err_btcjob_open_failed   = 9
+      err_btcjob_submit_failed = 10
+      err_btcjob_close_failed  = 11
+      OTHERS                   = 12.
+
+  pdf_size = bin_size.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+*       FORM send_email                                               *
+*---------------------------------------------------------------------*
+*  -->  p_email                                                       *
+*---------------------------------------------------------------------*
+FORM send.
+  DATA: it_contents TYPE STANDARD TABLE OF soli,
+        wa_contents TYPE                   soli,
+        ld_subject  TYPE                   so_obj_des.
+
+  TRY.
+      CONCATENATE 'Please fine attached the output report' ''
+                       INTO wa_contents-line.
+      APPEND wa_contents TO it_contents.
+
+      ld_subject  = |Output report |.
+
+*     -------- create persistent send request ------------------------
+      send_request = cl_bcs=>create_persistent( ).
+
+*     -------- create and set document -------------------------------
+      pdf_content = cl_document_bcs=>xstring_to_solix( pdf_xstring ).
+
+      document = cl_document_bcs=>create_document(
+            i_type    = 'PDF'
+            i_hex     = pdf_content
+            i_length  = pdf_size
+            i_subject = ld_subject
+            i_text    = it_contents ).                      "#EC NOTEXT
+
+*     add document object to send request
+      send_request->set_document( document ).
+
+*     --------- add recipient (e-mail address) -----------------------
+*     create recipient object
+      recipient = cl_cam_address_bcs=>create_internet_address( p_email ).
+
+*     add recipient object to send request
+      send_request->add_recipient( recipient ).
+
+*     ---------- send document ---------------------------------------
+      sent_to_all = send_request->send( i_with_error_screen = 'X' ).
+
+      COMMIT WORK.
+
+      IF sent_to_all IS INITIAL.
+        MESSAGE i500(sbcoms) WITH p_email.
+      ELSE.
+        MESSAGE s022(so).
+      ENDIF.
+
+*   ------------ exception handling ----------------------------------
+*   replace this rudimentary exception handling with your own one !!!
+    CATCH cx_bcs INTO bcs_exception.
+      MESSAGE i865(so) WITH bcs_exception->error_type.
+  ENDTRY.
+
+ENDFORM.
+
+
+
+*&-------------------------------*
+*&      Form  SUBMIT_REPORT_IN_BACKGROUND
+*&-------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM submit_report_in_background .
+  DATA: jobname LIKE tbtcjob-jobname VALUE
+                             'TRANSFER DATA'.
+  DATA: jobcount LIKE tbtcjob-jobcount,
+        host     LIKE msxxlist-host.
+  DATA: BEGIN OF starttime.
+          INCLUDE STRUCTURE tbtcstrt.
+  DATA: END OF starttime.
+  DATA: starttimeimmediate LIKE btch0000-char1 VALUE 'X'.
+
+  DATA: wa_pernr LIKE LINE OF so_pernr.
+
+  REFRESH: seltab.
+
+  seltab_wa-selname = 'SO_PERNR'.
+
+  LOOP AT so_pernr INTO wa_pernr.
+    seltab_wa-sign    = wa_pernr-sign.
+    seltab_wa-option  = wa_pernr-option.
+    seltab_wa-low    = wa_pernr-low.
+    seltab_wa-high    = wa_pernr-high.
+    APPEND seltab_wa TO seltab.
+  ENDLOOP.
+
+* Job open
+  CALL FUNCTION 'JOB_OPEN'
+    EXPORTING
+      delanfrep        = ' '
+      jobgroup         = ' '
+      jobname          = jobname
+      sdlstrtdt        = sy-datum
+      sdlstrttm        = sy-uzeit
+    IMPORTING
+      jobcount         = jobcount
+    EXCEPTIONS
+      cant_create_job  = 01
+      invalid_job_data = 02
+      jobname_missing  = 03.
+  IF sy-subrc NE 0.
+    "error processing
+  ENDIF.
+
+  SUBMIT (sy-cprog) AND RETURN   "
+    WITH SELECTION-TABLE seltab
+    WITH p_keydat = p_keydat
+    WITH p_sendto = gd_email
+    USER sy-uname
+    VIA JOB jobname
+    NUMBER jobcount.
+
+*    SKIP.
+*    WRITE:/ 'Program must be executed in background in-order for spool',
+*            'request to be created.'.
+
+* Close job
+  starttime-sdlstrtdt = sy-datum + 1.
+  starttime-sdlstrttm = '220000'.
+  CALL FUNCTION 'JOB_CLOSE'
+    EXPORTING
+      "            event_id             = starttime-eventid
+      "            event_param          = starttime-eventparm
+      "            event_periodic       = starttime-periodic
+      jobcount             = jobcount
+      jobname              = jobname
+"     laststrtdt           = starttime-laststrtdt
+"     laststrttm           = starttime-laststrttm
+"     prddays              = 1
+"     prdhours             = 0
+"     prdmins              = 0
+"     prdmonths            = 0
+"     prdweeks             = 0
+"     sdlstrtdt            = starttime-sdlstrtdt
+"     sdlstrttm            = starttime-sdlstrttm
+      strtimmed            = starttimeimmediate
+"     targetsystem         = host
+    EXCEPTIONS
+      cant_start_immediate = 01
+      invalid_startdate    = 02
+      jobname_missing      = 03
+      job_close_failed     = 04
+      job_nosteps          = 05
+      job_notex            = 06
+      lock_failed          = 07
+      OTHERS               = 99.
+  IF sy-subrc EQ 0.
+    "error processing
+  ENDIF.
+
+ENDFORM.                    " SUBMIT_REPORT_IN_BACKGROUND

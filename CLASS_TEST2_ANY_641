@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_TEST2_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_test2_any_641.
+
+CLASS zcl_generic DEFINITION.
+  PUBLIC SECTION.
+    METHODS show_value
+      IMPORTING
+        iv_data TYPE any. " Generic parameter
+ENDCLASS.
+
+CLASS zcl_generic IMPLEMENTATION.
+  METHOD show_value.
+    " Just display the value passed, irrespective of its data type
+    WRITE: / 'Value:', iv_data.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lo_obj) = NEW zcl_generic( ).
+  lo_obj->show_value( iv_data = 'Hello ABAP' ).
+  lo_obj->show_value( iv_data = sy-uname ).
+  lo_obj->show_value( iv_data = 2025 ).
+  lo_obj->show_value( iv_data = sy-datum ).

@@ -1,0 +1,37 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZDROP_DOWN_MP641_STATUS_020O01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0201 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0201 OUTPUT.
+  DATA : lt_val TYPE vrm_values,
+         lw_val TYPE vrm_value.
+* SET PF-STATUS 'xxxxxxxx'.
+* SET TITLEBAR 'xxx'.
+
+  IF zstates_641-state IS NOT INITIAL.
+    REFRESH lt_val.
+    LOOP AT itab INTO wa.
+      lw_val-key = wa-region.
+      lw_val-text = wa-region.
+      APPEND lw_val TO lt_val.
+      CLEAR lw_val.
+    ENDLOOP.
+    CLEAR : zstates_641-region.
+    CALL FUNCTION 'VRM_SET_VALUES'
+      EXPORTING
+        id              = 'ZSTATES_641-REGION'
+        values          = lt_val
+      EXCEPTIONS
+        id_illegal_name = 1
+        OTHERS          = 2.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+  ENDIF.
+
+ENDMODULE.

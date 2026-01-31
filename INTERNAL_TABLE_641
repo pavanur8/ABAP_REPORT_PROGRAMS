@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERNAL_TABLE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zinternal_table_641.
+
+DATA obj TYPE REF TO cl_salv_table.
+
+*DATA itab TYPE STANDARD TABLE OF vbak.
+SELECT vbeln,ernam,erdat,vbtyp FROM vbak INTO TABLE @DATA(itab_vbak) UP TO 10 ROWS.
+SELECT vbeln,matnr,posnr,ernam FROM vbap INTO TABLE @DATA(itab_vbap) UP TO 10 ROWS.
+
+itab_vbap = itab_vbak.
+itab_vbap = CORRESPONDING #( BASE ( itab_vbap ) itab_vbak ).
+
+
+TRY.
+    CALL METHOD cl_salv_table=>factory
+      EXPORTING
+        list_display = if_salv_c_bool_sap=>false
+*       r_container  =
+*       container_name =
+      IMPORTING
+        r_salv_table = obj
+      CHANGING
+        t_table      = itab_vbap.
+  CATCH cx_salv_msg.
+ENDTRY.
+
+CALL METHOD obj->if_salv_gui_om_table_action~display( ).

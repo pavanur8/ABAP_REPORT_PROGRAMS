@@ -1,0 +1,467 @@
+REPORT zpr_factory_design_demo2_641.
+
+INCLUDE zpr_factory_design_demo2_top. "header declaration
+INCLUDE zpr_factory_design_demo2_pbo.  " screen designing and controlling
+INCLUDE zpr_factory_design_demo2_pai.   "actual code
+INCLUDE zpr_factory_design_demo2_form.  "form definitions
+*&---------------------------------------------------------------------*
+*& Include          ZPR_FACTORY_DESIGN_DEMO2_TOP
+*&---------------------------------------------------------------------*
+
+DATA gt_zemployeeproj641 TYPE TABLE OF zemployeeproj641 WITH HEADER LINE.
+DATA : gt_vrm TYPE TABLE OF vrm_value WITH HEADER LINE.
+DATA : gv_num          TYPE string  VALUE '0123456789',
+       lv_alphabet     TYPE string VALUE 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+       gv_special_char TYPE string VALUE  '~!@#$%^&&*()_+|{}:"<>?,./;[]'';=-`-+/*\',
+       screen_flag(1)  TYPE c.
+*&---------------------------------------------------------------------*
+*& Include          ZPR_FACTORY_DESIGN_DEMO2_PBO
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK b WITH FRAME TITLE TEXT-001.
+  SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-002.
+    SELECTION-SCREEN SKIP.
+    PARAMETERS: p6 TYPE char10 AS LISTBOX VISIBLE LENGTH 10.                                 "Operation performed
+    SELECTION-SCREEN SKIP.
+  SELECTION-SCREEN END OF BLOCK b1 .
+  SELECTION-SCREEN SKIP.
+  SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-003.
+    SELECTION-SCREEN SKIP.
+    PARAMETERS: p1 TYPE zemployeeproj641-emp_id MODIF ID in1.
+    PARAMETERS: p2 TYPE zemployeeproj641-full_name MODIF ID in2.
+    PARAMETERS: p3 TYPE zemployeeproj641-dob MODIF ID in2.
+    PARAMETERS: p4 TYPE zemployeeproj641-salary MODIF ID in2.
+    PARAMETERS: p5 TYPE zemployeeproj641-email MODIF ID in2.
+    PARAMETERS: p7 TYPE zemployeeproj641-phone MODIF ID in2.
+    SELECTION-SCREEN SKIP.
+    SELECTION-SCREEN BEGIN OF LINE.
+      SELECTION-SCREEN PUSHBUTTON 20(10) back USER-COMMAND back .                               "Operation performed
+      SELECTION-SCREEN PUSHBUTTON 35(10) clear USER-COMMAND clear .                             "Operation performed
+    SELECTION-SCREEN END OF LINE.
+    SELECTION-SCREEN SKIP.
+  SELECTION-SCREEN END OF BLOCK b2 ."WITH FRAME TITLE TEXT-002.
+  SELECTION-SCREEN SKIP.
+SELECTION-SCREEN END OF BLOCK b.
+
+*DATA : GT_VRM TYPE VRM_VALUES WITH HEADER LINE.
+INITIALIZATION.
+  back = 'Back'.
+  clear = 'Clear'.
+
+AT SELECTION-SCREEN OUTPUT.
+*  clear : gt_vrm,p6.
+  REFRESH:  gt_vrm .
+  gt_vrm-key = 'Insert' .
+  APPEND gt_vrm.
+  gt_vrm-key = 'Update' .
+  APPEND gt_vrm.
+  gt_vrm-key = 'Delete' .
+  APPEND gt_vrm.
+  gt_vrm-key = 'Display'.
+  APPEND gt_vrm.
+
+* gt_vrm[] =  VALUE #( ( gt_vrm-key = 'INSERT')
+*                      ( gt_vrm-key = 'UPDATE')
+*                      ( gt_vrm-key = 'DELETE')
+*                      ( gt_vrm-key = 'DISPLAY') ).
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id              = 'P6'
+      values          = gt_vrm[]
+    EXCEPTIONS
+      id_illegal_name = 1
+      OTHERS          = 2.
+
+  LOOP AT SCREEN.
+    IF p6 IS INITIAL.
+      IF screen-group1 = 'IN1' OR
+         screen-group1 = 'IN2' OR
+         screen-name = 'BACK'  OR
+         screen-name = 'CLEAR'.
+        screen-active = 0.
+        MODIFY SCREEN.
+      ENDIF.
+    ELSE.
+*    IF p6 IS NOT INITIAL AND sy-ucomm = ''.
+      IF screen-group1 = 'IN2' OR
+         screen-name = 'BACK'  OR
+         screen-name = 'CLEAR'.
+        screen-active = 1.
+        MODIFY SCREEN.
+      ENDIF.
+      IF screen-name = 'P6' .
+        screen-input = 0.
+        MODIFY SCREEN.
+      ENDIF.
+      IF p1 IS INITIAL AND ( p6 = 'UPDATE' OR p6 = 'DELETE' OR p6 = 'DISPLAY' ).
+        IF screen-group1 = 'IN1' .
+          screen-input = 1.
+          MODIFY SCREEN.
+        ENDIF.
+      ELSE.
+        IF screen-group1 = 'IN1' .
+          screen-input = 0.
+          MODIFY SCREEN.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+    IF p6 = 'DELETE' OR p6 = 'DISPLAY'.
+      IF screen-group1 = 'IN2'.
+        screen-active = 0.
+        MODIFY SCREEN.
+      ENDIF.
+    ENDIF.
+
+    IF screen_flag IS  INITIAL.
+      IF screen-group1 = 'IN1' OR
+         screen-group1 = 'IN2' OR
+         screen-name = 'BACK'  OR
+         screen-name = 'CLEAR'.
+        screen-active = 1.
+        MODIFY SCREEN.
+      ENDIF.
+    ELSE.
+      IF screen-group1 = 'IN1' OR
+         screen-group1 = 'IN2' OR
+         screen-name = 'BACK'  OR
+          screen-name = 'CLEAR'.
+        screen-active = 0.
+        MODIFY SCREEN.
+      ENDIF.
+      IF screen-name = 'P6' .
+        screen-input = 1.
+        MODIFY SCREEN.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p1.
+  IF p6 = 'UPDATE' OR p6 = 'DELETE' OR p6 = 'DISPLAY'.
+    DATA : gt_ddshretval TYPE TABLE OF ddshretval WITH HEADER LINE.
+    SELECT emp_id FROM zemployeeproj641 INTO TABLE @DATA(lt_zemployeeproj641_id).
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+*       DDIC_STRUCTURE  = ' '
+        retfield        = 'EMP_ID'
+*       PVALKEY         = ' '
+        dynpprog        = sy-repid
+        dynpnr          = sy-dynnr
+        dynprofield     = 'P1'
+*       STEPL           = 0
+*       WINDOW_TITLE    =
+*       VALUE           = ' '
+        value_org       = 'S'
+*       MULTIPLE_CHOICE = ' '
+*       DISPLAY         = ' '
+*       CALLBACK_PROGRAM       = ' '
+*       CALLBACK_FORM   = ' '
+*       CALLBACK_METHOD =
+*       MARK_TAB        =
+*       IMPORTING
+*       USER_RESET      =
+      TABLES
+        value_tab       = lt_zemployeeproj641_id
+*       FIELD_TAB       =
+        return_tab      = gt_ddshretval
+*       DYNPFLD_MAPPING =
+      EXCEPTIONS
+        parameter_error = 1
+        no_values_found = 2
+        OTHERS          = 3.
+    IF sy-subrc = 0.
+      READ TABLE gt_ddshretval INTO gt_ddshretval INDEX 1.
+    ENDIF.
+  ENDIF.
+*&---------------------------------------------------------------------*
+*& Include          ZPR_FACTORY_DESIGN_DEMO2_PAI
+*&---------------------------------------------------------------------*
+AT SELECTION-SCREEN.
+*  ON CHANGE OF P6.
+*  CLEAR : p2,p3,p4,p5.
+*  ENDON.
+
+  IF sy-ucomm = 'BACK'.
+*      CLEAR P6.
+    screen_flag = 'X'.
+  ELSE.
+    screen_flag = ' '.
+  ENDIF.
+
+  IF sy-ucomm = 'CLEAR'.
+    CLEAR : p1,p2,p3,p4,p5,p7.
+  ENDIF.
+  IF p6 IS INITIAL.
+    SET CURSOR FIELD 'P6'.
+    MESSAGE : 'Please provide operation name' TYPE 'E'.
+  ELSE.
+    IF  sy-ucomm = 'ONLI'.
+      PERFORM assignment_parameter.
+      CLEAR : p1,p2,p3,p4,p5,p7.
+      IF p6 = 'INSERT' OR p6 = 'UPDATE'.
+        PERFORM validation.
+      ENDIF.
+    ENDIF.
+
+    IF  p6 = 'UPDATE'.
+      PERFORM get_data.
+    ENDIF.
+  ENDIF.
+
+
+  "--------------------------------------------------------
+
+CLASS crud_operation DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    METHODS : operation ABSTRACT.
+    CLASS-METHODS : get_instance IMPORTING VALUE(imp_opr) TYPE char10
+                                 RETURNING VALUE(ret_obj) TYPE REF TO crud_operation.
+
+ENDCLASS.
+
+CLASS class_insert DEFINITION INHERITING FROM crud_operation.
+
+  PUBLIC SECTION.
+    METHODS operation REDEFINITION.
+
+ENDCLASS.
+
+
+CLASS class_insert IMPLEMENTATION.
+  METHOD operation.
+
+    INSERT zemployeeproj641 FROM gt_zemployeeproj641.
+    IF sy-subrc = 0.
+      CLEAR gt_zemployeeproj641.
+      MESSAGE : 'Record inserted successfully' TYPE 'S'.
+    ELSE.
+      MESSAGE : 'Record not inserted' TYPE 'E'.
+
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS class_update DEFINITION INHERITING FROM crud_operation.
+  PUBLIC SECTION.
+    METHODS : operation REDEFINITION.
+ENDCLASS.
+
+
+CLASS class_update IMPLEMENTATION.
+  METHOD operation.
+
+    UPDATE zemployeeproj641 FROM gt_zemployeeproj641.
+    IF sy-subrc = 0.
+      CLEAR gt_zemployeeproj641.
+      MESSAGE : 'Record updated successfully' TYPE 'S'.
+    ELSE.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS class_delete DEFINITION INHERITING FROM crud_operation.
+  PUBLIC SECTION.
+    METHODS : operation REDEFINITION.
+ENDCLASS.
+
+CLASS class_delete IMPLEMENTATION.
+
+  METHOD operation.
+    DELETE zemployeeproj641 FROM gt_zemployeeproj641.
+    IF sy-subrc = 0.
+      CLEAR gt_zemployeeproj641.
+      MESSAGE : 'Record deleted successfully' TYPE 'S'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS class_display DEFINITION INHERITING FROM crud_operation.
+  PUBLIC SECTION.
+    DATA: o_alv TYPE REF TO cl_salv_table.
+    METHODS : operation REDEFINITION.
+ENDCLASS.
+
+CLASS class_display IMPLEMENTATION.
+  METHOD operation.
+    IF gt_zemployeeproj641-emp_id IS NOT INITIAL.
+      SELECT   * FROM zemployeeproj641 INTO TABLE gt_zemployeeproj641 WHERE emp_id = gt_zemployeeproj641-emp_id.
+*        APPEND gt_zemployeeproj641.
+      WRITE : / gt_zemployeeproj641-emp_id,
+                gt_zemployeeproj641-full_name,
+                gt_zemployeeproj641-dob,
+                gt_zemployeeproj641-salary,
+                gt_zemployeeproj641-email,
+                gt_zemployeeproj641-phone.
+      DATA: lx_msg TYPE REF TO cx_salv_msg.
+      TRY.
+          cl_salv_table=>factory(
+            IMPORTING
+              r_salv_table = o_alv
+            CHANGING
+              t_table      = gt_zemployeeproj641[] ).
+        CATCH cx_salv_msg INTO lx_msg.
+      ENDTRY.
+      o_alv->display( ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS crud_operation IMPLEMENTATION.
+  METHOD get_instance.
+    CASE : imp_opr.
+
+      WHEN 'INSERT'.
+        CREATE OBJECT ret_obj TYPE class_insert.
+      WHEN 'UPDATE'.
+        CREATE OBJECT ret_obj TYPE class_update.
+      WHEN 'DELETE'.
+        CREATE OBJECT ret_obj TYPE class_delete.
+      WHEN 'DISPLAY'.
+        CREATE OBJECT ret_obj TYPE class_display.
+    ENDCASE.
+  ENDMETHOD.
+ENDCLASS.
+
+
+START-OF-SELECTION.
+  DATA : object_ref TYPE REF TO crud_operation.
+  object_ref = crud_operation=>get_instance( imp_opr = p6 ).
+  object_ref->operation( ).
+*&---------------------------------------------------------------------*
+*& Include          ZPR_FACTORY_DESIGN_DEMO2_FORM
+*&---------------------------------------------------------------------*
+
+*&---------------------------------------------------------------------*
+*& Form VALIDATION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM validation .
+  IF gt_zemployeeproj641-emp_id IS NOT INITIAL.
+    IF  gt_zemployeeproj641-emp_id+0(1) =  space.
+      SET CURSOR  FIELD 'P1'.
+      MESSAGE :  e039(zpr_msg) .
+    ENDIF.
+    IF gt_zemployeeproj641-emp_id+0(2) <> 'ID'.
+      SET CURSOR  FIELD 'P1'.
+      MESSAGE : 'Please enter correct format of Id (i.e IDXXX)' TYPE 'E'.
+    ENDIF.
+    IF p6 = 'INSERT'.
+      SELECT SINGLE emp_id FROM zemployeeproj641 INTO @DATA(lv_id) WHERE emp_id = @gt_zemployeeproj641-emp_id.
+      IF sy-subrc = 0.
+        SET CURSOR  FIELD 'P1'.
+        MESSAGE : 'Id already exist, please enter different Id' TYPE 'E'.
+*    ELSE.
+*      MESSAGE : 'Your id is correct'  TYPE 'S'.
+      ENDIF.
+    ENDIF.
+
+  ELSE.
+    SET CURSOR  FIELD 'P1'.
+    MESSAGE : 'Please enter Id' TYPE 'E'.
+  ENDIF.
+  "-----------------------------------------------------------------------------""id validation
+  IF gt_zemployeeproj641-full_name IS NOT INITIAL.
+    IF  gt_zemployeeproj641-full_name+0(1) =  space.
+      SET CURSOR  FIELD 'P2'.
+      MESSAGE :  e040(zpr_msg) .
+    ELSEIF  strlen( gt_zemployeeproj641-full_name ) LT 3.
+      SET CURSOR  FIELD 'P2'.
+      MESSAGE : e041(zpr_msg).
+    ELSEIF gt_zemployeeproj641-full_name CA gv_num .
+      SET CURSOR  FIELD 'P2'.
+      MESSAGE : e042(zpr_msg).
+    ELSEIF   gt_zemployeeproj641-full_name CA gv_special_char.
+      SET CURSOR  FIELD 'P2'.
+      MESSAGE : e042(zpr_msg).
+    ENDIF.
+  ELSE.
+    SET CURSOR  FIELD 'P2'.
+    MESSAGE : e044(zpr_msg).
+  ENDIF.
+  "-------------------------------------------------------------------------------name validation
+  IF gt_zemployeeproj641-salary  IS INITIAL.
+    SET CURSOR  FIELD 'P4'.
+    MESSAGE : 'Please enter Salary' TYPE 'E'.
+  ELSEIF gt_zemployeeproj641-salary <= 0.
+    SET CURSOR  FIELD 'P4'.
+    MESSAGE : 'Salary must be a positive value' TYPE 'E'.
+  ENDIF.
+  "------------------------------------------------------------------------------------""salary validation
+  IF gt_zemployeeproj641-dob IS  INITIAL.
+    SET CURSOR  FIELD 'P3'.
+    MESSAGE : 'Please enter Date of birth' TYPE 'E'.
+  ENDIF.
+  "--------------------------------------------------------------------------"dob_validation
+  IF gt_zemployeeproj641-email IS NOT INITIAL.
+    IF  gt_zemployeeproj641-email+0(1) =  space.
+      SET CURSOR  FIELD 'P5'.
+      MESSAGE :  e047(zpr_msg) .
+    ELSEIF  strlen( gt_zemployeeproj641-email ) LT 3.
+      SET CURSOR  FIELD 'P5'.
+      MESSAGE : e049(zpr_msg).
+    ELSEIF gt_zemployeeproj641-email NA gv_num .
+      SET CURSOR  FIELD 'P5'.
+      MESSAGE : 'Email should contain at least one number' TYPE 'E'.
+    ELSEIF  gt_zemployeeproj641-email NA gv_special_char  .
+      SET CURSOR  FIELD 'P5'.
+      MESSAGE : 'Email should contain at least one special character' TYPE 'E'.
+    ENDIF.
+  ELSE.
+    SET CURSOR  FIELD 'P5'.
+    MESSAGE : 'Please enter email' TYPE 'E'.
+  ENDIF.
+  "-------------------------------------------------------------------------""email_validation
+  IF gt_zemployeeproj641-phone IS NOT INITIAL.
+    IF gt_zemployeeproj641-phone+0(1) NA '789'.
+      SET CURSOR  FIELD 'P7'.
+      MESSAGE : 'Phone number should start with 7, 8, or 9' TYPE 'E'.
+    ENDIF.
+    IF gt_zemployeeproj641-phone CA gv_special_char OR gt_zemployeeproj641-phone CA lv_alphabet.
+      SET CURSOR  FIELD 'P7'.
+      MESSAGE : 'Phone should be numeric only' TYPE 'E'.
+    ENDIF.
+    IF strlen( gt_zemployeeproj641-phone ) <> 10.
+      SET CURSOR  FIELD 'P7'.
+      MESSAGE : 'Phone number should be 10 digits' TYPE 'E'.
+    ENDIF.
+  ELSE.
+    SET CURSOR  FIELD 'P7'.
+    MESSAGE : 'Please enter Phone' TYPE 'E'.
+  ENDIF.
+  "-------------------------------------------------------------------------""phone_validation
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ASSIGNMENT_PARAMETER
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM assignment_parameter .
+
+  gt_zemployeeproj641-emp_id = p1.
+  gt_zemployeeproj641-full_name = p2.
+  gt_zemployeeproj641-dob = p3.
+  gt_zemployeeproj641-salary = p4.
+  gt_zemployeeproj641-email = p5.
+  gt_zemployeeproj641-phone = p7.
+
+ENDFORM.
+FORM get_data.
+  CLEAR gt_zemployeeproj641.
+  SELECT SINGLE * FROM zemployeeproj641 INTO CORRESPONDING FIELDS OF gt_zemployeeproj641 WHERE emp_id = p1 .
+  IF sy-subrc = 0.
+    p1 = gt_zemployeeproj641-emp_id    .
+    p2 = gt_zemployeeproj641-full_name .
+    p3 = gt_zemployeeproj641-dob       .
+    p4 = gt_zemployeeproj641-salary    .
+    p5 = gt_zemployeeproj641-email     .
+    p7 = gt_zemployeeproj641-phone     .
+
+  ENDIF.
+ENDFORM.

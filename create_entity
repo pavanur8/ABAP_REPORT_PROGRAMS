@@ -1,0 +1,14 @@
+  METHOD employeedataset_create_entity.
+    DATA wa TYPE zcl_zcrud_demo_641_mpc=>ts_employeedata.
+
+    io_data_provider->read_entry_data(
+      IMPORTING
+        es_data = wa
+    ).
+
+    INSERT INTO zemp_salary18 VALUES wa.
+    COMMIT WORK.
+*    IF sy-subrc EQ 0.
+*      COMMIT WORK.
+*    ENDIF.
+  ENDMETHOD.

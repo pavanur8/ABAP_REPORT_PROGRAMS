@@ -1,0 +1,18 @@
+*&---------------------------------------------------------------------*
+*& Report zconsu_table_function641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zconsu_table_function641.
+
+*seleCT * fROM zdemo_table_2function641 ( iv_carrid = 'LH' ) into table @Data(itab)
+* ##db_feature_mode[amdp_table_function]
+*
+*cl_demo_output=>display_data( EXPORTING VALUE = itab ).
+
+
+SELECT *
+        FROM zdemo_table_2function641( iv_carrid = 'LH' )
+         INTO TABLE @DATA(lt_flight)
+        ##db_feature_mode[amdp_table_function].
+cl_demo_output=>display_data( EXPORTING value = lt_flight ).

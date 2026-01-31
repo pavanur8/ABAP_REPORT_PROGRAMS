@@ -1,0 +1,78 @@
+*&---------------------------------------------------------------------*
+*& Report ZFACTORY_DESIGN_PATTERN_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zfactory_design_pattern_641.
+
+CLASS op_handler DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    CLASS-METHODS: factory
+      IMPORTING imp_output_type TYPE kschl
+      RETURNING VALUE(ret_obj)  TYPE REF TO op_handler.
+    METHODS: process_output ABSTRACT.
+ENDCLASS.                                               "op_handler DEFINITION
+CLASS class_zabc DEFINITION INHERITING FROM op_handler.
+  PUBLIC SECTION.
+    METHODS: process_output REDEFINITION.
+ENDCLASS.                                             "op_handler-class_zabc DEFINITION
+*
+CLASS class_zabc IMPLEMENTATION.
+  METHOD process_output.
+    WRITE: / 'Processing ZABC'.
+  ENDMETHOD.                                            "process_output
+ENDCLASS.                                               "op_handler-class_zabc IMPLEMENTATION
+CLASS class_zefg DEFINITION INHERITING FROM op_handler.
+  PUBLIC SECTION.
+    METHODS: process_output REDEFINITION.
+ENDCLASS.                                             "op_handler-class_zefg DEFINITION
+*
+CLASS class_zefg IMPLEMENTATION.
+  METHOD process_output.
+    WRITE: / 'Processing ZEFG'.
+  ENDMETHOD.                                            "process_output
+ENDCLASS.                                               "op_handler-class_zefg IMPLEMENTATION
+CLASS class_zxyz DEFINITION INHERITING FROM op_handler.
+  PUBLIC SECTION.
+    METHODS: process_output REDEFINITION.
+ENDCLASS.                                             "op_handler-class_zxyz DEFINITION
+*
+CLASS class_zxyz IMPLEMENTATION.
+  METHOD process_output.
+    WRITE: / 'Processing ZXYZ'.
+  ENDMETHOD.                                            "process_output
+ENDCLASS.                                               "op_handler-class_zxyz IMPLEMENTATION
+
+
+CLASS op_handler IMPLEMENTATION.
+  METHOD factory.
+    CASE imp_output_type.
+      WHEN 'ZABC'.
+        CREATE OBJECT ret_obj TYPE class_zabc.
+      WHEN 'ZEFG'.
+        CREATE OBJECT ret_obj TYPE class_zefg.
+      WHEN 'ZXYZ'.
+        CREATE OBJECT ret_obj TYPE class_zxyz.
+    ENDCASE.
+  ENDMETHOD.                                                 "factory
+ENDCLASS.                                                    "op_handler IMPLEMENTATION
+CLASS lcl_main_app DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: run.
+ENDCLASS.                                                  "lcl_main_app DEFINITION
+*
+CLASS lcl_main_app IMPLEMENTATION.
+  METHOD run.
+    DATA: lo_output TYPE REF TO op_handler.
+    lo_output = op_handler=>factory( 'ZABC' ).
+    lo_output->process_output( ).
+    lo_output = op_handler=>factory( 'ZEFG' ).
+    lo_output->process_output( ).
+    lo_output = op_handler=>factory( 'ZXYZ' ).
+    lo_output->process_output( ).
+  ENDMETHOD.                                               "run
+ENDCLASS.                                                  "lcl_main_app IMPLEMENTATION
+
+
+START-OF-SELECTION.
+  lcl_main_app=>run( ).

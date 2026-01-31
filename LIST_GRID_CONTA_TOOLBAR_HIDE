@@ -1,0 +1,126 @@
+*&---------------------------------------------------------------------*
+*& Report ZLIST_GRID_CONTA_TOOLBAR_HIDE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zlist_grid_conta_toolbar_hide.
+
+CLASS lcl_salv_tab DEFINITION.
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS : main IMPORTING
+                           i_list   TYPE xfeld
+                           i_grid   TYPE xfeld
+                           i_alv_tb TYPE c,
+      fetch_records,
+      get_alv_instance IMPORTING
+                         i_list   TYPE xfeld
+                         i_grid   TYPE xfeld
+                         i_alv_tb TYPE c,
+      display_alv.
+
+  PRIVATE SECTION.
+
+    CLASS-DATA : lt          TYPE TABLE OF sflight,
+                 lo_salv_tab TYPE REF TO cl_salv_table,
+                 lo_func     TYPE REF TO cl_salv_functions_list.
+
+ENDCLASS.
+
+CLASS lcl_salv_tab IMPLEMENTATION.
+
+  METHOD main.
+
+    fetch_records( ).
+    get_alv_instance( EXPORTING  i_list  = i_list
+                                  i_grid  = i_grid
+                                  i_alv_tb   = i_alv_tb ).
+    display_alv( ).
+  ENDMETHOD.
+
+
+  METHOD fetch_records.
+
+    SELECT * FROM sflight INTO TABLE lt UP TO 20 ROWS.
+
+  ENDMETHOD.
+
+
+  METHOD get_alv_instance.
+
+    DATA : flag.
+
+    IF i_list = 'X' OR i_grid = 'X'.
+
+      IF i_list = 'X'.
+
+        flag = 'X'.
+
+      ELSE.
+
+        flag = ' '.
+
+      ENDIF.
+
+      TRY.
+
+          CALL METHOD cl_salv_table=>factory
+            EXPORTING
+              list_display = flag
+            IMPORTING
+              r_salv_table = lo_salv_tab
+            CHANGING
+              t_table      = lt.
+
+
+          IF i_alv_tb = abap_true.
+
+            CALL METHOD lo_salv_tab->get_functions "GET the instance of alv toolbal button
+              RECEIVING
+                value = lo_func.
+
+
+            CALL METHOD lo_func->set_default "pass ‘true’ to display toobar ON alv
+              EXPORTING
+                value = if_salv_c_bool_sap=>true.
+            "true displays toolbar on alv/ false hides toolbar on alv
+
+          ENDIF.
+
+        CATCH cx_salv_msg .
+
+      ENDTRY.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD display_alv.
+
+    CALL METHOD lo_salv_tab->display.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME.
+
+    PARAMETERS : list     RADIOBUTTON GROUP g1,
+
+                 grid     RADIOBUTTON GROUP g1,
+
+                 alv_tool AS CHECKBOX.
+
+
+  SELECTION-SCREEN END OF BLOCK b1.
+
+
+  CALL METHOD lcl_salv_tab=>main
+    EXPORTING
+      i_list   = list
+      i_grid   = grid
+      i_alv_tb = alv_tool.

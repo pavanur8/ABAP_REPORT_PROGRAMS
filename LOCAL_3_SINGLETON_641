@@ -1,0 +1,68 @@
+*&---------------------------------------------------------------------*
+*& Report ZLOCAL_3_SINGLETON_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zlocal_3_singleton_641.
+
+CLASS zcl_singleton_b DEFINITION CREATE PRIVATE.
+  PUBLIC SECTION.
+    CLASS-METHODS:
+      get_instance RETURNING VALUE(ro_instance) TYPE REF TO zcl_singleton_b.
+    METHODS:
+      display_message.
+  PRIVATE SECTION.
+    CLASS-DATA go_instance TYPE REF TO zcl_singleton_b.
+ENDCLASS.
+
+CLASS zcl_singleton_b IMPLEMENTATION.
+  METHOD get_instance.
+    " Create only once
+    IF go_instance IS INITIAL.
+      CREATE OBJECT go_instance.
+    ENDIF.
+    ro_instance = go_instance.
+  ENDMETHOD.
+
+  METHOD display_message.
+    WRITE: / 'Hello from Singleton B'.
+  ENDMETHOD.
+ENDCLASS.
+
+
+"=============================
+" Singleton Class A
+"=============================
+CLASS zcl_singleton_a DEFINITION CREATE PRIVATE.
+  PUBLIC SECTION.
+    CLASS-METHODS:
+      get_instance RETURNING VALUE(ro_instance) TYPE REF TO zcl_singleton_a.
+    METHODS:
+      call_singleton_b.
+  PRIVATE SECTION.
+    CLASS-DATA go_instance TYPE REF TO zcl_singleton_a.
+ENDCLASS.
+
+CLASS zcl_singleton_a IMPLEMENTATION.
+  METHOD get_instance.
+    IF go_instance IS INITIAL.
+      CREATE OBJECT go_instance.
+    ENDIF.
+    ro_instance = go_instance.
+  ENDMETHOD.
+
+  METHOD call_singleton_b.
+    " Call Singleton B from Singleton A
+    DATA(lo_b) = zcl_singleton_b=>get_instance( ).
+    lo_b->display_message( ).
+  ENDMETHOD.
+ENDCLASS.
+
+
+"=============================
+" Test Program
+"=============================
+
+START-OF-SELECTION.
+  DATA(lo_a) = zcl_singleton_a=>get_instance( ).
+  lo_a->call_singleton_b( ).

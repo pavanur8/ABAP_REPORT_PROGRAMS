@@ -1,0 +1,62 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_DOW_UP_CASTING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_dow_up_casting_641.
+
+
+CLASS lcl_shape DEFINITION.
+  PUBLIC SECTION.
+    METHODS: draw,
+      display.
+ENDCLASS.                                     "Sub class lcl_circle  DEFINATION
+CLASS lcl_shape IMPLEMENTATION."super class
+  METHOD draw.
+    WRITE :/ 'Drawing any Shape'.
+  ENDMETHOD.
+
+  METHOD display.
+    WRITE :/ 'displaying main class'.
+  ENDMETHOD.
+ENDCLASS.                                         "Super class lcl_shape   IMPLIMENTATION
+
+CLASS lcl_circle DEFINITION INHERITING FROM lcl_shape.
+  PUBLIC SECTION.
+    METHODS: draw REDEFINITION,
+      calc_area.
+ENDCLASS.                                       "Sub class lcl_circle  DEFINATION
+CLASS lcl_circle IMPLEMENTATION."Sub Classs
+  METHOD draw.
+*    super->draw( ).
+    WRITE :/ 'Drawing specific shape: Circle'.
+  ENDMETHOD.
+
+  METHOD calc_area. "Sub class
+    WRITE :/ 'Area Of Crcle = 2iiR'.
+  ENDMETHOD.
+ENDCLASS.                                          "Sub class lcl_circle   IMPLIMENTATION
+
+START-OF-SELECTION.
+  DATA : o_cir TYPE REF TO lcl_circle.
+  CREATE OBJECT o_cir.
+  CALL METHOD o_cir->draw( ). " calls subclass Draw() method
+  CALL METHOD o_cir->calc_area( ).
+  ULINE.
+  "--------- Narrow cast(Upcast)---------------"
+
+  DATA : o_shp TYPE REF TO lcl_shape.        "this is super class
+  o_shp = o_cir.                             "  Narrow cast(Upcast)
+  CALL METHOD o_shp->display( ).             " this is superclasss method
+  CALL METHOD o_shp->draw( ).                " calls sub class Draw() REDEFINED method
+*call METHOD o_shp->calc_area( ) . " compilation error
+  ULINE.
+
+  "---------- Widening Cast(Downcast) -----------"
+
+  DATA : o_cir1 TYPE REF TO lcl_circle.
+
+  " o_cir1 = o_shp.            "  complilation error
+  o_cir1 ?= o_shp.             " Widening Cast(Downcast)
+  CALL METHOD o_cir1->draw( ). " calls subclass Draw() method
+  CALL METHOD o_cir1->calc_area( ).

@@ -1,0 +1,53 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASSIC_REPORT_JOIN
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclassic_report_join.
+
+TYPES : BEGIN OF ls_data,
+          order_number      TYPE zorder_ono,
+          order_odate       TYPE zorder_od,
+          payment_mode      TYPE zorder_pm,
+          total_amount      TYPE zorder_ta,
+          currency          TYPE zorder_cu,
+          order_item_number TYPE zorder_ino,
+          order_description TYPE zorder_odes,
+          item_cost         TYPE zorder_ic,
+        END OF ls_data.
+
+DATA lt TYPE TABLE OF ls_data.
+DATA lw TYPE ls_data.
+DATA lv_ono TYPE zorder_ono.
+
+SELECT-OPTIONS : s_ono FOR lv_ono.
+
+SELECT a~order_number a~order_odate a~payment_mode a~total_amount a~currency b~order_item_number b~order_description b~item_cost
+FROM zorder_head18 AS a JOIN zorder_item18 AS b
+ON a~order_number = b~order_number
+INTO TABLE lt
+WHERE a~order_number IN s_ono.
+
+WRITE : sy-uline(117).
+WRITE : / sy-vline ,TEXT-000,
+          15 sy-vline ,TEXT-001,
+          27 sy-vline ,TEXT-002,
+          41 sy-vline ,TEXT-003,
+          56 sy-vline ,TEXT-004,
+          66 sy-vline ,TEXT-005,
+          85 sy-vline ,TEXT-006,
+          104 sy-vline ,TEXT-007,
+          117 sy-vline ,TEXT-008.
+WRITE : sy-uline(117).
+
+LOOP AT lt INTO lw.
+  WRITE : / sy-vline,lw-order_number UNDER TEXT-000,
+            15 sy-vline ,lw-order_odate UNDER TEXT-001,
+            27 sy-vline ,lw-payment_mode UNDER TEXT-002,
+            41 sy-vline,lw-total_amount UNDER TEXT-003,
+            56 sy-vline ,lw-currency UNDER TEXT-004,
+            66 sy-vline ,lw-order_item_number UNDER TEXT-005,
+            85 sy-vline ,lw-order_description UNDER TEXT-006,
+            104 sy-vline ,lw-item_cost UNDER TEXT-007,117 sy-vline .
+  WRITE : sy-uline(117).
+ENDLOOP.

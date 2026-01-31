@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report Z_DIALOG_CONT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_dialog_cont_641.
+
+TABLES ekko.
+SELECT-OPTIONS s_ebeln FOR ekko-ebeln.
+
+DATA : obj_custom    TYPE REF TO cl_gui_custom_container.
+DATA : obj_db_cont    TYPE REF TO cl_gui_dialogbox_container,
+       obj_split      TYPE REF TO cl_gui_splitter_container,
+       obj_container1 TYPE REF TO cl_gui_container,
+       obj_container2 TYPE REF TO cl_gui_container,
+       obj_grid1      TYPE REF TO cl_salv_table,
+       obj_grid2      TYPE REF TO cl_salv_table,
+       obj_display    TYPE REF TO cl_salv_display_settings.
+
+DATA : lt_ekko     TYPE TABLE OF ekko.
+DATA : lt_ekpo     TYPE TABLE OF ekpo.
+
+SELECT *
+FROM ekko
+INTO TABLE lt_ekko
+WHERE ebeln IN s_ebeln .
+
+SELECT *
+FROM ekpo
+INTO TABLE lt_ekpo
+FOR ALL ENTRIES IN lt_ekko
+WHERE ebeln = lt_ekko-ebeln.
+
+CALL SCREEN 8000. " STARTING AT 15 3 , ENDING AT 160 16.
+
+INCLUDE z_dialog_cont_641_status_80o01.
+
+INCLUDE z_dialog_cont_641_user_commi01.
+
+INCLUDE z_dialog_cont_641_exit_commi01.

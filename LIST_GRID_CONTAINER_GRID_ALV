@@ -1,0 +1,98 @@
+REPORT zlist_grid_container_grid_alv.
+
+CLASS zcl_salv_table_example DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS : main IMPORTING
+                           i_list     TYPE xfeld
+                           i_grid     TYPE xfeld
+                           i_con_grid TYPE xfeld,
+      fetch_records,
+      get_alv_instance IMPORTING
+                         i_list     TYPE xfeld
+                         i_grid     TYPE xfeld
+                         i_con_grid TYPE xfeld,
+      display_alv.
+  PRIVATE SECTION.
+    CLASS-DATA : lt          TYPE STANDARD TABLE OF sflight WITH EMPTY KEY,
+                 lo_salv_tab TYPE REF TO cl_salv_table,
+                 o_cust      TYPE REF TO cl_gui_custom_container.
+ENDCLASS.
+
+CLASS zcl_salv_table_example IMPLEMENTATION.
+  METHOD main.
+    fetch_records( ).
+    get_alv_instance( EXPORTING i_list = i_list
+                                   i_grid = i_grid
+                                   i_con_grid = i_con_grid ).
+    IF i_list = 'X' OR i_grid = 'X'.
+      display_alv( ).
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD fetch_records.
+    SELECT * FROM sflight INTO TABLE lt UP TO 20 ROWS.
+  ENDMETHOD.
+
+  METHOD get_alv_instance.
+    DATA(flag) = abap_false.
+    IF i_list = 'X' OR i_grid = 'X'.
+      IF i_list = 'X'.
+        flag = abap_true.
+      ENDIF.
+      TRY.
+          cl_salv_table=>factory(
+            EXPORTING
+              list_display = flag
+            IMPORTING
+              r_salv_table = lo_salv_tab
+            CHANGING
+              t_table      = lt
+          ).
+        CATCH cx_salv_msg INTO DATA(lx_msg).
+          MESSAGE lx_msg->get_text( ) TYPE 'E'.
+      ENDTRY.
+    ELSEIF i_con_grid = 'X'.
+      CREATE OBJECT o_cust
+        EXPORTING
+          container_name = 'CONTAINER'.
+      TRY.
+          cl_salv_table=>factory(
+            EXPORTING
+              r_container  = o_cust
+            IMPORTING
+              r_salv_table = lo_salv_tab
+            CHANGING
+              t_table      = lt
+          ).
+        CATCH cx_salv_msg.
+          MESSAGE lx_msg->get_text( ) TYPE 'E'.
+      ENDTRY.
+      CALL SCREEN 1080.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD display_alv.
+    lo_salv_tab->display( ).
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME.
+    PARAMETERS list     RADIOBUTTON GROUP g1 DEFAULT 'X'.
+    PARAMETERS grid     RADIOBUTTON GROUP g1.
+    PARAMETERS con_grid RADIOBUTTON GROUP g1.
+  SELECTION-SCREEN END OF BLOCK b1.
+
+  TRY.
+      zcl_salv_table_example=>main(
+        EXPORTING
+          i_list     = list
+          i_grid     = grid
+          i_con_grid = con_grid
+      ).
+    CATCH cx_salv_msg INTO DATA(lx_msg).
+      MESSAGE lx_msg->get_text( ) TYPE 'E'.
+  ENDTRY.
+
+INCLUDE zlist_grid_container_grid_ao01.

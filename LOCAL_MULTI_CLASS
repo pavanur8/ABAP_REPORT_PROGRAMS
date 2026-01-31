@@ -1,0 +1,85 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG10_MULTI_CLASS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg10_multi_class.
+
+DATA lv_land TYPE land1_gp.
+DATA lv_name TYPE name1_gp.
+DATA lv_ort TYPE ort01_gp.
+DATA lv_pst TYPE pstlz.
+DATA lv_regio TYPE regio.
+
+PARAMETERS p_kunnr TYPE kunnr.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS display IMPORTING pkunnr TYPE kunnr
+                    EXPORTING pland1 TYPE land1_gp
+                              pname1 TYPE name1_gp
+                              port01 TYPE ort01_gp
+                              pPSTLZ TYPE pstlz
+                              pREGIO TYPE regio.
+    EVENTS : no_input,wrong_input.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD display.             "Triggering method
+    IF p_kunnr IS INITIAL.
+      RAISE EVENT no_input.
+    ELSE.
+      SELECT SINGLE land1 name1 ort01 pstlz regio
+      FROM kna1
+      INTO (  pland1,pname1,port01,ppstlz,pregio )
+      WHERE  kunnr = p_kunnr.
+      IF sy-subrc <> 0.
+        RAISE EVENT wrong_input.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS class2 DEFINITION.
+  PUBLIC SECTION.
+    METHODS message  FOR EVENT no_input OF class1.
+    METHODS msg FOR EVENT wrong_input OF class1.
+ENDCLASS.
+
+CLASS class2 IMPLEMENTATION.
+  METHOD message.               "Event Handler Method 1.
+    WRITE : 'please Enter Valid Input...'.
+  ENDMETHOD.
+  METHOD msg.                   "Event Handler Method 2.
+    WRITE : 'Enter Correct Input Only...'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(ob1) = NEW class1( ).
+  DATA(ob2) = NEW class2( ).
+*  DATA ob1 TYPE   REF TO class1.
+*  DATA ob2 TYPE   REF TO class2.
+*
+*  CREATE OBJECT ob1.
+*  CREATE OBJECT ob2.
+
+  IF p_kunnr IS INITIAL.
+    SET HANDLER ob2->message FOR ob1.  "Regestring the event handler method.
+  ELSE.
+    SET HANDLER ob2->msg FOR ob1.
+  ENDIF.
+
+
+  ob1->display( EXPORTING pkunnr = p_kunnr
+                IMPORTING pland1 = lv_land
+                pname1 = lv_name
+                port01 = lv_ort
+                ppstlz = lv_pst
+                pregio = lv_regio ).
+  WRITE : / lv_land,
+          /  lv_name ,
+          /  lv_ort ,
+          /  lv_pst ,
+          /  lv_regio.

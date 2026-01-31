@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_TEST4_DOWNCAST_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_test4_downcast_641.
+
+CLASS parent DEFINITION.
+  PUBLIC SECTION.
+    METHODS display.
+ENDCLASS.
+
+CLASS parent IMPLEMENTATION.
+  METHOD display.
+    WRITE: / 'Parent Display'.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS child DEFINITION INHERITING FROM parent.
+  PUBLIC SECTION.
+    METHODS child_method.
+ENDCLASS.
+
+CLASS child IMPLEMENTATION.
+  METHOD child_method.
+    WRITE: / 'Child-specific method'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA lo_parent TYPE REF TO parent.
+  DATA lo_child  TYPE REF TO child.
+
+  " Create a child object, but assign it to a parent reference (Upcasting)
+  lo_parent = NEW child( ).
+  " Now, downcast back to child reference
+  lo_child ?= lo_parent.
+
+  " Access child-specific method
+  lo_child->child_method( ).

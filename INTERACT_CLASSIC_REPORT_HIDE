@@ -1,0 +1,49 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERACT_CLASSIC_REPORT18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zinteract_classic_report_hide.
+
+TYPES : BEGIN OF ls_data,
+          order_number TYPE zorder_ono,
+          order_odate  TYPE zorder_od,
+          payment_mode TYPE zorder_pm,
+          currency     TYPE zorder_cu,
+        END OF ls_data.
+
+TYPES : BEGIN OF ls1_data,
+          order_number      TYPE zorder_ono,
+          order_item_number TYPE zorder_ino,
+          item_cost         TYPE zorder_ic,
+        END OF ls1_data.
+
+DATA : it_data TYPE TABLE OF ls_data.
+DATA : wa_data TYPE ls_data.
+DATA : lv_ono TYPE zorder_ono.
+DATA : it1_data TYPE TABLE OF ls1_data.
+DATA : wa1_data TYPE ls1_data.
+
+SELECT-OPTIONS : s_ono FOR lv_ono.
+
+START-OF-SELECTION.
+
+  SELECT order_number order_odate payment_mode currency
+  FROM zorder_head18
+  INTO TABLE it_data
+  WHERE order_number IN s_ono.
+
+  LOOP AT it_data INTO wa_data.
+    WRITE : / wa_data-order_number,wa_data-order_odate,wa_data-payment_mode,wa_data-currency.
+     HIDE :   wa_data-order_number,wa_data-order_odate,wa_data-payment_mode,wa_data-currency.
+  ENDLOOP.
+
+AT LINE-SELECTION.
+  SELECT order_number order_item_number item_cost
+  FROM zorder_item18
+  INTO TABLE it1_data
+  WHERE order_number = wa_data-order_number.
+
+  LOOP AT it1_data INTO wa1_data.
+    WRITE : / wa1_data-order_number,wa1_data-order_item_number,wa1_data-item_cost.
+  ENDLOOP.

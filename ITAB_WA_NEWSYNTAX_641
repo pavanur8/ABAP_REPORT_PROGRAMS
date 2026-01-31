@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZITAB_WA_NEWSYNTAX_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zitab_wa_newsyntax_641.
+
+TYPES : BEGIN OF ls,
+          name TYPE string,
+          role TYPE string,
+        END OF ls.
+*=======================================================================
+"Creating work area using the type.....
+
+*DATA wa1 TYPE ls.
+*wa1 = VALUE #( name = 'pavan' role = 'abap' ).
+*DATA(wa2) = VALUE #( BASE wa1 name = 'JOSHI' ).
+
+*=======================================================================
+"Creating internal table using TYPE....
+
+*TYPES itt TYPE TABLE OF ls WITH EMPTY KEY.
+*DATA(itab) = VALUE itt( ( name = 'PAVAN' role = 'ABAP' )
+*                        ( name = 'KUSHI' role = 'JAVA' )
+*                        ( name = 'TAMALLA' role = 'PYTHON' )
+*                        ( name = 'BHALLA' role = 'C' ) ).
+
+*=======================================================================
+
+DATA itab1 TYPE TABLE OF ls.
+*itab1 = VALUE #( ( name = 'PAVAN' role = 'ABAP' )
+*                        ( name = 'KUSHI' role = 'JAVA' )
+*                        ( name = 'TAMALLA' role = 'PYTHON' )
+*                        ( name = 'BHALLA' role = 'C' ) ).
+
+*APPEND VALUE #( name = 'BHAI' role = 'Fi' ) TO itab.
+
+*itab = VALUE #( BASE itab ( name = 'GANGA' role = 'C++' )
+*                          ( name = 'KRISH' role = 'POSTMAN' )
+*                          ( name = 'PRKASH' role = 'SAP' ) ).
+DATA(itab2) = VALUE #( BASE itab1 ( name = 'GANGA' role = 'C++' )
+                          ( name = 'KRISH' role = 'POSTMAN' )
+                          ( name = 'PRKASH' role = 'SAP' ) ).
+
+
+*cl_demo_output=>display( itab1 ).
+cl_demo_output=>display( itab2 ).

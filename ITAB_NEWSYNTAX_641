@@ -1,0 +1,54 @@
+*&---------------------------------------------------------------------*
+*& Report ZITAB_NEWSYNTAX_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zitab_newsyntax_641.
+
+TYPES : BEGIN OF ls,
+          name TYPE char20,
+          role TYPE char20,
+        END OF ls.
+
+DATA itab TYPE STANDARD TABLE OF ls.
+
+itab = VALUE #( ( name = 'PAVAN' role = 'RAP' )
+*                ( name = 'NAVEEN' role = 'ABAP Consltant' )
+*                ( name = 'PAVANI' role = 'ABAP Consltant' )
+                ( name = 'JAGDEESH' role = 'Java' )
+                ( name = 'VINOD' role = 'Pyhon' ) ).
+
+*cl_demo_output=>display( itab ).
+*TRY.
+*    DATA(result) = itab[ name = 'VINO' ]-role . "reading Internal table with new syntax.
+*  CATCH cx_sy_itab_line_not_found.
+*    WRITE : / 'Not Found'.
+*ENDTRY.
+
+*IF line_exists( itab[ name = 'PAV' ] ).
+*  WRITE 'Name is Existed'.
+*ELSE.
+*  WRITE 'Not Found Data'.
+*ENDIF.
+*
+*DATA(lv_index) =  line_index( itab[ name = 'PAV' ] ).
+*
+*WRITE / lv_index.
+
+DATA(lv_role) = REDUCE i( INIT i = 0
+                          FOR  wa IN itab
+                          WHERE ( role CP 'ABAP*' )
+                          NEXT i = COND #( WHEN wa-role = itab[ 1 ]-role THEN i
+                                               ELSE i + 1 ) ).
+
+
+
+IF lv_role <> 0.
+  WRITE : 'not Consltant'.
+ELSE.
+  WRITE : 'ABAP Consltant'.
+ENDIF.
+
+*cl_demo_output=>write( itab ).
+*itab[ name = 'PAVAN' ]-name = 'PRABHAS'.
+*cl_demo_output=>display( itab ).

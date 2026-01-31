@@ -1,0 +1,36 @@
+REPORT z_formatting_options_demo.
+
+* Sample data declarations
+DATA: lv_price    TYPE p DECIMALS 4 VALUE '1234.5678',  " For DECIMALS, ROUND, CURRENCY, NO-GROUPING
+      lv_positive TYPE p DECIMALS 2 VALUE '567.89',   " For NO-SIGN
+      lv_zero     TYPE p DECIMALS 2 VALUE '0.00',         " For NO-ZERO
+      lv_text     TYPE string VALUE 'Formatted Text'.     " For alignment options
+
+START-OF-SELECTION.
+
+  " Example for DECIMALS n: Sets the number of decimal places (e.g., limit to 2 decimals with rounding)
+  WRITE: / 'DECIMALS example (original 1234.5678 limited to 2 decimals): ', lv_price DECIMALS 2.
+  SKIP.
+  " Example for CURRENCY c: Formats according to specified currency (e.g., 'EUR' for Euro with comma as decimal separator)
+  WRITE: / 'CURRENCY example (1234.5678 as EUR): ', lv_price CURRENCY 'EUR'.
+  SKIP.
+  " Example for ROUND n: Rounds the value to a specified scale (e.g., divide by 100, resulting in 12.3457 rounded)
+  WRITE: / 'ROUND example (1234.5678 rounded with scale -2): ', lv_price ROUND -2.
+  SKIP.
+  " Example for NO-GROUPING: Removes thousands separators (e.g., 1.234,57 becomes 1234,57)
+  WRITE: / 'NO-GROUPING example (1234.5678 without thousands separator): ', lv_price NO-GROUPING DECIMALS 2.
+  SKIP.
+  " Example for NO-SIGN: Suppresses the sign for positive numbers (e.g., +567.89 becomes 567.89)
+  WRITE: / 'NO-SIGN example (positive 567.89 without sign): ', lv_positive NO-SIGN.
+  SKIP.
+  " Example for NO-ZERO: Suppresses output if the value is zero (e.g., 0.00 is not displayed)
+  WRITE: / 'NO-ZERO example (0.00 suppressed): ', lv_zero NO-ZERO.  " This will show nothing after the label
+  SKIP.
+  " Example for LEFT-JUSTIFIED: Controls alignment (left-aligns the text using field's natural length)
+  WRITE: / 'LEFT-JUSTIFIED example: ', lv_text LEFT-JUSTIFIED.
+  SKIP.
+  " Example for CENTERED: Controls alignment (centers the text using field's natural length)
+  WRITE: / 'CENTERED example: ', lv_text CENTERED.
+  SKIP.
+  " Example for RIGHT-JUSTIFIED: Controls alignment (right-aligns the text using field's natural length)
+  WRITE: / 'RIGHT-JUSTIFIED example: ', lv_text RIGHT-JUSTIFIED.

@@ -1,0 +1,55 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_DOCKING_CONTAINER_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_docking_container_641.
+
+
+DATA: gt_sflight TYPE TABLE OF sflight,
+      go_docking TYPE REF TO cl_gui_docking_container,
+      go_alv     TYPE REF TO cl_gui_alv_grid.
+
+START-OF-SELECTION.
+  " Fetch sample data
+  SELECT * FROM sflight INTO TABLE gt_sflight UP TO 50 ROWS.
+
+  CALL SCREEN 100.
+
+*----------------------------------------------------------------------*
+* MODULE status_0100 OUTPUT
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'STATUS'.
+  SET TITLEBAR 'TITLE'.
+
+  IF go_docking IS INITIAL.
+
+    CREATE OBJECT go_docking
+      EXPORTING
+        side      = cl_gui_docking_container=>dock_at_left
+        extension = 2000.  " Adjust size as needed
+
+    " Create ALV grid inside the docking container
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_docking.
+
+    " Display data in ALV
+    CALL METHOD go_alv->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'SFLIGHT'
+      CHANGING
+        it_outtab        = gt_sflight.
+  ENDIF.
+ENDMODULE.
+
+*----------------------------------------------------------------------*
+* MODULE user_command_0100 INPUT
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.

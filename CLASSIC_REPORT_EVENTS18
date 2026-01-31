@@ -1,0 +1,175 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASSIC_REPORT_EVENTS18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclassic_report_events18 LINE-COUNT 10(2).
+
+TYPES : BEGIN OF lyt_data,
+          order_number TYPE zorder_ono,
+          order_odate  TYPE zorder_od,
+          payment_mode TYPE zorder_pm,
+          currency     TYPE zorder_cu,
+        END OF lyt_data.
+
+TYPES : BEGIN OF ls_data,
+        cur TYPE ZORDER_PM,
+        desc TYPE desc40,
+        END OF ls_data.
+
+DATA : lv_odate TYPE zorder_od,
+       lv_pm    TYPE zorder_pm,
+       lv_curr  TYPE zorder_cu.
+DATA : lt_data TYPE TABLE OF lyt_data.
+DATA : wa_data TYPE lyt_data.
+DATA : lt TYPE TABLE OF ls_data.
+DATA : lw TYPE ls_data.
+
+SELECT-OPTIONS : s_odate FOR lv_odate NO-EXTENSION.
+SELECT-OPTIONS : s_pm FOR lv_pm NO INTERVALS.
+SELECT-OPTIONS : s_curr FOR lv_curr NO INTERVALS MODIF ID CUR.
+PARAMETERS : s_cur AS CHECKBOX USER-COMMAND flake.
+
+INITIALIZATION.
+  s_odate-sign = 'I'.
+  s_odate-option = 'BT'.
+  s_odate-low = sy-datum - 100.
+  s_odate-high = sy-datum.
+  APPEND s_odate.
+
+AT SELECTION-SCREEN OUTPUT.
+
+IF s_cur = ' '.
+ LOOP AT SCREEN.
+ IF screen-group1 = 'CUR'.
+   screen-active = 0.
+  MODIFY SCREEN.
+  ENDIF.
+  ENDLOOP.
+  ENDIF.
+
+  IF s_cur = 'X'.
+ LOOP AT SCREEN.
+ IF screen-group1 = 'CUR'.
+   screen-active = 1.
+  MODIFY SCREEN.
+  ENDIF.
+  ENDLOOP.
+  ENDIF.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_curr-low.
+lw-cur = 'I'.
+  lw-desc = text-100.
+  APPEND lw TO lt.
+  CLEAR lw.
+
+  lw-cur = 'D'.
+  lw-desc = text-101.
+  APPEND lw TO lt.
+  CLEAR lw.
+
+  lw-cur = 'E'.
+  lw-desc = text-102.
+  APPEND lw TO lt.
+  CLEAR lw.
+
+CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+  EXPORTING
+*   DDIC_STRUCTURE         = ' '
+    retfield               = 'CUR'
+*   PVALKEY                = ' '
+    DYNPPROG               = sy-repid
+   DYNPNR                 = sy-dynnr
+   DYNPROFIELD            = 's_curr-low'
+*   STEPL                  = 0
+*   WINDOW_TITLE           =
+*   VALUE                  = ' '
+   VALUE_ORG              = 'S'
+*   MULTIPLE_CHOICE        = ' '
+*   DISPLAY                = ' '
+*   CALLBACK_PROGRAM       = ' '
+*   CALLBACK_FORM          = ' '
+*   CALLBACK_METHOD        =
+*   MARK_TAB               =
+* IMPORTING
+*   USER_RESET             =
+  tables
+    value_tab              = lt
+*   FIELD_TAB              =
+*   RETURN_TAB             =
+*   DYNPFLD_MAPPING        =
+ EXCEPTIONS
+   PARAMETER_ERROR        = 1
+   NO_VALUES_FOUND        = 2
+   OTHERS                 = 3
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+*AT SELECTION-SCREEN ON HELP-REQUEST FOR s_cur.
+*  CALL FUNCTION 'HELP_OBJECT_SHOW'
+*    EXPORTING
+*      dokclass                            =
+**     DOKLANGU                            = SY-LANGU
+*      dokname                             =
+**     DOKTITLE                            = ' '
+**     CALLED_BY_PROGRAM                   = ' '
+**     CALLED_BY_DYNP                      = ' '
+**     CALLED_FOR_TAB                      = ' '
+**     CALLED_FOR_FIELD                    = ' '
+**     CALLED_FOR_TAB_FLD_BTCH_INPUT       = ' '
+**     MSG_VAR_1                           = ' '
+**     MSG_VAR_2                           = ' '
+**     MSG_VAR_3                           = ' '
+**     MSG_VAR_4                           = ' '
+**     CALLED_BY_CUAPROG                   = ' '
+**     CALLED_BY_CUASTAT                   =
+**     SHORT_TEXT                          = ' '
+**     CLASSIC_SAPSCRIPT                   = ' '
+**     MES_PROGRAM_NAME                    = ' '
+**     MES_INCLUDE_NAME                    = ' '
+**     MES_LINE_NUMBER                     =
+**     MES_EXCEPTION                       = ' '
+**   TABLES
+**     LINKS                               =
+**   EXCEPTIONS
+**     OBJECT_NOT_FOUND                    = 1
+**     SAPSCRIPT_ERROR                     = 2
+**     OTHERS                              = 3
+*            .
+*  IF sy-subrc <> 0.
+** Implement suitable error handling here
+*  ENDIF.
+
+
+
+AT SELECTION-SCREEN.
+  IF s_pm IS NOT INITIAL.
+    IF s_pm-low <> 'C' AND s_pm-low <> 'D' AND s_pm-low <> 'N'.
+      MESSAGE e001(zmessge_1).
+    ENDIF.
+  ENDIF.
+
+START-OF-SELECTION.
+  SELECT order_number order_odate payment_mode currency
+  FROM zorder_head18
+  INTO TABLE lt_data
+  WHERE order_odate IN s_odate
+  AND payment_mode IN s_pm
+  AND currency IN s_curr.
+
+  LOOP AT lt_data INTO wa_data.
+    WRITE : / wa_data-order_number UNDER TEXT-003,wa_data-order_odate UNDER TEXT-004,
+              wa_data-payment_mode,wa_data-currency.
+  ENDLOOP.
+
+END-OF-SELECTION.
+ WRITE : TEXT-001.
+
+TOP-OF-PAGE.
+ WRITE : / TEXT-008,sy-pagno.
+ WRITE : / TEXT-003,15 TEXT-004,27 TEXT-005,41 TEXT-006.
+
+END-OF-PAGE.
+WRITE : / text-009,sy-pagno.

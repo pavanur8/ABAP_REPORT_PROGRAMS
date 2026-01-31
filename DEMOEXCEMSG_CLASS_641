@@ -1,0 +1,59 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG21_DEMOEXCEMSG_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg21_demoexcemsg_class_641.
+
+DATA lv_odate TYPE zorder_od.
+DATA lv_pm TYPE zorder_pm.
+DATA lv_ta TYPE zorder_ta.
+DATA lv_cu TYPE zorder_cu.
+DATA lv_exc TYPE REF TO zcx_order_exce_msgclas_641.
+DATA lv_msg TYPE string.
+PARAMETERS p_ono TYPE zorder_ono.
+
+START-OF-SELECTION.
+  WRITE : / lv_odate,/ lv_pm,/ lv_ta,/ lv_cu.
+
+AT SELECTION-SCREEN.
+
+  TRY.
+      IF p_ono IS INITIAL.
+        RAISE EXCEPTION TYPE zcx_order_exce_msgclas_641
+          EXPORTING
+            textid = zcx_order_exce_msgclas_641=>order_mandt
+*           previous =
+            lv_ono = p_ono.
+      ENDIF.
+    CATCH zcx_order_exce_msgclas_641 INTO lv_exc.
+      CALL METHOD lv_exc->if_message~get_text
+        RECEIVING
+          result = lv_msg.
+      MESSAGE lv_msg TYPE 'E'.
+  ENDTRY.
+
+
+
+
+  TRY.
+      SELECT SINGLE order_odate payment_mode total_amount currency
+      FROM zorder_head18
+      INTO ( lv_odate, lv_pm, lv_ta,lv_cu )
+      WHERE order_number = p_ono.
+
+      IF sy-subrc NE 0.
+        RAISE EXCEPTION TYPE zcx_order_exce_msgclas_641
+          EXPORTING
+            textid = zcx_order_exce_msgclas_641=>zcx_order_exce_msgclas_641
+*           previous =
+            lv_ono = p_ono.
+      ENDIF.
+
+    CATCH zcx_order_exce_msgclas_641 INTO lv_exc.
+
+      CALL METHOD lv_exc->if_message~get_text
+        RECEIVING
+          result = lv_msg.
+      MESSAGE lv_msg TYPE 'E'.
+  ENDTRY.

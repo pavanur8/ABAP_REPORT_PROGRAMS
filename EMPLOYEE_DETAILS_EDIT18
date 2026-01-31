@@ -1,0 +1,106 @@
+*&---------------------------------------------------------------------*
+*& Report ZEMPLOYEE_DETAILS_EDIT18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zemployee_details_edit18.
+
+DATA : lt TYPE TABLE OF Zemp_deatils18.
+DATA : lt_change TYPE STANDARD TABLE OF Zemp_deatils18.
+DATA :lt_cpli TYPE TABLE OF Zemp_deatils18.
+DATA : lw TYPE Zemp_deatils18.
+DATA : emp_id TYPE zemp_id_t.
+DATA : lt_fieldcat TYPE slis_t_fieldcat_alv.
+DATA : lw_fieldcat TYPE slis_fieldcat_alv.
+
+SELECTION-SCREEN BEGIN OF BLOCK q1 WITH FRAME TITLE TEXT-000.
+  SELECT-OPTIONS : p_emp_id  FOR emp_id  NO-EXTENSION.
+  PARAMETERS : p_dept TYPE zemp_department_t.
+SELECTION-SCREEN END OF BLOCK q1.
+
+START-OF-SELECTION.
+  SELECT empid empname empmobilenum empemailid empaddress empdepartment emplastupdate
+  FROM zemp_deatils18
+  INTO TABLE lt
+  WHERE empid IN p_emp_id.
+
+  DEFINE lwt_filedcat.
+    lw_fieldcat-col_pos = &1.
+    lw_fieldcat-fieldname = &2.
+    lw_fieldcat-seltext_l = &3.
+    APPEND lw_fieldcat TO lt_fieldcat.
+    CLEAR lw_fieldcat.
+  END-OF-DEFINITION.
+
+  lwt_filedcat 1 'EMPID' TEXT-001.
+  lwt_filedcat 2 'EMPNAME' TEXT-002.
+
+  lw_fieldcat-col_pos = 3.
+  lw_fieldcat-fieldname = 'EMPMOBILENUM'.
+  lw_fieldcat-seltext_l = TEXT-003.
+  lw_fieldcat-edit = 'X'.
+  APPEND lw_fieldcat TO lt_fieldcat.
+  CLEAR lw_fieldcat.
+
+  lw_fieldcat-col_pos = 4.
+  lw_fieldcat-fieldname =  'EMPEMAILID'.
+  lw_fieldcat-seltext_l = TEXT-004.
+  lw_fieldcat-edit = 'X'.
+  APPEND lw_fieldcat TO lt_fieldcat.
+  CLEAR lw_fieldcat.
+
+  lwt_filedcat 5 'EMPADDRESS' TEXT-005 .
+
+  lw_fieldcat-col_pos = 6.
+  lw_fieldcat-fieldname =  'EMPDEPARTMENT'.
+  lw_fieldcat-seltext_l = TEXT-006.
+  lw_fieldcat-edit = 'X'.
+  APPEND lw_fieldcat TO lt_fieldcat.
+  CLEAR lw_fieldcat.
+
+  lwt_filedcat 7 'EMPLASTUPDATE' TEXT-007.
+
+
+  lt_cpli[] = lt[].
+  SORT lt BY empid.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program      = sy-repid
+      i_callback_user_command = 'US_COMM'
+      it_fieldcat             = lt_fieldcat
+    TABLES
+      t_outtab                = lt
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+  IF sy-subrc <> 0.
+
+  ENDIF.
+
+FORM f_save_data.
+  DATA : wa_spli TYPE Zemp_deatils18.
+  DATA : wa_splity TYPE Zemp_deatils18.
+
+  CLEAR lt_change.
+  LOOP AT lt INTO lw.
+    READ TABLE lt_cpli INTO wa_spli INDEX sy-tabix.
+    IF wa_spli NE lw.
+      APPEND lw TO lt_change.
+      MOVE-CORRESPONDING lw TO wa_splity.
+
+      MODIFY Zemp_deatils18 FROM wa_splity.
+    ENDIF.
+    CLEAR wa_spli.
+  ENDLOOP.
+
+
+ENDFORM.
+
+FORM us_comm  USING r_ucomm LIKE sy-ucomm
+                                  rs_selfield TYPE slis_selfield.
+  READ TABLE lt INTO lw INDEX rs_selfield-tabindex.
+  IF r_ucomm = '&DATA_SAVE' .
+    UPDATE Zemp_deatils18 FROM lw.
+  ENDIF.
+ENDFORM.

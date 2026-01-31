@@ -1,0 +1,47 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERACTIVE_REPORT_USER18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zinteractive_report_user18.
+
+TYPES : BEGIN OF ls,
+          order_number TYPE zorder_ono,
+          order_odate  TYPE zorder_od,
+          payment_mode TYPE zorder_pm,
+          currency     TYPE zorder_cu,
+        END OF ls.
+
+DATA : lt TYPE TABLE OF ls,
+       wa TYPE ls.
+DATA : lv_ono TYPE  zorder_ono.
+
+SELECT-OPTIONS : s_ono FOR lv_ono.
+
+START-OF-SELECTION.
+
+  SELECT order_number order_odate payment_mode currency
+  FROM zorder_head18
+  INTO TABLE lt
+  WHERE  order_number IN s_ono.
+
+  LOOP AT lt INTO wa.
+    WRITE : / wa-order_number,wa-order_odate,wa-payment_mode,wa-currency.
+  ENDLOOP.
+
+SET PF-STATUS 'FUNCTION'.
+
+AT USER-COMMAND.
+IF sy-ucomm = 'ASCENDING'.
+SORT lt BY order_number.
+LOOP AT lt INTO wa.
+  WRITE : / wa-order_number,wa-order_odate,wa-payment_mode,wa-currency.
+ENDLOOP.
+ENDIF.
+
+IF sy-ucomm = 'DECENDING'.
+SORT lt BY order_number DESCENDING.
+LOOP AT lt INTO wa.
+WRITE : / wa-order_number,wa-order_odate,wa-payment_mode,wa-currency.
+ENDLOOP.
+ENDIF.

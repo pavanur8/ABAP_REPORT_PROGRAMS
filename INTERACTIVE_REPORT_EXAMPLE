@@ -1,0 +1,179 @@
+*&---------------------------------------------------------------------*
+*& Report Z_INTERACTIVE_REPORT_EXAMPLE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+*REPORT Z_INTERACTIVE_REPORT_EXAMPLE.
+*&---------------------------------------------------------------------*
+*& Report Z_INTERACTIVE_REPORT_EXAMPLE
+*&
+*&---------------------------------------------------------------------*
+*& Example interactive report with data transfer using HIDE
+*&---------------------------------------------------------------------*
+REPORT z_interactive_report_example.
+
+* Tables declaration
+TABLES: kna1, vbak, vbap.
+
+* Select options for customer number input
+SELECT-OPTIONS: s_cust FOR kna1-kunnr.
+
+* Initialization: Set default range
+INITIALIZATION.
+  s_cust-low = '01'.
+  s_cust-high = '4000'.
+  s_cust-sign = 'I'.
+  s_cust-option = 'BT'.
+  APPEND s_cust.
+
+* Selection screen validation
+AT SELECTION-SCREEN ON s_cust.
+  LOOP AT SCREEN.
+    IF s_cust-low < 1 OR s_cust-high > 5000.
+      MESSAGE e001(00) WITH 'Customer range must be between 1 and 5000'.
+    ENDIF.
+  ENDLOOP.
+
+* Basic list selection
+START-OF-SELECTION.
+  SELECT kunnr, name1, ort01, land1
+    INTO (@kna1-kunnr, @kna1-name1, @kna1-ort01, @kna1-land1)
+    FROM kna1
+    WHERE kunnr IN @s_cust.
+    WRITE: /1 sy-vline,
+            kna1-kunnr UNDER 'CUSTOMER NO.' HOTSPOT ON,
+           16 sy-vline,
+            kna1-name1 UNDER 'NAME',
+           61 sy-vline,
+            kna1-ort01 UNDER 'CITY',
+           86 sy-vline,
+            kna1-land1 UNDER 'COUNTRY',
+          103 sy-vline.
+    HIDE: kna1-kunnr.  " Hide customer number for transfer
+  ENDSELECT.
+  ULINE.
+
+* Secondary list access
+AT LINE-SELECTION.
+  IF sy-lsind = 1.
+    PERFORM display_sales_orders.
+  ENDIF.
+  IF sy-lsind = 2.
+    PERFORM display_items.
+  ENDIF.
+
+* Top of page for basic list
+TOP-OF-PAGE.
+  FORMAT COLOR 1.
+  WRITE: 'CUSTOMER DETAILS'.
+  FORMAT COLOR 1 OFF.
+  ULINE.
+  FORMAT COLOR 3.
+  WRITE: /1 sy-vline,
+          3 'CUSTOMER NO.',
+         16 sy-vline,
+         18 'NAME',
+         61 sy-vline,
+         63 'CITY',
+         86 sy-vline,
+         88 'COUNTRY',
+        103 sy-vline.
+  ULINE.
+  FORMAT COLOR 3 OFF.
+
+* Top of page for secondary lists
+TOP-OF-PAGE DURING LINE-SELECTION.
+* For first secondary list (sales orders)
+  IF sy-lsind = 1.
+  ULINE.
+  FORMAT COLOR 1.
+  WRITE: 'SALES ORDER DETAILS'.
+  FORMAT COLOR 1 OFF.
+  ULINE.
+  FORMAT COLOR 3.
+  WRITE: /1 sy-vline,
+          3 'CUSTOMER NO.',
+         16 sy-vline,
+         18 'SALES ORDER NO.',
+         40 sy-vline,
+         42 'DATE',
+         60 sy-vline,
+         62 'CREATOR',
+         85 sy-vline,
+         87 'DOC DATE',
+        103 sy-vline.
+  ULINE.
+  FORMAT COLOR 3 OFF.
+ENDIF.
+
+* For second secondary list (items)
+IF sy-lsind = 2.
+ULINE.
+FORMAT COLOR 1.
+WRITE: 'ITEM DETAILS'.
+FORMAT COLOR 1 OFF.
+ULINE.
+FORMAT COLOR 3.
+WRITE: /1 sy-vline,
+        3 'SALES ORDER NO.',
+       40 sy-vline,
+       42 'SALES ITEM NO.',
+       60 sy-vline,
+       62 'ORDER QUANTITY',
+      103 sy-vline.
+ULINE.
+FORMAT COLOR 3 OFF.
+ENDIF.
+
+* End of page
+END-OF-PAGE.
+  ULINE.
+  WRITE: /'USER:', sy-uname, / 'DATE:', sy-datum, 85 'END OF PAGE:', sy-pagno.
+  SKIP.
+
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_SALES_ORDERS
+*&---------------------------------------------------------------------*
+* First secondary list: Sales orders for selected customer
+*----------------------------------------------------------------------*
+FORM display_sales_orders.
+  SELECT kunnr, vbeln, erdat, ernam, audat
+    INTO (@vbak-kunnr, @vbak-vbeln, @vbak-erdat, @vbak-ernam, @vbak-audat)
+    FROM vbak
+    WHERE kunnr = @kna1-kunnr.  " Use hidden customer number
+    WRITE: /1 sy-vline,
+            vbak-kunnr UNDER 'CUSTOMER NO.' HOTSPOT ON,
+           16 sy-vline,
+            vbak-vbeln UNDER 'SALES ORDER NO.' HOTSPOT ON,
+           40 sy-vline,
+            vbak-erdat UNDER 'DATE',
+           60 sy-vline,
+            vbak-ernam UNDER 'CREATOR',
+           85 sy-vline,
+            vbak-audat UNDER 'DOC DATE',
+          103 sy-vline.
+    HIDE: vbak-vbeln.  " Hide sales order number for next level
+  ENDSELECT.
+  ULINE.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ITEMS
+*&---------------------------------------------------------------------*
+* Second secondary list: Items for selected sales order
+*----------------------------------------------------------------------*
+FORM display_items.
+  SELECT vbeln, posnr, kwmeng
+    INTO (@vbap-vbeln, @vbap-posnr, @vbap-kwmeng)
+    FROM vbap
+    WHERE vbeln = @vbak-vbeln.  " Use hidden sales order number
+    WRITE: /1 sy-vline,
+            vbap-vbeln UNDER 'SALES ORDER NO.',
+           40 sy-vline,
+            vbap-posnr UNDER 'SALES ITEM NO.',
+           60 sy-vline,
+            vbap-kwmeng UNDER 'ORDER QUANTITY',
+          103 sy-vline.
+  ENDSELECT.
+  ULINE.
+ENDFORM.

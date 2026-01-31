@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO11_ALVOOPS_COLOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_forallentries_641.
+
+SELECT *
+FROM spfli
+*WHERE countryfr = 'USA'
+INTO TABLE @DATA(itab_spfli).
+
+IF itab_spfli IS NOT INITIAL.
+  SELECT carrid,connid
+  FROM sflight
+  FOR ALL ENTRIES IN @itab_spfli
+  WHERE carrid = @itab_spfli-carrid AND connid = @itab_spfli-connid
+  INTO TABLE @DATA(itab_sflight).
+
+  IF itab_sflight IS NOT INITIAL.
+    SELECT carrid,connid
+  FROM sbook
+  FOR ALL ENTRIES IN @itab_sflight
+  WHERE carrid = @itab_sflight-carrid AND connid = @itab_sflight-connid
+  INTO TABLE @DATA(itab_sflightt).
+  ENDIF.
+ELSE.
+  WRITE :'Data Not Found'.
+ENDIF.
+
+DATA(lines) = lines( itab_sflightt ).
+
+*cl_demo_output=>display( itab_spfli ).
+*cl_demo_output=>display( name = | { lines } | data = itab_sflight ).
+cl_demo_output=>display( name = | { lines } | data = itab_sflightt ).

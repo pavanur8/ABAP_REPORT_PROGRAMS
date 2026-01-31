@@ -1,0 +1,19 @@
+*&---------------------------------------------------------------------*
+*& Report ZLOCAL_2_SINGLETON_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zlocal_2_singleton_641.
+
+CLASS lcl_single DEFINITION CREATE PRIVATE FINAL.
+  PUBLIC SECTION.
+    METHODS Calculate IMPORTING p1   TYPE i
+                                p2   TYPE i
+                      EXPORTING pout TYPE i.
+    CLASS-METHODS get_instance RETURNING VALUE(st_obj) TYPE REF TO lcl_single.
+
+ENDCLASS.
+
+CLASS lcl_single IMPLEMENTATION.
+
+ENDCLASS.

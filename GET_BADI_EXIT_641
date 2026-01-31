@@ -1,0 +1,217 @@
+*&---------------------------------------------------------------------*
+*& Report ZGET_BADI_EXIT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zget_badi_exit_641_2.
+
+TABLES: tstc, tadir, modsapt, modact, trdir, tfdir, enlfdir, sxs_attrt, tstct.
+
+PARAMETERS: p_tcode TYPE tstc-tcode,
+            p_pgmna TYPE tstc-pgmna.
+
+TYPES: BEGIN OF ty_result,
+         obj_name TYPE tadir-obj_name,
+         object   TYPE tadir-object,
+         text(60) TYPE c,
+       END OF ty_result.
+
+DATA: lt_result      TYPE STANDARD TABLE OF ty_result,
+      ls_result      TYPE ty_result,
+      lt_badi_spot   TYPE STANDARD TABLE OF badi_spot,
+      ls_badi_spot   TYPE badi_spot,
+      lv_devclass    TYPE tadir-devclass,
+      ls_tadir       TYPE tadir,
+      lv_field       TYPE c LENGTH 30,
+      lv_object_desc TYPE c LENGTH 30,
+      lv_txt         TYPE c LENGTH 60,
+      lv_cnt_smod    TYPE i,
+      lv_cnt_badi    TYPE i.
+
+DATA: ls_otr_context TYPE sotr_cntxt,
+      ls_otr_text    TYPE sotr_text,
+      ls_otr_key     TYPE sotr_key.
+DATA ls_tfdir   TYPE tfdir.
+DATA ls_enlfdir TYPE enlfdir.
+
+*---------------------------------------------------------------------*
+* START-OF-SELECTION
+*---------------------------------------------------------------------*
+START-OF-SELECTION.
+
+  " Get program from TCode or parameter
+  IF p_tcode IS NOT INITIAL.
+    SELECT SINGLE * FROM tstc INTO @DATA(ls_tstc)
+       WHERE tcode = @p_tcode.
+  ELSEIF p_pgmna IS NOT INITIAL.
+    tstc-pgmna = p_pgmna.
+  ENDIF.
+
+  IF sy-subrc <> 0.
+    FORMAT COLOR COL_NEGATIVE INTENSIFIED ON.
+    WRITE: /(105) 'Transaction does not exist'.
+    RETURN.
+  ENDIF.
+
+  " Get devclass for the program
+  SELECT SINGLE * FROM tadir INTO @ls_tadir
+    WHERE pgmid   = 'R3TR'
+      AND object  = 'PROG'
+      AND obj_name = @tstc-pgmna.
+
+  lv_devclass = ls_tadir-devclass.
+
+  IF sy-subrc <> 0.
+    SELECT SINGLE * FROM trdir INTO @DATA(ls_trdir)
+       WHERE name = @ls_tstc-pgmna.
+    IF trdir-subc = 'F'.
+      SELECT SINGLE * FROM tfdir INTO @ls_tfdir
+        WHERE pname = @ls_tstc-pgmna.
+      SELECT SINGLE * FROM enlfdir INTO @ls_enlfdir
+       WHERE funcname = @ls_tfdir-funcname.
+
+      SELECT SINGLE * FROM tadir INTO @ls_tadir
+        WHERE pgmid   = 'R3TR'
+          AND object  = 'FUGR'
+          AND obj_name = @enlfdir-area.
+
+      lv_devclass = ls_tadir-devclass.
+    ENDIF.
+  ENDIF.
+
+  " Get user exits (SMOD) and BADIs (SXSD)
+  SELECT * FROM tadir INTO TABLE @DATA(lt_tadir)
+    WHERE pgmid   = 'R3TR'
+      AND object  IN ('SMOD', 'SXSD')
+      AND devclass = @lv_devclass.
+
+  " Get Kernel BADIs
+  SELECT a~* FROM badi_spot AS a
+    INNER JOIN enhspotheader AS b ON a~enhspotname = b~enhspot
+    INNER JOIN tadir AS c         ON a~enhspotname = c~obj_name
+    INTO CORRESPONDING FIELDS OF TABLE @lt_badi_spot
+    WHERE c~pgmid   = 'R3TR'
+      AND c~object  = 'ENHS'
+      AND c~devclass = @lv_devclass.
+
+  LOOP AT lt_badi_spot INTO ls_badi_spot.
+    ls_result-obj_name = ls_badi_spot-badi_name.
+    ls_result-object   = 'ENHS'.
+    APPEND ls_result TO lt_result.
+  ENDLOOP.
+
+  LOOP AT lt_tadir INTO ls_tadir.
+    ls_result-obj_name = ls_tadir-obj_name.
+    ls_result-object   = ls_tadir-object.
+    APPEND ls_result TO lt_result.
+  ENDLOOP.
+
+*---------------------------------------------------------------------*
+* Output
+*---------------------------------------------------------------------*
+  SELECT SINGLE * FROM tstct INTO @DATA(ls_tstct)
+        WHERE sprsl = @sy-langu
+          AND tcode = @p_tcode.
+
+  FORMAT COLOR COL_POSITIVE INTENSIFIED OFF.
+  WRITE: /(19) 'Transaction Code – ', 20(20) p_tcode, 45(50) tstct-ttext.
+  SKIP.
+
+  IF lt_result IS INITIAL.
+    FORMAT COLOR COL_NEGATIVE INTENSIFIED ON.
+    WRITE: /(105) 'No userexits or BADIs exist'.
+    RETURN.
+  ENDIF.
+
+  WRITE: /(105) sy-uline.
+  FORMAT COLOR COL_HEADING INTENSIFIED ON.
+
+  SORT lt_result BY object.
+
+  FORMAT COLOR 2 INTENSIFIED ON.
+  WRITE: / 'Click ON the USER EXIT or BADI to view/edit'.
+
+  LOOP AT lt_result INTO ls_result.
+    AT FIRST.
+      FORMAT COLOR COL_HEADING INTENSIFIED ON.
+      WRITE:/1 sy-vline, 2 'Enhancement/ Business Add-in',
+             41 sy-vline , 42 'Description', 105 sy-vline.
+      WRITE: /(105) sy-uline.
+    ENDAT.
+
+    CLEAR lv_txt.
+    CASE ls_result-object.
+      WHEN 'SMOD'.
+        lv_cnt_smod += 1.
+        SELECT SINGLE modtext INTO @lv_txt
+          FROM modsapt
+          WHERE sprsl = @sy-langu
+            AND name  = @ls_result-obj_name.
+        lv_object_desc = 'Enhancement'.
+      WHEN 'SXSD'.
+        lv_cnt_badi += 1.
+        SELECT SINGLE text INTO @lv_txt
+          FROM sxs_attrt
+          WHERE sprsl = @sy-langu
+            AND exit_name = @ls_result-obj_name.
+        lv_object_desc = 'Business Add-in'.
+      WHEN 'ENHS'.
+        lv_cnt_badi += 1.
+        lv_object_desc = 'Kernel Business Add-in'.
+        READ TABLE lt_badi_spot INTO ls_badi_spot
+             WITH KEY badi_name = ls_result-obj_name.
+        IF sy-subrc = 0.
+          ls_otr_key-concept = ls_badi_spot-shorttext_obj.
+          CALL FUNCTION 'SOTR_READ_TEXT_WITH_KEY'
+            EXPORTING
+              langu            = sy-langu
+              context          = ls_otr_context
+              sotr_key         = ls_otr_key
+            IMPORTING
+              entry            = ls_otr_text
+            EXCEPTIONS
+              no_entry_found   = 1
+              language_missing = 2
+              OTHERS           = 3.
+          IF sy-subrc = 0.
+            lv_txt = ls_otr_text-text.
+          ENDIF.
+        ENDIF.
+    ENDCASE.
+
+    WRITE:/1 sy-vline,
+           2 ls_result-obj_name HOTSPOT ON,
+           41 sy-vline , 42 lv_txt, 105 sy-vline.
+
+    AT END OF object.
+      WRITE: /(105) sy-uline.
+    ENDAT.
+  ENDLOOP.
+
+  WRITE: /(105) sy-uline.
+  SKIP.
+  FORMAT COLOR COL_TOTAL INTENSIFIED ON.
+  WRITE:/ 'No.of Exits:' , lv_cnt_smod.
+  WRITE:/ 'No.of BADis:' , lv_cnt_badi.
+
+*---------------------------------------------------------------------*
+* AT LINE-SELECTION – navigation
+*---------------------------------------------------------------------*
+AT LINE-SELECTION.
+  GET CURSOR FIELD lv_field.
+  CHECK lv_field CP 'LS_RESULT*'.
+
+  READ TABLE lt_result INTO ls_result
+    WITH KEY obj_name = sy-lisel+1(30).
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  CASE ls_result-object.
+    WHEN 'SMOD'.
+      SET PARAMETER ID 'MON' FIELD sy-lisel+1(10).
+      CALL TRANSACTION 'SMOD' AND SKIP FIRST SCREEN.
+    WHEN 'SXSD' OR 'ENHS'.
+      SET PARAMETER ID 'EXN' FIELD sy-lisel+1(30).
+      CALL TRANSACTION 'SE18' AND SKIP FIRST SCREEN.
+  ENDCASE.

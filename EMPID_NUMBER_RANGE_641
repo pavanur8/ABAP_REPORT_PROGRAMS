@@ -1,0 +1,42 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_EMPID_NUMBER_RANGE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_empid_number_range_641.
+
+DATA wa TYPE zemployeeid641.
+DATA lv_id TYPE i.
+
+PARAMETERS pname TYPE zemp_name_t OBLIGATORY.
+PARAMETERS pdep TYPE zemp_department_t OBLIGATORY.
+PARAMETERS paddress TYPE zemp_address_t OBLIGATORY.
+
+CALL FUNCTION 'NUMBER_GET_NEXT'
+  EXPORTING
+    nr_range_nr             = '01'
+    object                  = 'ZEMID_641'
+  IMPORTING
+    number                  = lv_id
+  EXCEPTIONS
+    interval_not_found      = 1
+    number_range_not_intern = 2
+    object_not_found        = 3
+    quantity_is_0           = 4
+    quantity_is_not_1       = 5
+    interval_overflow       = 6
+    buffer_overflow         = 7
+    OTHERS                  = 8.
+IF sy-subrc <> 0.
+  RETURN.
+ENDIF.
+
+wa-empid = lv_id.
+wa-empname = pname.
+wa-empdepartment = pdep.
+wa-empaddress = paddress.
+
+INSERT zemployeeid641 FROM wa.
+IF sy-subrc = 0.
+  MESSAGE s006(zmessge_1) WITH wa-empid.
+ENDIF.

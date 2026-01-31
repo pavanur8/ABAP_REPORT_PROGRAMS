@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG3_FILTER_BADI_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg3_filter_badi2_641.
+
+PARAMETERS p_cur TYPE zorder_cu.
+
+DATA lo_badi TYPE REF TO ztest_kernal_badi_fileter.
+
+GET BADI lo_badi FILTERS curr	= p_cur.
+
+IF lo_badi IS BOUND.
+  CALL BADI lo_badi->get_data
+    EXPORTING
+      pcurrency = p_cur.
+ELSE.
+  WRITE 'No impimentation found'.
+ENDIF.

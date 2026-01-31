@@ -1,0 +1,277 @@
+*&---------------------------------------------------------------------*
+*& Report ZDBOPEN_PERSISTENCE_CLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdboperations_class_641.
+
+DATA lo_object TYPE REF TO zcl_oreder_header_641.
+DATA lo_agent TYPE REF TO zca_oreder_header_641.
+DATA lv_odate TYPE zorder_od.
+DATA lv_pm TYPE zorder_pm.
+DATA lv_ta TYPE zorder_ta.
+DATA lv_cu TYPE zorder_cu.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS p_ono TYPE zorder_ono OBLIGATORY.
+  PARAMETERS p_odate TYPE zorder_od.
+  PARAMETERS p_pm TYPE zorder_pm.
+  PARAMETERS p_ta TYPE zorder_ta.
+  PARAMETERS p_cu TYPE zorder_cu.
+SELECTION-SCREEN END OF BLOCK b1.
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+  PARAMETERS r1 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS r2 TYPE c RADIOBUTTON GROUP r1 DEFAULT 'X'.
+  PARAMETERS r3 TYPE c RADIOBUTTON GROUP r1.
+SELECTION-SCREEN END OF BLOCK b2.
+
+START-OF-SELECTION.
+
+  IF r1 = 'X'.
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->create_persistent
+          EXPORTING
+            i_order_number = p_ono
+          RECEIVING
+            result         = lo_object.
+      CATCH cx_os_object_existing.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_order_odate
+          EXPORTING
+            i_order_odate = p_odate.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_payment_mode
+          EXPORTING
+            i_payment_mode = p_pm.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_total_amount
+          EXPORTING
+            i_total_amount = p_ta.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_currency
+          EXPORTING
+            i_currency = p_cu.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    COMMIT WORK.
+
+    MESSAGE s001(zmsg_641) WITH p_ono p_odate p_ta p_cu.
+
+  ENDIF.
+
+  IF r3 = 'X'.
+
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->delete_persistent
+          EXPORTING
+            i_order_number = p_ono.
+      CATCH cx_os_object_not_existing.
+    ENDTRY.
+
+    COMMIT WORK.
+
+    MESSAGE s003(zmsg_641) WITH p_ono.
+
+  ENDIF.
+
+  IF r2 = 'X'.
+
+    CLEAR : lo_object,lo_agent.
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->get_persistent
+          EXPORTING
+            i_order_number = p_ono
+          RECEIVING
+            result         = lo_object.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    TRY.
+        CALL METHOD lo_object->set_order_odate
+          EXPORTING
+            i_order_odate = p_odate.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_payment_mode
+          EXPORTING
+            i_payment_mode = p_pm.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    TRY.
+        CALL METHOD lo_object->set_total_amount
+          EXPORTING
+            i_total_amount = p_ta.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+
+    TRY.
+        CALL METHOD lo_object->set_currency
+          EXPORTING
+            i_currency = p_cu.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    COMMIT WORK.
+    MESSAGE s005(zmsg_641) WITH p_ono.
+  ENDIF.
+
+AT SELECTION-SCREEN.
+  IF r1 = 'X'.
+    CLEAR : lo_object,lo_agent.
+*    SELECT SINGLE order_number
+*    FROM zorder_hea5
+*    INTO @DATA(wa)
+*    WHERE order_number = @p_ono.
+*    IF sy-subrc = 0.
+*      MESSAGE e000(zmsg_641) WITH p_ono.
+*    ENDIF.
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->get_persistent
+          EXPORTING
+            i_order_number = p_ono
+          RECEIVING
+            result         = lo_object.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    IF lo_object IS NOT INITIAL.
+      MESSAGE e000(zmsg_641) WITH p_ono.
+    ENDIF.
+  ENDIF.
+
+  IF r3 = 'X'.
+
+    CLEAR : lo_object,lo_agent.
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->get_persistent
+          EXPORTING
+            i_order_number = p_ono
+          RECEIVING
+            result         = lo_object.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    IF lo_object IS INITIAL.
+      MESSAGE e002(zmsg_641) WITH p_ono.
+    ENDIF.
+    IF lo_object IS NOT INITIAL.
+      TRY.
+          CALL METHOD lo_object->get_order_odate
+            RECEIVING
+              result = lv_odate.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+
+      TRY.
+          CALL METHOD lo_object->get_payment_mode
+            RECEIVING
+              result = lv_pm.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+      TRY.
+          CALL METHOD lo_object->get_total_amount
+            RECEIVING
+              result = lv_ta.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+      TRY.
+          CALL METHOD lo_object->get_currency
+            RECEIVING
+              result = lv_cu.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+    ENDIF.
+  ENDIF.
+
+  IF r2 = 'X'.
+    CLEAR : lo_object,lo_agent.
+    lo_agent = zca_oreder_header_641=>agent.
+
+    TRY.
+        CALL METHOD lo_agent->get_persistent
+          EXPORTING
+            i_order_number = p_ono
+          RECEIVING
+            result         = lo_object.
+      CATCH cx_os_object_not_found.
+    ENDTRY.
+
+    IF lo_object IS INITIAL.
+      MESSAGE e004(zmsg_641) WITH p_ono.
+    ENDIF.
+
+
+    IF lo_object IS  NOT INITIAL.
+
+      TRY.
+          CALL METHOD lo_object->get_order_odate
+            RECEIVING
+              result = lv_odate.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+
+      TRY.
+          CALL METHOD lo_object->get_payment_mode
+            RECEIVING
+              result = lv_pm.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+      TRY.
+          CALL METHOD lo_object->get_total_amount
+            RECEIVING
+              result = lv_ta.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+
+      TRY.
+          CALL METHOD lo_object->get_currency
+            RECEIVING
+              result = lv_cu.
+        CATCH cx_os_object_not_found.
+      ENDTRY.
+    ENDIF.
+  ENDIF.
+
+AT SELECTION-SCREEN OUTPUT.
+  IF r2 = 'X'.
+    p_odate =  lv_odate.
+    p_pm   =   lv_pm.
+    p_ta   =   lv_ta.
+    p_cu = lv_cu.
+  ENDIF.

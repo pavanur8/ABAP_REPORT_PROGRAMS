@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG11_ME_KEYWORD_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg11_me_keyword_641.
+
+CLASS cl DEFINITION.
+  PUBLIC SECTION.
+    DATA var TYPE n VALUE 5.
+    METHODS disp.
+ENDCLASS.
+
+CLASS cl IMPLEMENTATION.
+  METHOD disp.
+    DATA var TYPE n VALUE 8.
+    WRITE : / var.
+    WRITE : / me->var.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA object TYPE REF TO cl.
+  CREATE OBJECT object.
+  object->disp( ).

@@ -1,0 +1,45 @@
+*&---------------------------------------------------------------------*
+*& Report ZINTERACTIVE_REPORT_CONTROL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zinteractive_report_control.
+
+TYPES : BEGIN OF lty,
+          payment_mode TYPE zorder_pm,
+          total_amount TYPE zorder_ta,
+        END OF lty.
+
+DATA : lt_data TYPE TABLE OF lty.
+DATA : wa_data TYPE lty.
+DATA : lv_pm TYPE zorder_pm.
+
+SELECT-OPTIONS : s_pm FOR lv_pm NO INTERVALS.
+
+SELECT payment_mode total_amount
+FROM ZORDER_HEAD18
+INTO TABLE lt_data
+WHERE payment_mode IN s_pm.
+
+LOOP AT lt_data INTO wa_data.
+
+AT FIRST.
+  WRITE : / TEXT-000.
+  WRITE : / .
+ENDAT.
+
+AT NEW payment_mode.
+  WRITE : / wa_data-payment_mode.
+ENDAT.
+
+AT END OF payment_mode.
+  SUM.
+  WRITE : wa_data-total_amount.
+  WRITE : / .
+ENDAT.
+
+AT LAST.
+  WRITE : / TEXT-001.
+ENDAT.
+
+ENDLOOP.

@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Modulpool Z_CREATE_EMPLOYEE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM z_create_employee_641.
+
+TABLES zemployeeproj641.
+
+DATA: it_data TYPE TABLE OF zemployeeproj641,
+      is_data TYPE zemployeeproj641.
+
+DATA: id       TYPE zemp_id_t,
+      FULLName TYPE zemp_name_t.
+
+INCLUDE z_create_employee_641_statuo01.
+
+INCLUDE z_create_employee_641_user_i01.
+
+INCLUDE z_create_employee_641_user_i02.
+
+INCLUDE z_create_employee_641_user_i03.
+
+*&SPWIZARD: DECLARATION OF TABLECONTROL 'ZTABLC' ITSELF
+CONTROLS: ZTABLC TYPE TABLEVIEW USING SCREEN 0300.
+
+*&SPWIZARD: OUTPUT MODULE FOR TC 'ZTABLC'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: UPDATE LINES FOR EQUIVALENT SCROLLBAR
+MODULE ZTABLC_CHANGE_TC_ATTR OUTPUT.
+  DESCRIBE TABLE IT_DATA LINES ZTABLC-lines.
+ENDMODULE.

@@ -1,0 +1,68 @@
+*&---------------------------------------------------------------------*
+*& Report ZCONSTRUCTOR_INHERIT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zconstructor_inherit_641.
+
+
+"--- Parent class ---
+CLASS lcl_parent DEFINITION.
+  PUBLIC SECTION.
+    METHODS constructor.            " Instance constructor
+ENDCLASS.
+
+CLASS lcl_parent IMPLEMENTATION.
+  METHOD constructor.
+    WRITE: / 'Parent: instance CONSTRUCTOR executed'.
+  ENDMETHOD.
+ENDCLASS.
+
+
+"--- Child class ---
+CLASS lcl_child DEFINITION INHERITING FROM lcl_parent.
+  PUBLIC SECTION.
+    METHODS constructor REDEFINITION. " # redefinition is here, in DEFINITION
+ENDCLASS.
+
+CLASS lcl_child IMPLEMENTATION.
+  METHOD constructor.
+    " Call the parent's constructor explicitly
+    super->constructor( ).
+    WRITE: / 'Child: instance CONSTRUCTOR executed'.
+  ENDMETHOD.
+ENDCLASS.
+
+
+"--- Demo ---
+
+START-OF-SELECTION.
+  DATA(lo_obj) = NEW lcl_child( ).
+
+
+
+*CLASS class1 DEFINITION.
+*  PUBLIC SECTION.
+*    METHODS constrUctor.
+*    CLASS-METHODS class_constructor1.
+*ENDCLASS.
+*
+*CLASS class1 IMPLEMENTATION.
+*
+*  METHOD class_constructor1.
+*    WRITE : / ' 222 SStatic Constructor is triggered'.
+*  ENDMETHOD.
+*  METHOD constrUctor.
+*    WRITE : / 'Insance  Constructor Triggered'.
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*CLASS clas2 DEFINITION INHERITING FROM class1.
+*  PUBLIC SECTION.
+*    METHODS constructor REDEFINITION.
+*ENDCLASS.
+*
+*CLASS clas2 IMPLEMENTATION.
+*  METHOD constrUctor.
+*  ENDMETHOD.
+*ENDCLASS.

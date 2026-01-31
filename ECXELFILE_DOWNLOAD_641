@@ -1,0 +1,94 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_ECXELFILE_DOWNLOAD_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_ecxelfile_download_641.
+
+CLASS lcl_excel_downloader DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS download_excel
+      IMPORTING it_data TYPE STANDARD TABLE.
+ENDCLASS.
+
+CLASS lcl_excel_downloader IMPLEMENTATION.
+  METHOD download_excel.
+
+    DATA:
+      lv_length       TYPE i,
+      lv_xml          TYPE xstring,
+      lv_sname        TYPE tabname,
+      lv_file         TYPE string VALUE 'c:/mydownload.xlsx',
+      lt_fieldcatalog TYPE lvc_t_fcat,
+      lt_xml_stream   TYPE xml_rawdata,
+      lr_result_data  TYPE REF TO cl_salv_bs_result_data_table.
+
+* Get the structure name with proper RTTI handling
+    TRY.
+        DATA(lo_type_descr) = cl_abap_typedescr=>describe_by_data( it_data ).
+        IF lo_type_descr->kind = cl_abap_typedescr=>kind_table.
+          DATA(lo_table_descr) = CAST cl_abap_tabledescr( lo_type_descr ).
+          DATA(lo_line_type) = lo_table_descr->get_table_line_type( ).
+          DATA(lo_struct_descr) = CAST cl_abap_structdescr( lo_line_type ).
+          lv_sname = lo_struct_descr->get_relative_name( ).
+        ELSE.
+          " Handle non-table case (e.g., raise error or default)
+          lv_sname = ''.
+        ENDIF.
+      CATCH cx_sy_move_cast_error.
+        " Handle casting failure (e.g., line type not a structure)
+        lv_sname = ''.
+    ENDTRY.
+
+* Get the column header information
+    CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+      EXPORTING
+        i_structure_name       = lv_sname
+        i_bypassing_buffer     = 'X'
+      CHANGING
+        ct_fieldcat            = lt_fieldcatalog
+      EXCEPTIONS
+        inconsistent_interface = 1
+        program_error          = 2
+        OTHERS                 = 3.
+
+    cl_salv_ex_util=>factory_result_data_table(
+      EXPORTING
+        r_data         = REF #( it_data )
+        t_fieldcatalog = lt_fieldcatalog
+      RECEIVING
+        r_result_data_table  = lr_result_data ).
+
+* Transform data to XSTRING
+    CALL METHOD cl_salv_bs_tt_util=>if_salv_bs_tt_util~transform
+      EXPORTING
+        xml_type      = if_salv_bs_xml=>c_type_xlsx
+*        xml_version   = cl_salv_bs_xml=>version_26
+        r_result_data = lr_result_data
+        xml_flavour   = if_salv_bs_c_tt=>c_tt_xml_flavour_export
+        gui_type      = if_salv_bs_xml=>c_gui_type_gui
+      IMPORTING
+        xml           = lv_xml.
+
+* Convert XSTRING to BINARY
+    CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+      EXPORTING
+        buffer        = lv_xml
+      IMPORTING
+        output_length = lv_length
+      TABLES
+        binary_tab    = lt_xml_stream.
+
+* Download Data with Binary format
+    CALL METHOD cl_gui_frontend_services=>gui_download
+      EXPORTING
+        bin_filesize = lv_length
+        filetype     = 'BIN'
+        filename     = lv_file
+      CHANGING
+        data_tab     = lt_xml_stream
+      EXCEPTIONS
+        OTHERS       = 1.
+
+  ENDMETHOD.
+ENDCLASS.

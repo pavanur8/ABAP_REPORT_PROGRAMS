@@ -1,0 +1,18 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_CONDENSE_STATEMENT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_condense_statement_641.
+
+DATA : lv_text(50) TYPE c VALUE'       Leading Spaces along with text'.
+
+WRITE : 'Text before condense:',lv_text.
+
+SKIP 2.
+CONDENSE lv_text.
+WRITE : 'Text after condense:',lv_text.
+
+SKIP 2.
+CONDENSE lv_text NO-GAPS.
+WRITE : 'Text after condense with NO GAP  :',lv_text.

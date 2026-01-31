@@ -1,0 +1,15 @@
+*&---------------------------------------------------------------------*
+*& Modulpool Z_CYCLE_EMPLOYEE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+PROGRAM z_cycle_employee_641.
+
+DATA: r1 TYPE c,
+      r2 TYPE c,
+      r3 TYPE c,
+      r4 TYPE c.
+
+INCLUDE z_cycle_employee_641_statuso01.
+
+INCLUDE z_cycle_employee_641_user_ci01.

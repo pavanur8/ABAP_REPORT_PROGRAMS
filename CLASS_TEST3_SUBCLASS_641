@@ -1,0 +1,33 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_TEST3_SUBCLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_test3_subclass_641.
+
+CLASS parent DEFINITION.
+  PUBLIC SECTION.
+    METHODS display.
+ENDCLASS.
+
+CLASS parent IMPLEMENTATION.
+  METHOD display.
+    WRITE: / 'Parent display'.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS child DEFINITION INHERITING FROM parent.
+  PUBLIC SECTION.
+    METHODS display REDEFINITION.
+ENDCLASS.
+
+CLASS child IMPLEMENTATION.
+  METHOD display.
+    WRITE: / 'Child display'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA lo_parent TYPE REF TO parent.
+  lo_parent = NEW child( ).
+  lo_parent->display( ).

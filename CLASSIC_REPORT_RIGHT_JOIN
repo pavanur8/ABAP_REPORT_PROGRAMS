@@ -1,0 +1,42 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASSIC_REPORT_RIGHT_JOIN
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZCLASSIC_REPORT_RIGHT_JOIN.
+
+TYPES : BEGIN OF ls_data,
+          order_number      TYPE zorder_ono,
+          order_odate       TYPE zorder_od,
+          payment_mode      TYPE zorder_pm,
+          total_amount      TYPE zorder_ta,
+          currency          TYPE zorder_cu,
+          order_item_number TYPE zorder_ino,
+          order_description TYPE zorder_odes,
+          item_cost         TYPE zorder_ic,
+        END OF ls_data.
+
+DATA lt TYPE TABLE OF ls_data.
+DATA lw TYPE ls_data.
+DATA lv_ono TYPE zorder_ono.
+
+SELECT-OPTIONS : s_ono FOR lv_ono.
+
+*SELECT a~order_number a~order_odate a~payment_mode a~total_amount a~currency b~order_item_number b~order_description b~item_cost
+*FROM zorder_head18 AS a RIGHT OUTER JOIN zorder_item18 AS b
+*ON a~order_number = b~order_number
+*INTO TABLE lt
+*WHERE a~order_number IN s_ono.
+
+SELECT a~order_number,a~order_odate,a~payment_mode,a~total_amount,a~currency,b~order_item_number,b~order_description,b~item_cost
+INTO CORRESPONDING FIELDS OF TABLE @lt
+FROM zorder_head18 AS a
+RIGHT OUTER JOIN zorder_item18 AS b
+ON a~order_number = b~order_number.
+
+
+
+LOOP AT lt INTO lw.
+  WRITE : / lw-order_number,lw-order_odate,lw-payment_mode,lw-total_amount,lw-currency,lw-order_item_number,
+            lw-order_description,lw-item_cost.
+ENDLOOP.

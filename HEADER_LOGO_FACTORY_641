@@ -1,0 +1,118 @@
+*&---------------------------------------------------------------------*
+*& Report ZVA_HEADER_LOGO_FACTORY_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zva_header_logo_factory_641.
+
+TABLES: zorder_hea5.
+* Declare data references
+DATA: lt_table TYPE REF TO cl_salv_table, " Reference to ALV table object
+      lv_text  TYPE string.               " Text string for header
+
+* Selection screen for Vendor Numbers
+SELECT-OPTIONS: s_veno FOR zorder_hea5-order_number.
+
+START-OF-SELECTION.
+
+  "Select data from custom vendor table based on selection
+  SELECT order_number,order_odate,payment_mode,total_amount,currency
+    INTO TABLE @DATA(lt_vendor)
+    FROM zorder_hea5
+    WHERE order_number IN @s_veno.
+
+* Proceed only if records are found
+  IF lt_vendor IS NOT INITIAL.
+
+* Create the salv (alv) object using factory METHOD
+TRY.
+ cl_salv_table=>factory(
+      IMPORTING
+        r_salv_table = lt_table
+      CHANGING
+        t_table      = lt_vendor
+    ).
+CATCH cx_salv_msg.
+
+ENDTRY.
+
+
+* Create layout grids and logo objects for header and footer customization
+    DATA(lt_layout)  = NEW cl_salv_form_layout_grid( ).
+    DATA(lt_layout1) = NEW cl_salv_form_layout_grid( ).
+    DATA(lt_logo)    = NEW cl_salv_form_layout_logo( ).
+
+* Set the header title
+    lv_text = 'PAVAN UR'.
+    lt_layout->create_header_information(
+      EXPORTING
+        row     = 3
+        column  = 1
+        text    = lv_text
+    ).
+
+* Add user name label and text
+    lt_layout->create_label(
+      EXPORTING
+        row     = 5
+        column  = 1
+        text    = 'User Name' ).
+
+    lt_layout->create_text(
+      EXPORTING
+        row     = 5
+        column  = 2
+        text    = 'PAVAN UR' ).
+
+* Add date label and current date value
+    lt_layout->create_label(
+      EXPORTING
+        row     = 3
+        column  = 1
+        text    = 'Date' ).
+
+    lt_layout->create_text(
+      EXPORTING
+        row     = 3
+        column  = 2
+        text    = sy-datum ).
+
+* Add time label and current system time
+    lt_layout->create_label(
+      EXPORTING
+        row     = 4
+        column  = 1
+        text    = 'Time' ).
+
+    lt_layout->create_text(
+      EXPORTING
+        row     = 4
+        column  = 2
+        text    = sy-uzeit ).
+
+* Add footer layout - number of records found
+    lt_layout1->create_label(
+      EXPORTING
+        row     = 2
+        column  = 1
+        text    = 'Number of records found' ).
+
+    DATA: lv_count TYPE int4.
+    DESCRIBE TABLE lt_vendor LINES lv_count.
+
+    lt_layout1->create_text(
+      EXPORTING
+        row     = 2
+        column  = 2
+        text    = lv_count
+        tooltip = lv_count ).
+
+* Set sap logo on the right of the header
+    lt_logo->set_right_logo( 'ENJOYSAP_LOGO' ).
+* Set header and footer content
+    lt_logo->set_left_content( lt_layout ).
+    lt_table->set_top_of_list( value = lt_logo ).
+    lt_table->set_end_of_list( value = lt_layout1 ).
+* Display the alv table
+    lt_table->display( ).
+  ENDIF.

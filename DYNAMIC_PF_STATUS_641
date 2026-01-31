@@ -1,0 +1,71 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_DYNAMIC_PF_STATUS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_dynamic_pf_status_641.
+TABLES vbak.
+
+TYPES : BEGIN OF lex,
+          fcode(10) TYPE c,
+        END OF lex.
+
+TYPES : BEGIN OF ls,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+        END OF ls.
+
+DATA itabex TYPE TABLE OF lex.
+DATA waex TYPE lex.
+DATA itab TYPE TABLE OF ls.
+DATA wa TYPE ls.
+
+SELECT-OPTIONS s_vbeln FOR vbak-vbeln OBLIGATORY.
+PARAMETERS r1 TYPE c RADIOBUTTON GROUP pr1.
+PARAMETERS r2 TYPE c RADIOBUTTON GROUP pr1.
+PARAMETERS r3 TYPE c RADIOBUTTON GROUP pr1.
+
+START-OF-SELECTION.
+
+  IF r1 = 'X'.
+    waex-fcode = 'TRANSFER'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+
+    waex-fcode = 'POST'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+  ENDIF.
+
+  IF r2 = 'X'.
+    waex-fcode = 'SAVE'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+
+    waex-fcode = 'POST'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+  ENDIF.
+
+  IF r3 = 'X'.
+    waex-fcode = 'SAVE'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+
+    waex-fcode = 'TRANSFER'.
+    APPEND waex TO itabex.
+    CLEAR waex.
+  ENDIF.
+
+  SET PF-STATUS 'PFS' EXCLUDING itabex.
+
+  SELECT vbeln erdat erzet ernam
+  FROM vbak
+  INTO TABLE itab
+  WHERE vbeln IN s_vbeln.
+
+  LOOP AT itab INTO wa.
+    WRITE : / wa-vbeln,wa-erdat,wa-erzet,wa-ernam.
+  ENDLOOP.

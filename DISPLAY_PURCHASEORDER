@@ -1,0 +1,174 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_DISPLAY_PURCHASEORDER
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+*TECH_54 = LT0641
+REPORT zreport_display_purchaseorder.
+
+TYPES : BEGIN OF lty_ekko,
+          ebeln TYPE ebeln,
+          aedat TYPE mmpur_erdat,
+          ernam TYPE mmpur_ernam,
+          lifnr TYPE elifn,
+          lands TYPE land1_stml,
+        END OF lty_ekko.
+
+TYPES : BEGIN OF lty_ekpo,
+          ebeln TYPE ebeln,
+          matnr TYPE matnr,
+          matkl TYPE matkl,
+          menge TYPE bstmg,
+          meins TYPE bstme,
+        END OF lty_ekpo.
+
+TYPES : BEGIN OF lty_final,
+          ebeln TYPE ebeln,
+          aedat TYPE mmpur_erdat,
+          ernam TYPE mmpur_ernam,
+          lifnr TYPE elifn,
+          lands TYPE land1_stml,
+          matnr TYPE matnr,
+          matkl TYPE matkl,
+          menge TYPE bstmg,
+          meins TYPE bstme,
+        END OF lty_final.
+
+DATA : lt_ekko TYPE TABLE OF lty_ekko.
+DATA : lwa_ekko TYPE lty_ekko.
+DATA : lt_ekpo TYPE TABLE OF lty_ekpo.
+DATA : lwa_ekpo TYPE lty_ekpo.
+DATA : d_ebeln TYPE ebeln.
+DATA : lt_final TYPE TABLE OF lty_final.
+DATA : lwa_final TYPE lty_final.
+DATA : lt_fieldcat TYPE slis_t_fieldcat_alv.
+DATA : lwa_fieldcat TYPE slis_fieldcat_alv.
+DATA: ls_log TYPE ZCUSTOM_SYSTEM.
+DATA : lpid TYPE i.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-009.
+  SELECT-OPTIONS : s_ebeln FOR d_ebeln NO-EXTENSION OBLIGATORY.
+  PARAMETERS : p_burks TYPE bukrs OBLIGATORY.
+  PARAMETERS : p_WERKS TYPE ewerk.
+  PARAMETERS : p_LGORT TYPE lgort_d.
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECT MAX( pid ) INTO lpid FROM ZCUSTOM_SYSTEM.
+ls_log-PID = lPID + 1.
+ls_log-program_name   = sy-repid.
+ls_log-executed_by = sy-uname.
+ls_log-execution_time   = sy-uzeit.
+ls_log-execution_date = sy-datum.
+
+insert ZCUSTOM_SYSTEM FROM ls_log.
+IF sy-subrc = 0.
+WRITE : 'Inserted'.
+ENDIF.
+
+SELECT  ebeln  aedat ernam lifnr lands
+FROM ekko
+INTO TABLE lt_ekko
+WHERE ebeln IN s_ebeln.
+
+IF lt_ekko IS NOT INITIAL.
+  SELECT ebeln matnr matkl menge meins
+  FROM ekpo
+  INTO TABLE lt_ekpo
+  FOR ALL ENTRIES IN lt_ekko
+  WHERE ebeln = lt_ekko-ebeln.
+ENDIF.
+
+LOOP AT lt_ekko INTO lwa_ekko.
+  LOOP AT lt_ekpo INTO lwa_ekpo WHERE ebeln = lwa_ekko-ebeln.
+    lwa_final-ebeln = lwa_ekko-ebeln.
+    lwa_final-aedat = lwa_ekko-aedat.
+    lwa_final-ernam = lwa_ekko-ernam.
+    lwa_final-lifnr = lwa_ekko-lifnr.
+    lwa_final-lands = lwa_ekko-lands.
+    lwa_final-ebeln = lwa_ekpo-ebeln.
+    lwa_final-matnr = lwa_ekpo-matnr.
+    lwa_final-matkl = lwa_ekpo-matkl.
+    lwa_final-menge = lwa_ekpo-menge.
+    lwa_final-meins = lwa_ekpo-meins.
+    APPEND lwa_final TO lt_final.
+    CLEAR : lwa_final.
+  ENDLOOP.
+ENDLOOP.
+
+lwa_fieldcat-col_pos = 1.
+lwa_fieldcat-fieldname = 'EBELN'.
+lwa_fieldcat-tabname = 'LT_EKKO'.
+lwa_fieldcat-seltext_s  = TEXT-000.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 2.
+lwa_fieldcat-fieldname = 'AEDAT'.
+lwa_fieldcat-tabname = 'LT_EKKO'.
+lwa_fieldcat-seltext_s  = TEXT-001.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 3.
+lwa_fieldcat-fieldname = 'ERNAM'.
+lwa_fieldcat-tabname = 'LT_EKKO'.
+lwa_fieldcat-seltext_s  = TEXT-002.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 4.
+lwa_fieldcat-fieldname = 'LIFNR'.
+lwa_fieldcat-tabname = 'LT_EKKO'.
+lwa_fieldcat-seltext_s  = TEXT-003.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 5.
+lwa_fieldcat-fieldname = 'LANDS'.
+lwa_fieldcat-tabname = 'LT_EKKO'.
+lwa_fieldcat-seltext_s  = TEXT-004.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 6.
+lwa_fieldcat-fieldname = 'MATNR'.
+lwa_fieldcat-tabname = 'LT_EKPO'.
+lwa_fieldcat-seltext_s  = TEXT-005.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 7.
+lwa_fieldcat-fieldname = 'MATKL'.
+lwa_fieldcat-tabname = 'LT_EKPO'.
+lwa_fieldcat-seltext_s  = TEXT-006.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 8.
+lwa_fieldcat-fieldname = 'MENGE'.
+lwa_fieldcat-tabname = 'LT_EKPO'.
+lwa_fieldcat-seltext_s  = TEXT-007.
+lwa_fieldcat-do_sum = 'X'.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+lwa_fieldcat-col_pos = 9.
+lwa_fieldcat-fieldname = 'MEINS'.
+lwa_fieldcat-tabname = 'LT_EKPO'.
+lwa_fieldcat-seltext_s  = TEXT-008.
+APPEND lwa_fieldcat TO lt_fieldcat.
+CLEAR lwa_fieldcat.
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+  EXPORTING
+    i_callback_program = sy-repid
+    it_fieldcat        = lt_fieldcat
+  TABLES
+    t_outtab           = lt_final
+  EXCEPTIONS
+    program_error      = 1
+    OTHERS             = 2.
+IF sy-subrc <> 0.
+  WRITE : TEXT-010.
+ENDIF.

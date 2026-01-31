@@ -1,0 +1,38 @@
+*&---------------------------------------------------------------------*
+*& Report ZIF_TEST3_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zif_test3_641.
+
+INTERFACE zif_parent.
+  CONSTANTS c1 TYPE i VALUE 10.
+*  DATA v1 TYPE i VALUE 200.
+*  CLASS-DATA v2 TYPE i.
+  METHODS m1.
+  CLASS-METHODS m2.
+ENDINTERFACE.
+
+INTERFACE zif_child.
+  INTERFACES zif_parent.
+ENDINTERFACE.
+
+CLASS zcl_demo DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zif_child .
+ENDCLASS.
+
+CLASS zcl_demo IMPLEMENTATION.
+  METHOD zif_parent~m1.
+    WRITE : 'This Instacne method' COLOR 4 ,zif_parent=>c1.
+  ENDMETHOD.
+
+  METHOD zif_parent~m2.
+    WRITE: / 'This is a Static Method'.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(obj) = NEW zcl_demo( ).
+  obj->zif_parent~m1( ).
+  zcl_demo=>zif_parent~m2( ).

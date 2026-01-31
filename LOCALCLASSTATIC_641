@@ -1,0 +1,61 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO1_LOCALCLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro2_localclasstatic_641.
+
+DATA lv_count TYPE land1.
+DATA lv_city TYPE s_from_cit.
+DATA lv_airport TYPE s_fromairp.
+DATA lv_cityto TYPE s_to_city.
+DATA lv_airpto TYPE s_toairp.
+DATA lv_dept TYPE s_dep_time.
+DATA lv_arr  TYPE s_arr_time.
+DATA lv_dist TYPE s_distance.
+
+PARAMETERS p_carrid TYPE s_carr_id.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS display IMPORTING  pcarrid    TYPE s_carr_id
+                          EXPORTING  pCOUNTRYFR TYPE land1
+                                     pCITYFROM  TYPE s_from_cit
+                                     pAIRPFROM  TYPE s_fromairp
+                                     pCITYTO    TYPE s_to_city
+                                     pAIRPTO    TYPE s_toairp
+                                     pDEPTIME   TYPE s_dep_time
+                                     pARRTIME   TYPE s_arr_time
+                                     pDISTANCE  TYPE s_distance
+                          EXCEPTIONS wrong_input.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD display.
+    SELECT SINGLE countryfr cityfrom airpfrom cityto airpto deptime arrtime distance
+    FROM spfli
+    INTO ( pCOUNTRYFR, pCITYFROM, pAIRPFROM, pCITYTO, pAIRPTO,pDEPTIME,pARRTIME,pDISTANCE )
+    WHERE carrid =   pcarrid.
+    IF sy-subrc <> 0.
+      RAISE wrong_input.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  class1=>display( EXPORTING pcarrid = p_carrid
+                      IMPORTING pCOUNTRYFR = lv_count
+                                pCITYFROM = lv_city
+                                pAIRPFROM = lv_airport
+                                pCITYTO = lv_cityto
+                                pAIRPTO = lv_airpto
+                                pDEPTIME = lv_dept
+                                pARRTIME = lv_arr
+                                pDISTANCE = lv_dist
+                      EXCEPTIONS wrong_input = 1 ).
+  IF sy-subrc = 0.
+    WRITE :/ lv_count,lv_city,lv_airport,lv_cityto,lv_airpto,lv_dept,lv_arr,lv_dist.
+  ELSE.
+    WRITE : 'Enter Correct Input'.
+  ENDIF.

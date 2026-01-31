@@ -1,0 +1,51 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_DELETE_DUPLICATE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_delete_duplicate_641.
+
+DATA : lv_string       TYPE string,
+       lv_string2      TYPE string,
+       lv_string_final TYPE string.
+
+TYPES: BEGIN OF ty_data,
+         auth TYPE c,
+       END OF ty_data.
+
+DATA: ls_user  TYPE ty_data,
+      ls_user2 TYPE ty_data,
+      lt_user2 TYPE TABLE OF ty_data,
+      lt_user  TYPE TABLE OF ty_data.
+
+lv_string = 'a,b,c,a'.
+lv_string2 = 'd,b,c,a'.
+
+SPLIT lv_string AT ',' INTO TABLE lt_user.
+SPLIT lv_string2 AT ',' INTO TABLE lt_user2.
+
+LOOP AT lt_user2 ASSIGNING FIELD-SYMBOL(<fs_field>).
+
+  INSERT  <fs_field> INTO TABLE lt_user.
+
+ENDLOOP.
+
+SORT lt_user BY auth.
+
+DELETE ADJACENT DUPLICATES FROM lt_user COMPARING auth.
+
+IF sy-subrc = 0.
+
+  LOOP AT lt_user ASSIGNING FIELD-SYMBOL(<fs_user_table>).
+
+    IF lv_string_final IS INITIAL.
+      lv_string_final = <fs_user_table>-auth.
+    ELSE.
+      CONCATENATE  lv_string_final <fs_user_table>-auth INTO lv_string_final SEPARATED BY ','.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDIF.
+WRITE lv_string_final.
+*WRITE: / 'Final String:' , lv_string_final.#

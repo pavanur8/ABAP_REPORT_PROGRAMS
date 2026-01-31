@@ -1,0 +1,12 @@
+*&---------------------------------------------------------------------*
+*& Report zconsume_cds_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zconsume_cds_641.
+
+SELECT * FROM zddl_view641 INTO TABLE @DATA(itab) up to 20 rows.
+SELECT * FROM ZCDS_VIEW_MARA641 INTO TABLE @DATA(itab_mara) up to 20 rows.
+
+cl_demo_output=>display( itab ).
+cl_demo_output=>display( itab_mara ).

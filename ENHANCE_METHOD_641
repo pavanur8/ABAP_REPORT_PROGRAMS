@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_ENHANCE_METHOD_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_enhance_method_641.
+
+DATA lo_obj TYPE REF TO zcl_enhance_methods1_641.
+DATA d_kunnr TYPE kunnr.
+DATA d_name1 TYPE name1.
+
+PARAMETERS p_kunnr TYPE kunnr.
+PARAMETERS p_ccode  TYPE land1.
+
+d_kunnr = p_kunnr.
+
+CREATE OBJECT lo_obj.
+
+CALL METHOD lo_obj->zmethod_kna1
+  EXPORTING
+    pccode1 = p_ccode
+  IMPORTING
+    pname1  = d_name1
+  CHANGING
+    pkunnr  = d_kunnr.
+
+WRITE: / 'Customer' COLOR 5 INTENSIFIED.
+SKIP.
+WRITE: / d_name1 COLOR 5 INVERSE.

@@ -1,0 +1,56 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO_DYNAMIC_TEXT_PFSTAT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo_dynamic_text_pfstat_641.
+
+TABLES vbak.
+
+
+TYPES : BEGIN OF ls,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+        END OF ls.
+
+DATA itab TYPE TABLE OF ls.
+DATA wa TYPE ls.
+DATA wa_text TYPE smp_dyntxt.
+
+SELECT-OPTIONS s_vbeln FOR vbak-vbeln OBLIGATORY.
+PARAMETERS r1 TYPE c RADIOBUTTON GROUP pr1.
+PARAMETERS r2 TYPE c RADIOBUTTON GROUP pr1.
+PARAMETERS r3 TYPE c RADIOBUTTON GROUP pr1.
+
+START-OF-SELECTION.
+
+  IF r1 = 'X'.
+    wa_text-text = 'To Save The Data'.
+    wa_text-icon_id = '@2L@'.
+    wa_text-icon_text = 'SAVE'.
+  ENDIF.
+
+  IF r2 = 'X'.
+    wa_text-text = 'To Transfer The Data'.
+    wa_text-icon_id = '@7V@'.
+    wa_text-icon_text = 'TRANSFER'.
+  ENDIF.
+
+  IF r3 = 'X'.
+    wa_text-text = 'To Post The Data'.
+    wa_text-icon_id = '@7U@'.
+    wa_text-icon_text = 'POST'.
+  ENDIF.
+
+  SET PF-STATUS 'PFSTATS'.
+
+  SELECT vbeln erdat erzet ernam
+  FROM vbak
+  INTO TABLE itab
+  WHERE vbeln IN s_vbeln.
+
+  LOOP AT itab INTO wa.
+    WRITE : / wa-vbeln,wa-erdat,wa-erzet,wa-ernam.
+  ENDLOOP.

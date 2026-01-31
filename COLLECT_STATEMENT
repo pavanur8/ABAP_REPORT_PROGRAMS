@@ -1,0 +1,69 @@
+*&---------------------------------------------------------------------*
+*& Report ZCOLLECT_PRO
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcollect_pro.
+
+*Creating the structure.
+TYPES : BEGIN OF str_collect,
+          cname(10) TYPE c,
+          dept(15)  TYPE c,
+          amount    TYPE zorder_amount1,
+        END OF str_collect.
+
+*Initializing the data tyoes.
+DATA lt_data TYPE TABLE OF str_collect.
+DATA lwa_data TYPE str_collect.
+DATA lt_temp_data TYPE TABLE OF str_collect.
+
+*Adding tha values to the internal table.
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'HR'.
+lwa_data-amount = '10000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'ADMIN'.
+lwa_data-amount = '15000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'HR'.
+lwa_data-amount = '20000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'TRAINING'.
+lwa_data-amount = '28000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'TRAINING'.
+lwa_data-amount = '21000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+
+lwa_data-cname = 'ABC'.
+lwa_data-dept = 'ADMIN'.
+lwa_data-amount = '30000.00'.
+APPEND lwa_data TO lt_data.
+CLEAR : lwa_data.
+
+*It is the Collect operation.
+LOOP AT lt_data INTO lwa_data.
+  COLLECT lwa_data INTO lt_temp_data.
+ENDLOOP.
+
+*Displaying the data content.
+LOOP AT lt_temp_data INTO lwa_data.
+  WRITE : / sy-vline,lwa_data-cname,sy-vline,lwa_data-dept,sy-vline,lwa_data-amount,sy-vline.
+ENDLOOP.
+
+WRITE sy-uline.

@@ -1,0 +1,79 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG19_INTERFACE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg19_interface_641.
+
+* Interface Definition
+INTERFACE interfacenew.
+
+* Declaring interface variables.
+  DATA: a TYPE i, b TYPE i.
+
+* Declaring interface method.
+  METHODS methodnew.
+ENDINTERFACE.
+
+* classnew1 Definition
+CLASS classnew1 DEFINITION.
+  PUBLIC SECTION.
+* Interface definition in classnew1
+    interfaces interfacenew.
+ENDCLASS.
+
+* classnew1 implementation
+CLASS classnew1 IMPLEMENTATION.
+* methodnew implementation using interface in classnew1
+method interfacenew~methodnew.
+DATA result TYPE i.
+result = interfacenew~a + interfacenew~b.
+WRITE:/ 'Addition Result is: ', result.
+ENDMETHOD.
+ENDCLASS.
+
+* classnew2 Definition
+CLASS classnew2 DEFINITION.
+PUBLIC SECTION.
+* Interface definition in classnew2
+  interfaces interfacenew.
+ENDCLASS.
+
+* classnew2 implementation
+CLASS classnew2 IMPLEMENTATION.
+* methodnew implementation using interface in classnew2
+method interfacenew~methodnew.
+DATA result TYPE i.
+result = interfacenew~a * interfacenew~b.
+WRITE:/ 'Multiplication Result is: ', result.
+ENDMETHOD.
+ENDCLASS.
+
+* Creating class object
+START-OF-SELECTION.
+
+* Declaring and creating object for classnew1
+  DATA: childobj1 TYPE REF TO classnew1.
+  CREATE OBJECT childobj1.
+
+* Assigning value to interface variables of classnew1
+  childobj1->interfacenew~a = 10.
+  childobj1->interfacenew~b = 20.
+  WRITE / 'Accessing methodnew through childclass1 object'.
+
+* Calling methodnew using classnew1 object
+  CALL METHOD: childobj1->interfacenew~methodnew.
+  ULINE.
+
+* Declaring and creating object for classnew2
+  DATA: childobj2 TYPE REF TO classnew2.
+  CREATE OBJECT childobj2.
+
+* Assigning value to interface variables of classnew2
+  childobj2->interfacenew~a = 10.
+  childobj2->interfacenew~b = 20.
+  WRITE / 'Accessing methodnew through childclass2 object'.
+
+* Calling methodnew using classnew2 object
+  CALL METHOD: childobj2->interfacenew~methodnew.
+  ULINE.

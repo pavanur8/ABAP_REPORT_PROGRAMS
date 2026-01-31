@@ -1,0 +1,265 @@
+*& TITLE: SALV report using CL_SALV_TABLE class
+*&-------------------------------*
+*& Report  ZALV_COLO
+*&-------------------------------*
+*& Output: Simple ALV report using CL_SALV_TABLE class which also implements the following:
+*&
+*& Set whole row colour
+*& Set column colour
+*& Set individual field colour
+*& Hide a specific column
+*& Update column header text
+*& Set column width
+*& Set report title/header
+*&-------------------------------*
+REPORT zalv_coloring_cell_row641.
+
+TYPES: BEGIN OF t_report.
+         INCLUDE STRUCTURE sflight.
+TYPES:   row_colo TYPE lvc_t_scol.
+TYPES: END OF t_report.
+
+DATA: it_report TYPE TABLE OF t_report.
+
+DATA: lt_scol TYPE lvc_t_scol,
+      wa_scol TYPE lvc_s_scol.
+
+DATA salv_table TYPE REF TO cl_salv_table.          "The ALV table
+DATA salv_columns TYPE REF TO cl_salv_columns_table.
+
+
+
+FIELD-SYMBOLS: <report> TYPE t_report .
+
+************************************************************************
+START-OF-SELECTION.
+  PERFORM setup_alv.         "setup SALV report
+  PERFORM data_retrieval.    " get data from SAP tables
+  PERFORM row_colo_settings. "Row colour settings
+
+END-OF-SELECTION.
+  salv_table->display( ).
+************************************************************************
+
+FORM data_retrieval.
+  SELECT * FROM sflight UP TO 20 ROWS INTO CORRESPONDING FIELDS OF TABLE it_report.
+ENDFORM.
+
+FORM setup_alv.
+  DATA: err_message TYPE REF TO cx_salv_msg.
+
+  TRY.
+      cl_salv_table=>factory(
+      IMPORTING
+        r_salv_table = salv_table
+      CHANGING
+        t_table      = it_report ).
+
+      salv_columns = salv_table->get_columns( ).
+
+*     set_optimize optimises the column width and will remove any width specification
+*     setup within column settings i.e. single_column->set_output_length
+      salv_columns->set_optimize( 'X' ). "optimise colums of SALV grid
+
+*     Assign field of SALV internal tablee that will store colour
+*     setting for each row
+      salv_columns->set_color_column( 'ROW_COLO' )."set line colour of SALV report
+
+      PERFORM layout_settings.
+
+*     Setup each column including header text, visibility of a column
+      PERFORM column_settings.
+
+*     Setup SALV toolbar
+      PERFORM functions_settings.
+
+*     Setup display settings such as report title, zebra-striped pattern etc
+      PERFORM display_settings.
+
+    CATCH cx_salv_msg INTO err_message.
+*   Add error processing
+  ENDTRY.
+ENDFORM.
+
+
+FORM layout_settings.
+  DATA: layout TYPE REF TO cl_salv_layout.
+  DATA: layout_key TYPE salv_s_layout_key.
+
+  layout = salv_table->get_layout( ).
+
+  layout_key-report = sy-repid.
+  layout->set_key( layout_key ).
+
+  layout->set_save_restriction( if_salv_c_layout=>restrict_none ).
+ENDFORM.
+
+
+
+*&---------------------------------------------------------------------*
+*& FORM column_settings.
+*&---------------------------------------------------------------------*
+*  The ALV report will retrieve what it can from the associated
+*  internal table to build the fieldcatalog but you can overwrite them
+*  or add additional ones here i.e. column colour, hide a column,
+*  change header text, etc
+*&---------------------------------------------------------------------*
+FORM column_settings.
+  DATA: err_notfound TYPE REF TO cx_salv_not_found.
+  DATA: wa_scolo TYPE lvc_s_colo.
+  DATA column TYPE REF TO cl_salv_column.           "Single column (header txt, hide column)
+  DATA column_tab TYPE REF TO cl_salv_column_table. "table of column properties (col colour)
+
+  TRY.
+      column = salv_columns->get_column( 'CARRID' ).
+      column->set_short_text( 'Carrier ID' ).  "Note: if text too long it will cause syntax error
+      column->set_medium_text( 'Carrier ID' ).
+      column->set_long_text( 'Carrier ID' ).
+      column->set_output_length( '15' ). "Set specific width
+      column->set_visible( if_salv_c_bool_sap=>true ).   "not reuired as true is the default
+      "but just demonstrate the functionality
+
+      column = salv_columns->get_column( 'SEATSOCC_F' ).
+      column->set_visible( if_salv_c_bool_sap=>false ). " hide a specifi SALV column
+
+      column_tab ?= salv_columns->get_column( 'PAYMENTSUM' ).
+      wa_scolo-col = 3. "yellow
+      wa_scolo-int = 1. "intesified
+      column_tab->set_color( wa_scolo ).
+
+    CATCH cx_salv_not_found INTO err_notfound.
+*   Add error processing
+  ENDTRY.
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& FORM functions_settings.
+*&---------------------------------------------------------------------*
+*  The code below simply displays all available functions within the
+* ALV toolbar but this list can be restricted if required
+*&---------------------------------------------------------------------*
+FORM functions_settings.
+  DATA: functions TYPE REF TO cl_salv_functions_list.
+
+  functions = salv_table->get_functions( ).
+  functions->set_all( ).
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& FORM display_settings.
+*&---------------------------------------------------------------------*
+FORM display_settings.
+  DATA: display_settings TYPE REF TO cl_salv_display_settings.
+
+  display_settings = salv_table->get_display_settings( ).
+  display_settings->set_striped_pattern( if_salv_c_bool_sap=>true ).
+  display_settings->set_list_header( 'Display Flight report' ).
+ENDFORM.
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  ROW_COLO_SETTINGS
+*&---------------------------------------------------------------------*
+*       Setup colour settings for each row of the output table
+*col_1 col_background        '0'.
+*col_1 col_heading           '1'.
+*col_1 col_normal            '2'.
+*col_1 col_total             '3'.
+*col_1 col_key               '4'.
+*col_1 col_positive          '5'.
+*col_1 col_negative          '6'.
+*col_1 col_group             '7'.
+*----------------------------------------------------------------------*
+FORM row_colo_settings .
+
+  INCLUDE <color>. "click here to see possible colour values
+
+  LOOP AT it_report ASSIGNING <report> .
+    CASE sy-tabix.
+      WHEN 1." set the colour of following fields on row 1
+        wa_scol-fname = 'CARRID'.
+        wa_scol-color-col = 2.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'CONNID'.
+        wa_scol-color-col = 3.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+      WHEN 2. " set colour of following fields on row 2
+        wa_scol-fname = 'CARRID'.
+        wa_scol-color-col = 4.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'CONNID'.
+        wa_scol-color-col = 5.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'FLDATE'.
+        wa_scol-color-col = 6.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+      WHEN 3. " set colour of following fields on row 3
+        wa_scol-fname = 'CARRID'.
+        wa_scol-color-col = 3.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'CONNID'.
+        wa_scol-color-col = 4.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'FLDATE'.
+        wa_scol-color-col = 5.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+        wa_scol-fname = 'PRICE'.
+        wa_scol-color-col = 6.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+
+        wa_scol-fname = 'CURRENCY'.
+        wa_scol-color-col = 7.
+        wa_scol-color-int = 1.
+        wa_scol-color-inv = 0.
+        APPEND wa_scol TO <report>-row_colo.
+
+
+      WHEN 4 OR 5. "set the colour of the whole row
+*       You can also set the colour of the whole row by leaving the field name
+*       field (i.e. fname ) blank
+        IF <report>-price GT 5000.
+          CLEAR: wa_scol-fname.
+          wa_scol-color-col = 6.
+          wa_scol-color-int = 1.
+          wa_scol-color-inv = 0.
+          APPEND wa_scol TO <report>-row_colo.
+        ELSE.
+          CLEAR: wa_scol-fname.
+          wa_scol-color-col = 5.
+          wa_scol-color-int = 1.
+          wa_scol-color-inv = 0.
+          APPEND wa_scol TO <report>-row_colo.
+        ENDIF.
+    ENDCASE.
+  ENDLOOP.
+ENDFORM.

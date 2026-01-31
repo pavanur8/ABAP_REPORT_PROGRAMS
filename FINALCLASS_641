@@ -1,0 +1,46 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG4_FINALCLASS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg4_finalclass_641.
+
+DATA : lv_land  TYPE land1_gp,
+       lv_name  TYPE name1_gp,
+       lv_orto  TYPE ort01_gp,
+       lv_regio TYPE regio.
+
+PARAMETERS p_kunnr TYPE kunnr.
+
+CLASS class1 DEFINITION FINAL.
+  PUBLIC SECTION.
+    METHODS display IMPORTING pkunnr TYPE kunnr
+                    EXPORTING pLAND1 TYPE land1_gp
+                              pname1 TYPE name1_gp
+                              pORT01 TYPE ort01_gp
+                              pREGIO TYPE regio.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+  METHOD display.
+    SELECT SINGLE land1 name1 ort01 regio
+    FROM kna1
+    INTO ( pland1,pname1,port01,pregio )
+    WHERE kunnr = p_kunnr.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA lo_obj TYPE REF TO class1.
+
+  CREATE OBJECT lo_obj.
+
+  lo_obj->display( EXPORTING pkunnr = p_kunnr
+                   IMPORTING pland1 = lv_land
+                             pname1 = lv_name
+                             pORT01 = lv_orto
+                             pREGIO = lv_regio ).
+
+  IF sy-subrc = 0.
+  WRITE : / lv_land,lv_name,lv_orto,lv_regio.
+  ENDIF.

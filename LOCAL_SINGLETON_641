@@ -1,0 +1,55 @@
+*&---------------------------------------------------------------------*
+*& Report ZLOCAL_SINGLETON_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zlocal_singleton_641.
+
+CLASS lcl_singleton DEFINITION CREATE PRIVATE.
+
+  PUBLIC SECTION.
+    CLASS-METHODS get_instance
+      RETURNING
+        VALUE(ro_instance) TYPE REF TO lcl_singleton.
+
+    METHODS : perform_task,add.
+
+  PRIVATE SECTION.
+    " This static attribute will hold the single instance.
+    CLASS-DATA go_instance TYPE REF TO lcl_singleton.
+
+ENDCLASS.
+
+CLASS lcl_singleton IMPLEMENTATION.
+
+  METHOD get_instance.
+    " If the instance does not exist yet, create it.
+    IF go_instance IS NOT BOUND.
+      go_instance = NEW lcl_singleton( ).
+    ENDIF.
+    " Return the single instance.
+    ro_instance = go_instance.
+  ENDMETHOD.
+
+  METHOD perform_task.
+    WRITE: / 'The singleton instance is performing a task.'.
+  ENDMETHOD.
+
+  METHOD add.
+    WRITE: / 'The singleton 2nd instance is performing a task.'.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  " Obtain the singleton instance. Both variables will point to the same object.
+  DATA(lo_first_call) = lcl_singleton=>get_instance( ).
+  DATA(lo_second_call) = lcl_singleton=>get_instance( ).
+
+  lo_first_call->perform_task( ).
+  lo_second_call->add( ).
+
+  " Verify that both variables hold the exact same instance.
+  IF lo_first_call = lo_second_call.
+    WRITE: / 'lo_first_call and lo_second_call refer to the same object instance.'.
+  ENDIF.

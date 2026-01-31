@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_MATHS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_maths_641.
+DATA output TYPE i.
+PARAMETERS p_input TYPE decfloat16.
+
+*================================================================================
+*CALL METHOD cl_abap_math=>get_scale  "counting point values
+*  EXPORTING
+*    val   = p_input
+*  RECEIVING
+*    scale = output.
+
+*================================================================================
+CALL METHOD cl_abap_math=>get_number_of_digits "Counting the Digits
+  EXPORTING
+    val           = p_input
+  RECEIVING
+    num_of_digits = output.
+
+WRITE output.
+*cl_demo_output=>display( output ).

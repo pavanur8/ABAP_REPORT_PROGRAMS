@@ -1,0 +1,39 @@
+*&---------------------------------------------------------------------*
+*& Report ZIF_TEST2_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zif_test2_641.
+
+INTERFACE zif_demo.
+  METHODS m1.
+ENDINTERFACE.
+
+CLASS zcl_demo1 DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zif_demo.
+ENDCLASS.
+
+CLASS zcl_demo1 IMPLEMENTATION.
+  METHOD zif_demo~m1.
+    WRITE : 'm1 method interface' COLOR 4.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS zcl_demo2 DEFINITION INHERITING FROM zcl_demo1.
+  PUBLIC SECTION.
+    METHODS zif_demo~m1 REDEFINITION.
+ENDCLASS.
+
+CLASS zcl_demo2 IMPLEMENTATION.
+  METHOD zif_demo~m1.
+    WRITE : 'm2 method interface' COLOR 4.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(obj1) = NEW zcl_demo1( ).
+  DATA(obj2) = NEW zcl_demo2( ).
+  obj1->zif_demo~m1( ).
+  obj2->zif_demo~m1( ).

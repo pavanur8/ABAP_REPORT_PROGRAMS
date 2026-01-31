@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report ZFORALL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zforall.
+
+DATA : lt_data TYPE TABLE OF zforallstr.
+DATA : ls_data TYPE zforallstr.
+DATA : lt_data1 TYPE TABLE OF zforallstr1.
+DATA : ls_data1 TYPE zforallstr1.
+DATA : lv_vbeln TYPE vbeln_va.
+DATA : lv_count TYPE i.
+
+SELECT-OPTIONS : s_ono FOR lv_vbeln.
+
+SELECT vbeln erdat erzet ernam vbtyp
+FROM vbak
+INTO TABLE lt_data
+WHERE vbeln IN s_ono.
+
+IF lt_data IS NOT INITIAL.
+  SELECT vbeln posnr matnr
+  FROM vbap
+  INTO TABLE lt_data1
+  FOR ALL ENTRIES IN lt_data
+  WHERE vbeln = lt_data-vbeln.
+ENDIF.
+
+DESCRIBE TABLE lt_data LINES lv_count.
+WRITE : 'Total Number of lines',lv_count.
+*lv_count = LINES( lt_data ).
+*  WRITE : lv_count.
+
+LOOP AT lt_data INTO ls_data.
+  LOOP AT lt_data1 INTO ls_data1 WHERE vbeln = ls_data-vbeln.
+    WRITE : / ls_data-vbeln,ls_data-erdat,ls_data-erzet,ls_data-ernam,
+              ls_data-vbtyp,ls_data1-posnr,ls_data1-matnr.
+  ENDLOOP.
+ENDLOOP.

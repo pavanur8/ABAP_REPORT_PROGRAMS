@@ -1,0 +1,18 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG1_BADI_DEMO
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg2_filter_badi_demo.
+
+PARAMETERS p_fil TYPE n.
+DATA lo_obj TYPE REF TO zbadi_change_641.
+DATA lv_value TYPE char20.
+
+GET BADI lo_obj FILTERS zfilter_641 = p_fil.
+
+CALL BADI lo_obj->change
+  CHANGING
+    pvalue = lv_value.
+
+WRITE lv_value.

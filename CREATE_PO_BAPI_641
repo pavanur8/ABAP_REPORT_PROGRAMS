@@ -1,0 +1,119 @@
+
+REPORT zcreate_po_bapi_641.
+
+PARAMETERS : p_pr TYPE banfn.
+
+DATA: lt_poitem     TYPE TABLE OF bapimepoitem,
+
+      lt_poitemx    TYPE TABLE OF bapimepoitemx,
+
+      lt_poaccount  TYPE TABLE OF bapimepoaccount,
+
+      lt_poaccountx TYPE TABLE OF bapimepoaccountx,
+
+      lt_return     TYPE TABLE OF bapiret2,
+
+      ls_header     TYPE bapimepoheader,
+
+      ls_headerx    TYPE bapimepoheaderx,
+
+      lv_po_number  TYPE bapimepoheader-po_number.
+
+ls_header-doc_type  = 'NB'.          "Standard PO
+
+ls_header-vendor    = '0000001001'.    "Vendor Number
+
+ls_header-purch_org = 'RE01'.        "Purchasing Organization
+
+ls_header-pur_group = '001'.         "Purchasing Group
+
+ls_header-comp_code = 'RE01'.        "Company Code
+
+ls_headerx-doc_type  = 'X'.
+
+ls_headerx-vendor    = 'X'.
+
+ls_headerx-purch_org = 'X'.
+
+ls_headerx-pur_group = 'X'.
+
+ls_headerx-comp_code = 'X'.
+
+DATA: lt_pr TYPE TABLE OF eban,
+
+      ls_pr TYPE eban.
+
+SELECT * FROM eban INTO TABLE lt_pr WHERE banfn = p_pr.
+
+
+LOOP AT lt_pr INTO ls_pr.
+
+  DATA(ls_item) = VALUE bapimepoitem(
+
+    po_item   = ls_pr-bnfpo
+
+  material  = ls_pr-matnr
+
+  plant     = ls_pr-werks
+
+  quantity  = ls_pr-menge
+
+  preq_no   = ls_pr-banfn
+
+  preq_item = ls_pr-bnfpo
+
+).
+
+  APPEND ls_item TO lt_poitem.
+
+  " Mark fields as updated
+
+  DATA(ls_itemx) = VALUE bapimepoitemx(
+
+    po_item   = ls_pr-bnfpo
+
+  po_itemx  = 'X'
+
+  material  = 'X'
+
+  plant     = 'X'
+
+  quantity  = 'X'
+
+  preq_no   = 'X'
+
+  preq_item = 'X'
+
+  ).
+
+  APPEND ls_itemx TO lt_poitemx.
+
+ENDLOOP.
+
+CALL FUNCTION 'BAPI_PO_CREATE1'
+  EXPORTING
+    poheader         = ls_header
+    poheaderx        = ls_headerx
+  IMPORTING
+    exppurchaseorder = lv_po_number
+  TABLES
+    return           = lt_return
+    poitem           = lt_poitem
+    poitemx          = lt_poitemx
+    poaccount        = lt_poaccount
+    poaccountx       = lt_poaccountx.
+
+
+*LOOP AT lt_return INTO DATA(ls_return).
+*
+*  WRITE : / ls_return-type, ls_return-message.
+*
+*ENDLOOP.
+
+*WRITE: 'Purchase order has been crated under the number', lv_po_number.
+
+CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+  EXPORTING
+    wait = 'X'.
+
+WRITE : / 'Created Purchase Number = ',lv_po_number.

@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_LOCAL_CONSTRUCTOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_local_constructor_641.
+
+CLASS cl_demo1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS constructor.
+    CLASS-METHODS class_constructor.
+ENDCLASS.
+
+CLASS cl_demo1 IMPLEMENTATION.
+  METHOD constructor.
+    WRITE :/ 'constructor ' COLOR 4.
+  ENDMETHOD.
+
+  METHOD class_constructor.
+    WRITE :/ 'Class Constructor ' COLOR 5.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(Object) = NEW cl_demo1( ).

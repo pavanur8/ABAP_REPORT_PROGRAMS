@@ -1,0 +1,78 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG7_LOCAL_INTERFACE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg7_local_interface_641.
+
+DATA lv_erdat TYPE erdat.
+DATA lv_erzet TYPE erzet.
+DATA lv_ernam TYPE ernam.
+DATA lv_vbtyp TYPE vbtypl.
+
+PARAMETERS p_vbeln TYPE vbeln_va.
+PARAMETERS p_r1 TYPE c RADIOBUTTON GROUP r1.
+PARAMETERS p_r2 TYPE c RADIOBUTTON GROUP r1.
+
+INTERFACE interface1.
+  METHODS display IMPORTING pvbeln TYPE vbeln_va
+                  EXPORTING perdat TYPE erdat
+                            perzet TYPE erzet
+                            pernam TYPE ernam
+                            pvbtyp TYPE vbtypl.
+ENDINTERFACE.
+
+CLASS sales DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES interface1.
+ENDCLASS.
+
+CLASS sales IMPLEMENTATION.
+  METHOD interface1~display.
+    SELECT SINGLE  erdat erzet ernam vbtyp
+    FROM vbak
+    INTO ( perdat, perzet, pernam,pvbtyp )
+    WHERE vbeln = pvbeln.
+  ENDMETHOD.
+ENDCLASS.
+
+CLASS billing DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES interface1.
+ENDCLASS.
+
+CLASS billing IMPLEMENTATION.
+  METHOD interface1~display.
+    SELECT SINGLE  vbtyp ernam erzet erdat
+    FROM vbrk
+    INTO ( pvbtyp,pernam,perzet,perdat   )
+    WHERE vbeln = pvbeln.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA object_1 TYPE REF TO sales.
+  DATA object_2 TYPE REF TO billing.
+
+  IF p_r1 = 'X'.
+    CREATE OBJECT object_1.
+    object_1->interface1~display( EXPORTING pvbeln = p_vbeln
+                                  IMPORTING perdat = lv_erdat
+                                            perzet = lv_erzet
+                                            pernam = lv_ernam
+                                            pvbtyp = lv_vbtyp ).
+    WRITE : 'Sales Document Deatils Below'.
+    WRITE : / lv_erdat,/ lv_erzet, / lv_ernam,/ lv_vbtyp.
+
+  ENDIF.
+
+  IF p_r2 = 'X'.
+    CREATE OBJECT object_2.
+    object_2->interface1~display( EXPORTING pvbeln = p_vbeln
+                                  IMPORTING pvbtyp = lv_vbtyp
+                                            pernam = lv_ernam
+                                            perzet = lv_erzet
+                                            perdat =  lv_erdat ).
+    WRITE : 'Billing Details Below'.
+    WRITE : / lv_vbtyp,lv_ernam,lv_erzet,lv_erdat.
+  ENDIF.
