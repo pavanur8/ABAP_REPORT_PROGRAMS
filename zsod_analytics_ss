@@ -1,0 +1,11 @@
+*&---------------------------------------------------------------------*
+*& Include          ZSOD_ANALYTICS_SS
+*&---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-001.
+  SELECT-OPTIONS: s_matnr FOR mara-matnr,
+                  s_wrkst FOR mara-wrkst.
+
+  SELECTION-SCREEN SKIP 2.
+  PARAMETERS: sod_an  RADIOBUTTON GROUP a,
+              bulk_st RADIOBUTTON GROUP a.
+SELECTION-SCREEN END OF BLOCK a.

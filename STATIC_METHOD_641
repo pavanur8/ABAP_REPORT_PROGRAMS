@@ -1,0 +1,72 @@
+*&---------------------------------------------------------------------*
+*& Report ZCL_STATIC_METHOD_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcl_static_method_641.
+
+CLASS zcl_demo DEFINITION.
+  PUBLIC SECTION.
+    DATA lv_iv TYPE i.
+    METHODS m1.
+    CLASS-METHODS show_sm IMPORTING cl_obj TYPE REF TO zcl_demo.
+ENDCLASS.
+
+CLASS zcl_demo IMPLEMENTATION.
+  METHOD show_sm.
+
+    IF cl_obj IS BOUND.
+      WRITE :/ 'Instance Variable =', cl_obj->lv_iv.
+    ELSE.
+      WRITE :/ 'No Reference Passed'.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD m1.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(obj) = NEW zcl_demo( ).
+  obj->lv_iv = 123 .
+  obj->m1( ).
+  zcl_demo=>show_sm( obj ).
+
+
+*CLASS class1 DEFINITION.
+*  PUBLIC SECTION .
+*    METHODS m1.
+*    CLASS-METHODS : m2.
+*ENDCLASS.
+*
+*CLASS class1 IMPLEMENTATION.
+*  METHOD m1.
+*
+*    WRITE : / ' i am Instance Method'.
+*  ENDMETHOD.
+*  METHOD m2.
+*   "  DATA(lo_obj1) = new class1( ).
+*    WRITE : / ' i am static Method '.
+*    lo_obj1->m1( ).
+*  ENDMETHOD.
+*ENDCLASS.
+*CLASS class2 DEFINITION INHERITING FROM class1.
+*  PUBLIC SECTION.
+*    CLASS-METHODS m2 .
+**    METHODs m2 REDEFINITION.
+*
+*    ENDCLASS.
+*CLASS class2 IMPLEMENTATION.
+*  METHOD m3.
+*    DATA(obj) = NEW class2( ).
+*    obj->m1( ).
+*    obj->m2( ).
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*
+*START-OF-SELECTION.
+*
+*  DATA(lo_obj) = NEW class2( ).
+*  lo_obj->m3( ).

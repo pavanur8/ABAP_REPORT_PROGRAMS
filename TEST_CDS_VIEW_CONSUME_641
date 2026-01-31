@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report ztest_cds_view_consume_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztest_cds_view_consume_641.
+
+DATA lo_disp TYPE REF TO if_salv_gui_table_ida.
+
+TRY.
+    lo_disp = cl_salv_gui_table_ida=>create(
+      iv_table_name = 'ZVCSAE2_CDS_641' " SQL view name from CDS annotation
+    ).
+
+    lo_disp->fullscreen( )->display( ).
+
+  CATCH cx_salv_db_connection INTO DATA(lx1).
+    MESSAGE lx1->get_text( ) TYPE 'E'.
+  CATCH cx_salv_db_table_not_supported INTO DATA(lx2).
+    MESSAGE lx2->get_text( ) TYPE 'E'.
+  CATCH cx_salv_ida_contract_violation INTO DATA(lx3).
+    MESSAGE lx3->get_text( ) TYPE 'E'.
+ENDTRY.
+
+*DATA lo_disp TYPE REF TO if_salv_gui_table_ida.
+*
+*cl_salv_gui_table_ida=>create(
+*  EXPORTING
+*    iv_table_name         = 'ZCDS2_CASE_641'
+**    io_gui_container      =
+**    io_calc_field_handler =
+* RECEIVING
+*   ro_alv_gui_table_ida  = lo_disp
+*).
+*
+*lo_disp->fullscreen(  )->display(  ).

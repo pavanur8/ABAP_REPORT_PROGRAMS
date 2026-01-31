@@ -1,0 +1,28 @@
+*&---------------------------------------------------------------------*
+*& Include          ZDATADECLARE
+*&---------------------------------------------------------------------*
+TYPES : BEGIN OF lsd,
+          vbeln TYPE vbeln_va,
+          erdat TYPE erdat,
+          erzet TYPE erzet,
+          ernam TYPE ernam,
+          vbtyp TYPE vbtypl,
+        END OF lsd.
+
+TYPES : BEGIN OF lss,
+          vbeln TYPE vbeln_va,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+        END OF lss.
+
+DATA itab TYPE TABLE OF lsd.
+DATA wa TYPE lsd.
+DATA itab_vbap TYPE TABLE OF lss.
+DATA wa_vbap TYPE  lss.
+DATA lv_vbeln TYPE vbeln_va.
+DATA lo_alv TYPE REF TO cl_salv_table.
+DATA lo_alv1 TYPE REF TO cl_salv_table.
+DATA lo_event TYPE REF TO cl_salv_events_table.
+DATA: lv_answer TYPE c LENGTH 1.
+
+SELECT-OPTIONS svbeln FOR Lv_vbeln.

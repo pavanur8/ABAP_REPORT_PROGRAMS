@@ -1,0 +1,15 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASS_PRACTICE2_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclass_practice2_641.
+
+INCLUDE zclassdefine_implementation. "Defineing the class and implementing.
+INCLUDE zobjectcreation. "start of selection
+
+CALL SCREEN 102.
+
+INCLUDE zclass_practice2_641_statuso01.
+
+INCLUDE zclass_practice2_641_user_ci01.

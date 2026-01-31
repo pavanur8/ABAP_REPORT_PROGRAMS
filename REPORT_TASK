@@ -1,0 +1,91 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_TASK
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZREPORT_TASK.
+
+DATA vbl_n TYPE VBELN_VA.
+
+TYPES: BEGIN OF ts_vbak,
+         VBELN TYPE VBELN_VA,
+         ERNAM TYPE ERNAM,
+       END OF ts_vbak.
+
+DATA: lt_data TYPE TABLE OF ts_vbak.
+DATA : lw_data TYPE ts_vbak.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK blk1 WITH FRAME TITLE text-001.
+
+PARAMETERS:  p_hide RADIOBUTTON GROUP p1 USER-COMMAND ra ,
+            p_show RADIOBUTTON GROUP p1.
+
+SELECTION-SCREEN END OF BLOCK blk1.
+
+SELECTION-SCREEN BEGIN OF BLOCK blk2 WITH FRAME TITLE text-002.
+
+SELECT-OPTIONS : vbln FOR vbl_n OBLIGATORY NO-EXTENSION MODIF ID abc DEFAULT 1.
+ PARAMETERS : erm TYPE ERNAM OBLIGATORY MODIF ID abc DEFAULT 'x'.
+SELECTION-SCREEN END OF BLOCK blk2.
+
+SELECT VBELN ERNAM
+  FROM VBAK
+  INTO TABLE lt_data
+  WHERE VBELN IN vbln.
+
+if vbln IS NOT INITIAL.
+  MESSAGE : E000(ZMESSGE_1).
+ENDIF.
+
+if erm IS NOT INITIAL.
+  MESSAGE : 'Enter Value' TYPE 'I' .
+ENDIF.
+
+*WRITE : sy-vline,TEXT-008,8 sy-vline,TEXT-009.
+
+
+ LOOP AT lt_data INTO lw_data.
+WRITE : / lw_data-VBELN ,
+         lw_data-ERNAM.
+ ENDLOOP.
+
+INITIALIZATION.
+  p_hide = 'X'.
+
+
+AT SELECTION-SCREEN OUTPUT.
+
+  LOOP AT SCREEN.
+    IF screen-group1 = 'ABC'.
+      IF p_hide = 'X'.
+        screen-invisible = 1.
+        screen-active = 0.
+      ELSE.
+        screen-invisible = 0.
+        screen-active = 1.
+      ENDIF.
+      MODIFY SCREEN.
+    ENDIF.
+  ENDLOOP.
+
+
+*  LOOP AT SCREEN.
+*    IF screen-group1 = 'GRP1'.
+*      IF p_c = 'X'.
+*        screen-active = 1.
+*        screen-invisible = 0.
+*      ELSE.
+*        IF screen-group1 = 'ABC'.
+*      IF p_hide = 'X'.
+*        screen-invisible = 1.
+*        screen-active = 0.
+*      ELSE.
+*        screen-invisible = 0.
+*        screen-active = 1.
+*      ENDIF.
+*      ENDIF.
+*      MODIFY SCREEN.
+*    ENDIF.
+*    ENDIF.
+*  ENDLOOP.

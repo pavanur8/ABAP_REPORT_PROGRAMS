@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTATIC_METHOD_REDFINE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zstatic_method_redfine_641.
+
+CLASS cl_super DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS static_method .
+ENDCLASS.
+
+CLASS cl_super IMPLEMENTATION.
+  METHOD static_method.
+    WRITE: 'Super class static method' COLOR 5.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+cl_super=>static_method( ).

@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Report ZREDUCE641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zreduce641.
+
+*TYPES : BEGIN OF ss,
+*        sum
+*
+*
+*DATA(numbers) = VALUE int4_tab( ( 10 ) ( 20 ) ( 30 ) ).
+*
+*DATA(total) = REDUCE i(
+*    INIT sum = 0
+*    FOR num IN numbers
+*    NEXT sum = sum + num
+*).
+*
+*WRITE: / 'Total:', total.
+*
+*TYPES : BEGIN OF ty_tab,
+*          belnr TYPE belnr_d,
+*          shkzg TYPE shkzg,
+*          dmbtr TYPE dmbtr,
+*        END OF ty_tab,
+*        tt_tab TYPE STANDARD TABLE OF ty_tab.
+*
+*DATA : lt_tab    TYPE tt_tab,
+*       lv_amount TYPE dmbtr.
+*
+*lt_tab =  VALUE #( ( belnr = '1000000112'  shkzg = 'S' dmbtr = '101111.99' )
+*                   ( belnr = '1000000112'  shkzg = 'H' dmbtr = '202222.98' )
+*                   ( belnr = '1000000112'  shkzg = 'S' dmbtr = '303333.97' )
+*                   ( belnr = '1000000112'  shkzg = 'H' dmbtr = '404444.96' )
+*                   ( belnr = '1000000112'  shkzg = 'S' dmbtr = '202222.20' ) ).
+*
+*lv_amount = REDUCE #( INIT a TYPE dmbtr
+*                     FOR wa IN lt_tab
+*                     WHERE ( belnr = '1000000112' )
+*                     NEXT a = COND #( WHEN wa-shkzg = 'S' THEN a - wa-dmbtr
+*                                      WHEN wa-shkzg = 'H' THEN a + wa-dmbtr ) ).
+*
+*cl_demo_output=>display( lv_amount ).
+
+
+TYPES : BEGIN OF ty_cust,
+          name1 TYPE name1,
+          kunnr TYPE kunnr,
+        END OF ty_cust,
+        tt_cust TYPE STANDARD TABLE OF ty_cust.
+
+DATA : lt_cust    TYPE tt_cust.
+lt_cust =  VALUE #( ( name1 = 'NESTLE BR'     kunnr = '1001143' )
+                    ( name1 = 'NESTLE ARG'    kunnr = '1001143' )
+                    ( name1 = 'NESTLE COFFEE' kunnr = '1001143' )
+                    ( name1 = 'NESTLE BRUSSELS' kunnr = '1001145' )
+                    ( name1 = 'NESTLE BRU' kunnr = '1001146' )
+                    ( name1 = 'NESTLE'        kunnr = '1001143' ) ).
+
+DATA(lv_diffcust) = REDUCE i( INIT i = 0
+                              FOR wa IN lt_cust
+                              WHERE ( name1 CP 'NESTLE*' )
+                              NEXT i = COND #( WHEN wa-kunnr = lt_cust[ 1 ]-kunnr THEN i
+                                               ELSE i + 1 ) ).
+IF lv_diffcust <> 0.
+  WRITE : 'Anyone is having different customer number'.
+ELSE.
+  WRITE : 'All are having same customer number'.
+ENDIF.

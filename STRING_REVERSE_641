@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTRING_REVERSE_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zstring_reverse_641.
+
+PARAMETERS p1 TYPE string.
+DATA p2 TYPE string.
+PARAMETERS : times TYPE i .
+
+TRANSLATE p1 TO LOWER CASE.
+
+WRITE : 'Before String',p1.
+ULINE.
+
+p2 = reverse( p1 ).
+
+
+WRITE : 'After Reverse String:',p2.
+ULINE.
+
+p2 = repeat( val = p1 occ = times ).
+
+WRITE : 'After string Repeat :',p2.

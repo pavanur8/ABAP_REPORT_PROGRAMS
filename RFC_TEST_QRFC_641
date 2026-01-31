@@ -1,0 +1,71 @@
+*&---------------------------------------------------------------------*
+*& Report ZRFC_TEST_QRFC_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zrfc_test_qrfc_641.
+
+DATA : lv_tid    TYPE arfctid,
+       lv_fnum   TYPE qretstate-qrfnum,
+       lv_flg    TYPE char1,
+       ls_struct TYPE zbsp001_tab_641.
+
+DATA: p_in  TYPE trfcqnam VALUE 'ZTEST02_IN',
+      p_out TYPE trfcqnam VALUE 'ZTEST02_OUT',
+      p_rfc TYPE rfcdest  VALUE 'NONE'.
+
+WRITE : 'qRFC' COLOR COL_HEADING.
+DO 2 TIMES.
+  CASE sy-index.
+    WHEN 1.
+      ls_struct-mandt = '100'.
+      ls_struct-fname = 'John'.
+      ls_struct-sname = 'Carter'.
+      ls_struct-dob = '19650815'.
+      ls_struct-address = 'Washington'.
+    WHEN 2.
+      ls_struct-mandt = '100'.
+      ls_struct-fname = 'Dr.'.
+      ls_struct-sname = 'Strange'.
+      ls_struct-dob = '19670815'.
+      ls_struct-address = 'Seattle'.
+  ENDCASE.
+
+
+  CALL FUNCTION 'TRFC_SET_QIN_PROPERTIES'
+    EXPORTING
+      qout_name          = p_out
+      qin_name           = p_in
+    EXCEPTIONS
+      invalid_queue_name = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+    MESSAGE e001(00) WITH 'TRFC_SET_QIN_PROPERTIES error'.
+  ENDIF.
+
+  CALL FUNCTION 'ZFM_CREATE_ZBSP001_TAB641' IN BACKGROUND TASK
+    AS SEPARATE UNIT
+    DESTINATION 'NONE'
+    EXPORTING
+      im_struct = ls_struct.
+  IF sy-subrc = 0.
+    CALL FUNCTION 'ID_OF_BACKGROUNDTASK'
+      EXPORTING
+        dest = 'NONE'
+      IMPORTING
+        tid  = lv_tid
+        fnum = lv_fnum.
+    IF lv_tid IS NOT INITIAL.
+      WRITE : 'ENTRY CREATED SUCCESSFULLY - TID : ', lv_tid COLOR COL_KEY.
+      CLEAR ls_struct.
+    ELSE.
+      WRITE : 'ENTRY CREATION FAILED' COLOR COL_BACKGROUND.
+      CLEAR ls_struct.
+    ENDIF.
+  ENDIF.
+ENDDO.
+COMMIT WORK.
+IF sy-subrc <> 0.
+  MESSAGE e001(00) WITH 'Commit error with return code:' sy-subrc.
+ENDIF.
+CLEAR : lv_tid, lv_fnum, lv_flg, ls_struct.

@@ -1,0 +1,20 @@
+*&---------------------------------------------------------------------*
+*& Include          ZCALLING_CLASS
+*&---------------------------------------------------------------------*
+DATA(lo_obj1) = NEW vbap_class( ).
+DATA(lo_obj2) = NEW vbpa_class( ).
+
+IF r1 = 'X'.
+  lo_obj1->vbak_display( ).
+  CALL SCREEN 101.
+ENDIF.
+
+IF r2 = 'X'.
+  lo_obj1->vbap_display( ).
+  CALL SCREEN 102.
+ENDIF.
+
+IF r3 = 'X'.
+  lo_obj2->vbpa_display( ).
+  CALL SCREEN 103.
+ENDIF.

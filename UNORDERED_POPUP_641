@@ -1,0 +1,86 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_UNORDERED_POPUP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_unordered_popup_641.
+
+CONSTANTS: number_of_placeholders   TYPE i VALUE 70,
+           width_of_parameter_value TYPE i VALUE 75.
+
+DATA: text   TYPE string,
+      values TYPE TABLE OF spo_val,
+      params TYPE TABLE OF spar,
+      answer TYPE char1.
+
+*--------------------------------------------------------------------*
+* Build a long text.
+*--------------------------------------------------------------------*
+text &&=:
+  `Sed ut perspiciatis, unde omnis iste natus error sit voluptatem accusantium`,
+  ` doloremque laudantium, totam rem aperiam eaque ipsa, quae ab illo inventor`,
+  `e veritatis et quasi architecto beatae vitae dicta sunt, explicabo. Nemo en`,
+  `im ipsam voluptatem, quia voluptas sit, aspernatur aut odit aut fugit, sed `,
+  `quia consequuntur magni dolores eos, qui ratione voluptatem sequi nesciunt,`,
+  ` neque porro quisquam est, qui dolorem ipsum, quia dolor sit, amet, consect`,
+  `etur, adipisci velit, sed quia non numquam eius modi tempora incidunt, ut l`,
+  `abore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam`,
+  `, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut a`,
+  `liquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit, qu`,
+  `i in ea voluptate velit esse, quam nihil molestiae consequatur, vel illum, `,
+  `qui dolorem eum fugiat, quo voluptas nulla pariatur?`.
+
+*--------------------------------------------------------------------*
+* Split the text and fill the VALUES internal table.
+*--------------------------------------------------------------------*
+DATA(textlen) = strlen( text ).
+DATA(to_be_copied) = 0.
+DATA(copied) = 0. "75, 150, 225, ...
+
+WHILE copied LT textlen.
+  to_be_copied = COND #( WHEN copied + width_of_parameter_value LT textlen
+                         THEN width_of_parameter_value
+                         ELSE textlen - copied ).
+
+  APPEND CONV spo_val( text+copied(to_be_copied) ) TO values.
+  copied += to_be_copied.
+ENDWHILE.
+
+*--------------------------------------------------------------------*
+* Fill the PARAMS internal table.
+*--------------------------------------------------------------------*
+DATA(number_of_used_placeholders) = lines( values ).
+DATA(index_of_unused_placeholder) = 0.
+
+* Move values to placeholders and add them to the PARAMS internal table.
+* ARBFND_DETAILED_LONGTEXT has 70 placeholders (&VAR0000001&..&VAR0000070&).
+
+LOOP AT values ASSIGNING FIELD-SYMBOL(<value>).
+  APPEND VALUE spar( param = 'VAR' && CONV numc7( sy-tabix )
+                     value = <value> ) TO params.
+ENDLOOP.
+
+* Set the value of unused placeholders to blank.
+index_of_unused_placeholder = number_of_used_placeholders.
+
+DO ( number_of_placeholders - number_of_used_placeholders ) TIMES.
+  index_of_unused_placeholder += 1.
+  APPEND VALUE spar( param = 'VAR' && CONV numc7( index_of_unused_placeholder )
+                     value = space ) TO params.
+ENDDO.
+
+*--------------------------------------------------------------------*
+* Call the function with the DIAGNOSE_OBJECT and the PARAMETER.
+* Set the TEXT_QUESTION to space as we don't need it.
+*--------------------------------------------------------------------*
+CALL FUNCTION 'POPUP_TO_CONFIRM'
+  EXPORTING
+    diagnose_object = 'ARBFND_DETAILED_LONGTEXT'
+    text_question   = space
+    "userdefined_f1_help = '.'
+  IMPORTING
+    answer          = answer
+  TABLES
+    parameter       = params
+  EXCEPTIONS
+    OTHERS          = 2.

@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report ZSINGLETON_CLASS2_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsingleton_class2_641.
+
+CLASS cl_log_manager DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS get_instance RETURNING VALUE(ro_log) TYPE REF TO cl_log_manager .
+    METHODS constructor.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA go_log TYPE REF TO cl_log_manager.
+ENDCLASS.
+
+CLASS cl_log_manager IMPLEMENTATION.
+
+
+  METHOD get_instance.
+    IF go_log IS INITIAL.
+      go_log = NEW #( ).
+    ENDIF.
+    ro_log = go_log.
+  ENDMETHOD.
+
+  METHOD constructor.
+  ENDMETHOD.
+
+ENDCLASS.

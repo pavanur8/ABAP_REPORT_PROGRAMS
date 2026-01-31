@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report ZSAMPLE_REPORTRADIO
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSAMPLE_REPORTRADIO.
+
+PARAMETERS: rb1 RADIOBUTTON GROUP opt DEFAULT 'X',
+            rb2 RADIOBUTTON GROUP opt.
+
+SELECTION-SCREEN SKIP.
+
+PARAMETERS: p_name TYPE name1.
+
+START-OF-SELECTION.
+  IF rb1 = 'X'.
+    WRITE: / 'Option 1 selected'.
+  ELSEIF rb2 = 'X'.
+    WRITE: / 'Option 2 selected'.
+  ENDIF.
+
+
+*PARAMETERS: rb1 RADIOBUTTON GROUP grp1 USER-COMMAND rad_btn DEFAULT 'X',
+*            rb2 RADIOBUTTON GROUP grp1.
+*
+*SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+*PARAMETERS: p_name TYPE name1,
+*            p_age  TYPE i.
+*SELECTION-SCREEN: END OF BLOCK b1.
+*
+*INITIALIZATION.
+*
+*AT SELECTION-SCREEN OUTPUT.
+*
+** Dynamically show/hide block based on radio button
+*  LOOP AT SCREEN.
+*    IF screen-group1 = 'B1'.
+*      IF rb1 = 'X'. " Show
+*        screen-active = 1.
+*        screen-invisible = 0.
+*      ELSEIF rb2 = 'X'. " Hide
+*        screen-active = 0.
+*        screen-invisible = 1.
+*      ENDIF.
+*      MODIFY SCREEN.
+*    ENDIF.
+*  ENDLOOP.
+*
+*START-OF-SELECTION.
+*  WRITE: / 'You selected:',
+*         / 'Name:', p_name,
+*         / 'Age:',  p_age.

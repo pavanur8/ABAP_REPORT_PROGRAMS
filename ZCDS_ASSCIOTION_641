@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Report ZCDS_ASSCIOTION_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcds_assciotion_641.
+
+SELECT FROM  zcds_association2_641\_spfli AS flight
+  FIELDS flight~carrid,flight~connid
+  INTO TABLE @DATA(itab).
+
+*IF sy-subrc EQ 0.
+cl_salv_gui_table_ida=>create_for_cds_view( 'zcds_association2_641' )->fullscreen(  )->display(  ).
+**  cl_demo_output=>display( itab ).
+*ENDIF.
+
+*SELECT  carrname FROM zcds_association2_641
+*INTO TABLE @DATA(itab1).
+*
+*IF sy-subrc EQ 0.
+*  cl_demo_output=>display( itab1 ).
+*ENDIF.
+
+TRY.
+    CALL METHOD cl_salv_table=>factory
+*  EXPORTING
+*    list_display   = IF_SALV_C_BOOL_SAP=>FALSE
+*    r_container    =
+*    container_name =
+      IMPORTING
+        r_salv_table = DATA(obj)
+      CHANGING
+        t_table      = itab.
+  CATCH cx_salv_msg.
+ENDTRY.
+
+obj->display( ).

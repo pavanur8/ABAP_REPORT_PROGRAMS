@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Report ZSINGLETON_CLASS4_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsingleton_class4_641.
+
+DATA lo_obj TYPE REF TO zsingleton_39.
+
+DATA poutput TYPE i.
+
+PARAMETERS p1 TYPE i.
+PARAMETERS p2 TYPE i.
+
+
+
+CALL METHOD zsingleton_39=>get_instance
+  RECEIVING
+    ro_object = lo_obj.
+
+lo_obj->lo_boolean = abap_true.
+
+CALL METHOD lo_obj->sum
+  EXPORTING
+    pinput1 = p1
+    pinput2 = p2
+  IMPORTING
+    poutput = poutput.
+
+
+WRITE : poutput.

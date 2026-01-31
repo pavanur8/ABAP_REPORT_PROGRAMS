@@ -1,0 +1,77 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_PRG_FIELDSY
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZREPORT_PRG_FIELDSY.
+
+DATA : itab TYPE TABLE OF ZGSTROH.
+DATA : iw TYPE ZGSTROH.
+DATA d_ono TYPE ZORDER_ONO.
+FIELD-SYMBOLS : <fs_da> TYPE ZGSTROH.
+
+SELECT-OPTIONS : s_ono FOR d_ono.
+
+SELECT * "order_number order_odate payment_mode total_amount currency
+From ZORDER_HEAD18
+INTO TABLE itab
+WHERE order_number IN s_ono.
+
+*READ TABLE itab INTO iw WITH KEY order_number = 3.
+*IF sy-subrc = 0.
+*WRITE : / iw-order_number,iw-order_odate,iw-payment_mode,iw-total_amount,iw-currency.
+*ENDIF.
+
+*LOOP AT itab INTO iw.
+*iw-payment_mode = 'N'.
+*MODIFY itab FROM iw TRANSPORTING payment_mode.
+*IF sy-subrc = 0.
+*WRITE : / iw-order_number,iw-order_odate,iw-payment_mode,iw-total_amount,iw-currency.
+*ENDIF.
+*ENDLOOP.
+
+*LOOP AT itab ASSIGNING <fs_da>.
+*IF <fs_da> IS ASSIGNED .
+*<fs_da>-total_amount = '8000.00'.
+*ENDIF.
+*ENDLOOP.
+*
+*LOOP AT itab INTO iw.
+*WRITE : / iw-order_number,iw-order_odate,iw-payment_mode,iw-total_amount,iw-currency.
+*ENDLOOP.
+
+APPEND INITIAL LINE TO itab ASSIGNING <fs_da>.
+IF <fs_da> Is  ASSIGNED.
+<fs_da>-order_number = '1'.
+<fs_da>-order_odate = '04/07/2025'.
+<fs_da>-payment_mode = 'C'.
+<fs_da>-total_amount = '1230.00'.
+<fs_da>-currency = 'INR'.
+UNASSIGN <fs_da>.
+ENDIF.
+
+APPEND INITIAL LINE TO itab ASSIGNING <fs_da>.
+IF <fs_da> Is  ASSIGNED.
+<fs_da>-order_number = '2'.
+<fs_da>-order_odate = '5/7/2025'.
+<fs_da>-payment_mode = 'C'.
+<fs_da>-total_amount = '330.00'.
+<fs_da>-currency = 'INR'.
+UNASSIGN <fs_da>.
+ENDIF.
+
+APPEND INITIAL LINE TO itab ASSIGNING <fs_da>.
+IF <fs_da> Is  ASSIGNED.
+<fs_da>-order_number = '3'.
+<fs_da>-order_odate = '7/7/2025'.
+<fs_da>-payment_mode = 'N'.
+<fs_da>-total_amount = '830.00'.
+<fs_da>-currency = 'INR'.
+UNASSIGN <fs_da>.
+ENDIF.
+
+LOOP AT itab ASSIGNING <fs_da>.
+IF <fs_da> Is  ASSIGNED.
+WRITE : / <fs_da>-order_number,<fs_da>-order_odate,<fs_da>-payment_mode,<fs_da>-total_amount,<fs_da>-currency.
+ENDIF.
+ENDLOOP.

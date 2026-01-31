@@ -1,0 +1,122 @@
+*&---------------------------------------------------------------------*
+*& Report ZTEST_PASS_BY_EXPORTING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztest_pass_by_exporting_641.
+
+DATA gv_time_by_reference_implicit TYPE t.
+DATA gv_time_by_reference_explicit TYPE t.
+DATA gv_time_by_value TYPE t.
+
+CLASS lcl_time_utility DEFINITION FINAL.
+  PUBLIC SECTION.
+    CLASS-METHODS do_nothing
+      EXPORTING
+        ev_time_by_reference_implicit            TYPE t
+        REFERENCE(ev_time_by_reference_explicit) TYPE t
+        VALUE(ev_time_by_value)                  TYPE t.
+    CLASS-METHODS get_time_120000_successfully
+      EXPORTING
+        ev_time_by_reference_implicit            TYPE t
+        REFERENCE(ev_time_by_reference_explicit) TYPE t
+        VALUE(ev_time_by_value)                  TYPE t.
+    CLASS-METHODS get_time_120000_with_exception
+      EXPORTING
+        ev_time_by_reference_implicit            TYPE t
+        REFERENCE(ev_time_by_reference_explicit) TYPE t
+        VALUE(ev_time_by_value)                  TYPE t
+      RAISING
+        cx_abap_datfm_invalid_date.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+CLASS lcl_time_utility IMPLEMENTATION.
+  METHOD do_nothing.
+
+  ENDMETHOD.
+
+  METHOD get_time_120000_successfully.
+    ev_time_by_reference_implicit = '120000'.
+    ev_time_by_reference_explicit = '120000'.
+    ev_time_by_value = '120000'.
+  ENDMETHOD.
+
+  METHOD get_time_120000_with_exception.
+    ev_time_by_reference_implicit = '120000'.
+    ev_time_by_reference_explicit = '120000'.
+    ev_time_by_value = '120000'.
+    RAISE EXCEPTION TYPE cx_abap_datfm_invalid_date.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  gv_time_by_reference_implicit = sy-uzeit.
+  gv_time_by_reference_explicit = sy-uzeit.
+  gv_time_by_value = sy-uzeit.
+
+  WRITE: / `Start time:`.
+  WRITE: / gv_time_by_value.
+
+  WRITE: / `Do nothing:`.
+
+  lcl_time_utility=>do_nothing(
+    IMPORTING
+      ev_time_by_reference_implicit = gv_time_by_reference_implicit
+      ev_time_by_reference_explicit = gv_time_by_reference_explicit
+      ev_time_by_value              = gv_time_by_value ).
+
+  WRITE: / `Pass by reference (implicit):`.
+  WRITE: / gv_time_by_reference_implicit.
+
+  WRITE: / `Pass by reference (explicit):`.
+  WRITE: / gv_time_by_reference_explicit.
+
+  WRITE: / `Pass by value:`.
+  WRITE: / gv_time_by_value.
+
+  WRITE: / `Method call successful:`.
+
+  CLEAR: gv_time_by_reference_implicit, gv_time_by_reference_explicit, gv_time_by_value.
+
+  lcl_time_utility=>get_time_120000_successfully(
+    IMPORTING
+      ev_time_by_reference_implicit = gv_time_by_reference_implicit
+      ev_time_by_reference_explicit = gv_time_by_reference_explicit
+      ev_time_by_value              = gv_time_by_value ).
+
+
+  WRITE: / `Pass by reference (implicit):`.
+  WRITE: / gv_time_by_reference_implicit.
+
+  WRITE: / `Pass by reference (explicit):`.
+  WRITE: / gv_time_by_reference_explicit.
+
+  WRITE: / `Pass by value:`.
+  WRITE: / gv_time_by_value.
+
+  WRITE: / `Method call unsuccessful:`.
+
+  CLEAR: gv_time_by_reference_implicit, gv_time_by_reference_explicit, gv_time_by_value.
+
+  TRY.
+      lcl_time_utility=>get_time_120000_with_exception(
+        IMPORTING
+          ev_time_by_reference_implicit = gv_time_by_reference_implicit
+          ev_time_by_reference_explicit = gv_time_by_reference_explicit
+          ev_time_by_value              = gv_time_by_value ).
+    CATCH cx_abap_datfm_invalid_date.
+      " do nothing
+  ENDTRY.
+
+  WRITE: / `Pass by reference (implicit):`.
+  WRITE: / gv_time_by_reference_implicit.
+
+  WRITE: / `Pass by reference (explicit):`.
+  WRITE: / gv_time_by_reference_explicit.
+
+  WRITE: / `Pass by value:`.
+  WRITE: / gv_time_by_value.

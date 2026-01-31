@@ -1,0 +1,43 @@
+*&---------------------------------------------------------------------*
+*& Report ZSINGLETON_CLASS1_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsingleton_class1_641.
+
+DATA lo_obj TYPE REF TO zsingleton_class1_641.
+DATA poutput TYPE i.
+
+PARAMETERS p1 TYPE i.
+PARAMETERS p2 TYPE i.
+*cl_demo_input=>request( CHANGING field = ls_data ).
+
+*call method ZSINGLETON_CLASS1_641=>GET_INSTANCE
+*  receiving
+*    RU_OBJ = LO_OBJ.
+*
+*call method LO_OBJ->SUM
+*  exporting
+*    P1      = P1
+*    P2      = P2
+*  importing
+*    POUTPUT = POUTPUT.
+
+CALL METHOD zsingleton_class1_641=>get_instance
+  RECEIVING
+    ru_obj = lo_obj.
+
+
+CALL METHOD lo_obj->sum
+  EXPORTING
+    p1      = p1
+    p2      = p2
+  IMPORTING
+    poutput = poutput.
+
+
+
+*WRITE  poutput.
+
+*cl_demo_output=>display( poutput ).
+WRITE poutput.

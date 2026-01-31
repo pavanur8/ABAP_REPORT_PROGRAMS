@@ -1,0 +1,25 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SINGLE_BUFFER
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPRG_SINGLE_BUFFER.
+
+TYPES : BEGIN OF lty,
+        ORDER_NUMBER TYPE ZORDER_ONO,
+        ORDER_ODATE TYPE ZORDER_OD,
+        PAYMENT_MODE TYPE ZORDER_PM,
+        TOTAL_AMOUNT TYPE ZORDER_TA,
+        CURRENCY TYPE ZORDER_CU,
+        END OF lty.
+
+DATA : lt TYPE TABLE of lty.
+DATA : lw TYPE lty.
+PARAMETERS : o_ono TYPE ZORDER_ONO.
+
+SELECT SINGLE ORDER_NUMBER ORDER_ODATE PAYMENT_MODE TOTAL_AMOUNT CURRENCY
+FROM ZORDER_HEA5
+INTo lw
+WHERE ORDER_NUMBER = o_ono.
+
+ WRITE : / lw-ORDER_NUMBER,lw-ORDER_ODATE,lw-PAYMENT_MODE,lw-TOTAL_AMOUNT,lw-CURRENCY.

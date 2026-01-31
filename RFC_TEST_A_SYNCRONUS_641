@@ -1,0 +1,48 @@
+*&---------------------------------------------------------------------*
+*& Report ZRFC_TEST_A_SYNCRONUS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zrfc_test_a_syncronus_641.
+
+DATA : lv_tid    TYPE arfctid,
+       lv_fnum   TYPE qretstate-qrfnum,
+       lv_flg    TYPE char1,
+       ls_struct TYPE zbsp001_tab_641.
+
+ls_struct-mandt = '100'.
+ls_struct-sname = 'Bahubali'.
+ls_struct-fname = 'Devasena'.
+ls_struct-dob = '20160616'.
+ls_struct-address = 'Mahismathi'.
+CALL FUNCTION 'ZFM_CREATE_ZBSP001_TAB641'
+  DESTINATION 'NONE'
+  STARTING NEW TASK 'TASK1'
+  PERFORMING return_code ON END OF TASK
+  EXPORTING
+    im_struct = ls_struct.
+
+IF sy-subrc = 0.
+  WRITE : 'aRFC call successful' COLOR COL_HEADING.
+ENDIF.
+
+AT USER-COMMAND.
+  IF sy-ucomm = 'OKCD'.
+    IF lv_flg = abap_true.
+      WRITE : 'aRFC' COLOR COL_HEADING.
+      WRITE : 'ENTRY CREATED SUCCESSFULLY' COLOR COL_KEY.
+      CLEAR ls_struct.
+    ELSE.
+      WRITE : 'ENTRY CREATION FAILED' COLOR COL_BACKGROUND.
+      CLEAR ls_struct.
+    ENDIF.
+  ENDIF.
+
+  CLEAR : lv_tid, lv_fnum, lv_flg, ls_struct.
+
+FORM return_code USING taskname.
+  RECEIVE RESULTS FROM FUNCTION 'ZFM_CREATE_ZBSP001_TAB'
+  IMPORTING
+    ex_flg = lv_flg.
+  SET USER-COMMAND 'OKCD'.
+ENDFORM.

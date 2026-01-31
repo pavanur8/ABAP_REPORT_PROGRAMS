@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report ZPROAL11_2FILEHANDLING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zproal11_2filehandling_641.
+
+
+TYPES : BEGIN OF ts_zemployedetail,
+          emp_id     TYPE zemployedetail-emp_id,
+          first_name TYPE zemployedetail-first_name,
+          last_name  TYPE zemployedetail-last_name,
+          phone_no   TYPE zemployedetail-phone_no,
+          address    TYPE zemployedetail-address,
+        END OF ts_zemployedetail.
+
+DATA itab TYPE TABLE OF zemployedetail.
+DATA wa TYPE zemployedetail.
+
+DATA : lv_filename(20) TYPE c VALUE '/tmp/order.txt',
+       lv_string       TYPE string.
+
+
+OPEN DATASET lv_filename FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+IF sy-subrc = 0.
+  DO.
+    READ DATASET lv_filename INTO lv_string.
+    IF sy-subrc = 0.
+      SPLIT lv_string AT '#' INTO wa-emp_id wa-first_name wa-last_name wa-phone_no wa-address.
+      APPEND wa TO itab.
+      CLEAR : wa.
+    ELSE.
+      EXIT.
+    ENDIF.
+    CLOSE DATASET lv_filename.
+  ENDDO.
+ENDIF.
+
+LOOP AT itab INTO wa.
+  WRITE : / wa-emp_id,wa-first_name,wa-last_name,wa-phone_no,wa-address.
+ENDLOOP.

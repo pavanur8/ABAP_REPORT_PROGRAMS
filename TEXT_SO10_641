@@ -1,0 +1,86 @@
+*&---------------------------------------------------------------------*
+*& Report Z_TEXT_SO10_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_text_so10_641.
+
+DATA : lv_id          TYPE thead-tdid,
+       lv_language    TYPE thead-tdspras,
+       lv_name        TYPE thead-tdname,
+       lv_object_type TYPE thead-tdobject.
+
+DATA : it_lines TYPE TABLE OF tline,
+       wa_lines TYPE tline.
+
+DATA lv_html_string TYPE string.
+
+DATA it_header TYPE TABLE OF thead.
+
+lv_id = 'ST'.
+lv_language = 'E'.
+lv_name = 'Z_TEXT_641'.
+lv_object_type = 'TEXT'.
+
+CALL FUNCTION 'READ_TEXT'
+  EXPORTING
+    id                      = lv_id
+    language                = lv_language
+    name                    = lv_name
+    object                  = lv_object_type
+  TABLES
+    lines                   = it_lines
+  EXCEPTIONS
+    id                      = 1
+    language                = 2
+    name                    = 3
+    not_found               = 4
+    object                  = 5
+    reference_check         = 6
+    wrong_access_to_archive = 7
+    OTHERS                  = 8.
+IF sy-subrc <> 0.
+  RETURN.
+ENDIF.
+
+CALL FUNCTION 'SELECT_TEXT'
+  EXPORTING
+    object                  = lv_object_type
+    name                    = '*'
+    id                      = '*'
+    language                = '*'
+  TABLES
+    selections              = it_header
+  EXCEPTIONS
+    wrong_access_to_archive = 1
+    OTHERS                  = 2.
+IF sy-subrc <> 0.
+  RETURN.
+ENDIF.
+
+
+LOOP AT it_lines INTO wa_lines.
+  lv_html_string = lv_html_string && wa_lines-tdline.
+ENDLOOP.
+
+cl_demo_output=>display_html( html = lv_html_string ).
+
+
+DATA : it_ascii TYPE tdtab_c132.
+
+CALL FUNCTION 'CONVERT_ITF_TO_ASCII'
+  EXPORTING
+    codepage          = '4110'
+  IMPORTING
+    c_datatab         = it_ascii
+  TABLES
+    itf_lines         = it_lines
+  EXCEPTIONS
+    invalid_tabletype = 1
+    OTHERS            = 2.
+IF sy-subrc <> 0.
+  RETURN.
+ENDIF.
+
+*cl_demo_output=>display_html( it_ascii[ 2 ] ).
+cl_demo_output=>display_html( it_ascii[ 1 ] ).

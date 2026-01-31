@@ -1,0 +1,63 @@
+*&---------------------------------------------------------------------*
+*& Include          ZVBAK_CLASS
+*&---------------------------------------------------------------------*
+TYPES : BEGIN OF ls,
+          vbeln TYPE vbeln_va,
+          erzet TYPE erzet,
+          erdat TYPE erdat,
+          ernam TYPE ernam,
+          vbtyp TYPE vbtypl,
+        END OF ls.
+
+TYPES : BEGIN OF ls_vbap,
+          vbeln TYPE vbeln_va,
+          posnr TYPE posnr_va,
+          matnr TYPE matnr,
+          pmatn TYPE pmatn,
+          matkl TYPE matkl,
+          pstyv TYPE pstyv,
+        END OF ls_vbap.
+
+TYPES : BEGIN OF ls_vbpa,
+          vbeln TYPE vbeln_va,
+          posnr TYPE posnr_va,
+          parvw TYPE parvw,
+          kunnr TYPE kunnr,
+          lifnr TYPE lifnr,
+          land1 TYPE land1,
+        END OF ls_vbpa.
+
+DATA itab_vbpa TYPE TABLE OF ls_vbpa.
+DATA itab_vbap TYPE TABLE OF ls_vbap.
+DATA itab TYPE TABLE OF ls.
+DATA LV_vbeln TYPE vbeln_va.
+
+SELECT-OPTIONS s_vbeln FOR lv_vbeln.
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS r1 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS r2 TYPE c RADIOBUTTON GROUP r1 DEFAULT 'X'.
+  PARAMETERS r3 TYPE c RADIOBUTTON GROUP r1.
+SELECTION-SCREEN END OF BLOCK b1.
+
+CLASS ab_class DEFINITION ABSTRACT.
+  PUBLIC SECTION.
+    TYPES : BEGIN OF ltss,
+              sign   TYPE char1,
+              option TYPE char2,
+              low    TYPE vbeln_va,
+              high   TYPE vbeln_va,
+            END OF ltss.
+    TYPES sel_vbeln TYPE TABLE OF ltss.
+    METHODS ab_method ABSTRACT IMPORTING pvbeln  TYPE sel_vbeln
+                               EXPORTING poutput TYPE itab.
+
+    METHODS: vbak,vbak_display.
+ENDCLASS.
+
+CLASS ab_class IMPLEMENTATION.
+  METHOD vbak.
+  ENDMETHOD.
+
+  METHOD vbak_display.
+  ENDMETHOD.
+ENDCLASS.

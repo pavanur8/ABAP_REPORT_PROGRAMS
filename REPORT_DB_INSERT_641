@@ -1,0 +1,223 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_DB_INSERT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zreport_db_insert_641.
+
+TYPES : BEGIN OF lty,
+          order_number TYPE zorder_ono,
+        END OF lty.
+
+TYPES : BEGIN OF ls_display,
+          order_odate  TYPE zorder_od,
+          payment_mode TYPE zorder_pm,
+          total_amount TYPE zorder_ta,
+          currency     TYPE zorder_cu,
+        END OF ls_display.
+
+TYPES : BEGIN OF lsd,
+        ORDER_NUMBER TYPE ZORDER_ONO,
+        ORDER_ODATE TYPE ZORDER_OD,
+        PAYMENT_MODE TYPE ZORDER_PM,
+        TOTAL_AMOUNT TYPE ZORDER_TA,
+        CURRENCY TYPE ZORDER_CU,
+        END OF lsd.
+
+*Initialing the Structure Using the Table name.
+DATA : wa TYPE zorder_head18.
+DATA : lt TYPE TABLE OF lty.
+DATA :lwa TYPE lty.
+DATA : w TYPE ls_display.
+DATA : lt_data TYPE TABLE OF ZORDER_HEAD18.
+DATA : wa_data TYPE ZORDER_HEAD18.
+DATA: gv_show_output TYPE abap_bool VALUE abap_false.
+
+SELECTION-SCREEN BEGIN OF BLOCK bk1 WITH FRAME TITLE TEXT-002.
+  PARAMETERS : p_ono TYPE zorder_ono. "OBLIGATORY.
+  PARAMETERS : p_odate TYPE zorder_od MODIF ID a1.
+  PARAMETERS : p_pm TYPE zorder_pm MODIF ID a2.
+  PARAMETERS : p_ta TYPE zorder_ta MODIF ID a3.
+  PARAMETERS : p_curr TYPE zorder_cu MODIF ID a4.
+*   SELECTION-SCREEN PUSHBUTTON 10(20) btn_fetc USER-COMMAND fetch.
+
+SELECTION-SCREEN END OF BLOCK bk1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-003.
+  PARAMETERS : p_r1 TYPE c RADIOBUTTON GROUP r1 USER-COMMAND flag.
+  PARAMETERS : p_r2 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS : p_r3 TYPE c RADIOBUTTON GROUP r1.
+  PARAMETERS : p_r4 TYPE c RADIOBUTTON GROUP r1 DEFAULT 'X'.
+
+*  SELECTION-SCREEN PUSHBUTTON 10(20) btn_fetc
+*                       USER-COMMAND fetch.
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+  SELECTION-SCREEN PUSHBUTTON 10(20) btn_fetc USER-COMMAND fetch.
+
+
+
+
+START-OF-SELECTION.
+*
+*IF gv_show_output = abap_true.
+*    SELECT * FROM zorder_head18 INTO TABLE lt_data.
+*
+*    LOOP AT lt_data INTO wa_data.
+*      WRITE: / wa_data-order_number,
+*               wa_data-order_odate,
+*               wa_data-payment_mode,
+*               wa_data-total_amount,
+*               wa_data-currency.
+*    ENDLOOP.
+*  ENDIF.
+
+*Insert Query.
+  IF p_r1 = 'X'.
+    wa-order_number = p_ono.
+    wa-order_odate = p_odate.
+    wa-payment_mode = p_pm.
+    wa-total_amount = p_ta.
+    wa-currency = p_curr.
+    INSERT zorder_head18 FROM wa.
+    IF sy-subrc = 0.
+      WRITE : TEXT-000.
+    ELSE.
+      WRITE : TEXT-001.
+    ENDIF.
+  ENDIF.
+
+*Delete Query.
+  IF p_r2 = 'X'.
+    wa-order_number = p_ono.
+    DELETE zorder_head18 FROM wa.
+    IF sy-subrc = 0.
+      WRITE : TEXT-004,':',p_ono.
+    ENDIF.
+  ENDIF.
+
+*Update Query.
+  IF p_r3 = 'X'.
+    wa-order_number = p_ono.
+    wa-order_odate = p_odate.
+    wa-payment_mode = p_pm.
+    wa-total_amount = p_ta.
+    wa-currency = p_curr.
+    UPDATE zorder_head18 FROM wa.
+    IF sy-subrc = 0.
+      WRITE : TEXT-005,':',p_ono.
+    ENDIF.
+  ENDIF.
+
+*Modify.
+  IF p_r4 = 'X'.
+    wa-order_number = p_ono.
+    wa-order_odate = p_odate.
+    wa-payment_mode = p_pm.
+    wa-total_amount = p_ta.
+    wa-currency = p_curr.
+    MODIFY zorder_head18 FROM wa.
+    IF sy-subrc = 0.
+      WRITE : TEXT-006,':',p_ono.
+    ENDIF.
+  ENDIF.
+
+
+*SELECT ORDER_NUMBER ORDER_ODATE PAYMENT_MODE  TOTAL_AMOUNT CURRENCY
+ SELECT * FROM zorder_head18
+  INTO TABLE lt_data.
+*WHERE ORDER_NUMBER = p1_ono.
+
+LOOP AT lt_data INTO wa_data.
+  WRITE : / wa_data-ORDER_NUMBER,wa_data-ORDER_ODATE,wa_data-PAYMENT_MODE,wa_data-TOTAL_AMOUNT,wa_data-CURRENCY.
+ENDLOOP.
+
+*SELECTION-SCREEN PUSHBUTTON /1(10) save_btn USER-COMMAND save_cmd.
+
+AT SELECTION-SCREEN .
+
+    CASE sy-ucomm.
+    WHEN 'FETCH'.
+*Validating the order number
+  IF p_r1 = 'X'.
+    SELECT order_number
+    FROM zorder_head18
+    INTO TABLE lt
+    WHERE order_number = p_ono.
+*SELECT SINGLE ORDER_NUMBER
+*FROM ZORDER_HEAD18
+*INTO lwa
+*WHERE ORDER_NUMBER = p_ono.
+    IF sy-subrc = 0.
+      MESSAGE : e002(zmessge_1) WITH p_ono DISPLAY LIKE 'I'.
+    ENDIF.
+  ENDIF.
+
+  IF p_r2 = 'X'.
+    SELECT SINGLE order_number
+    FROM zorder_head18
+    INTO lwa
+    WHERE order_number = p_ono.
+    IF sy-subrc <> 0.
+      MESSAGE : e003(zmessge_1) WITH p_ono DISPLAY LIKE 'I'.
+    ENDIF.
+  ENDIF.
+
+  IF p_r3 = 'X'.
+    SELECT SINGLE order_number
+  FROM zorder_head18
+  INTO lwa
+  WHERE order_number = p_ono.
+    IF sy-subrc <> 0.
+      MESSAGE : e003(zmessge_1) WITH p_ono DISPLAY LIKE 'I'.
+    ELSE.
+      SELECT SINGLE order_odate payment_mode total_amount currency
+      FROM zorder_head18
+      INTO w
+      WHERE order_number = p_ono.
+    ENDIF.
+  ENDIF.
+
+  IF p_r4 = 'X'.
+    SELECT SINGLE order_odate payment_mode total_amount currency
+    FROM zorder_head18
+    INTO w
+    WHERE order_number = p_ono.
+
+    IF sy-subrc <> 0.
+      CLEAR w.
+    ENDIF.
+  ENDIF.
+  ENDCASE.
+*    gv_show_output = abap_true.
+*   ENDCASE.
+
+
+
+AT SELECTION-SCREEN OUTPUT .
+
+ btn_fetc = 'SAVE'.
+
+  IF p_r2 = 'X'.
+    LOOP AT SCREEN.
+      IF screen-group1 = 'A1' OR screen-group1 = 'A2' OR screen-group1 = 'A3' OR screen-group1 = 'A4'.
+        screen-active = 0.
+        MODIFY SCREEN.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+  IF p_r3 = 'X'.
+    p_odate = w-order_odate.
+    p_pm = w-payment_mode.
+    p_ta = w-total_amount.
+    p_curr = w-currency.
+  ENDIF.
+
+  IF p_r4 = 'X'.
+    p_odate = w-order_odate.
+    p_pm = w-payment_mode.
+    p_ta = w-total_amount.
+    p_curr = w-currency.
+  ENDIF.

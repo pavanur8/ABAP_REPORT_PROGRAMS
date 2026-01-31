@@ -1,0 +1,94 @@
+*&---------------------------------------------------------------------*
+*& Report ZTEST_PASS_BY_CHANGING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztest_pass_by_changing_641.
+
+DATA gv_time_by_reference_implicit TYPE t.
+DATA gv_time_by_reference_explicit TYPE t.
+DATA gv_time_by_value TYPE t.
+
+CLASS lcl_time_utility DEFINITION FINAL.
+  PUBLIC SECTION.
+    CLASS-METHODS add_10_seconds_successfully
+      CHANGING
+        cv_time_by_reference_implicit            TYPE t
+        REFERENCE(cv_time_by_reference_explicit) TYPE t
+        VALUE(cv_time_by_value)                  TYPE t.
+
+    CLASS-METHODS add_10_seconds_with_exception
+      CHANGING
+        cv_time_by_reference_implicit            TYPE t
+        REFERENCE(cv_time_by_reference_explicit) TYPE t
+        VALUE(cv_time_by_value)                  TYPE t
+      RAISING
+        cx_abap_datfm_invalid_date.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+CLASS lcl_time_utility IMPLEMENTATION.
+
+  METHOD add_10_seconds_successfully.
+    cv_time_by_reference_implicit = cv_time_by_reference_implicit + 10.
+    cv_time_by_reference_explicit = cv_time_by_reference_explicit + 10.
+    cv_time_by_value = cv_time_by_value + 10.
+  ENDMETHOD.
+
+  METHOD add_10_seconds_with_exception.
+    cv_time_by_reference_implicit = cv_time_by_reference_implicit + 10.
+    cv_time_by_reference_explicit = cv_time_by_reference_explicit + 10.
+    cv_time_by_value = cv_time_by_value + 10.
+    RAISE EXCEPTION TYPE cx_abap_datfm_invalid_date.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  gv_time_by_reference_implicit = sy-uzeit.
+  gv_time_by_reference_explicit = sy-uzeit.
+  gv_time_by_value = sy-uzeit.
+
+  WRITE: / `Start time:`.
+  WRITE: / gv_time_by_value.
+
+  WRITE: / `Method call successful:`.
+
+  lcl_time_utility=>add_10_seconds_successfully(
+    CHANGING
+      cv_time_by_reference_implicit = gv_time_by_reference_implicit
+      cv_time_by_reference_explicit = gv_time_by_reference_explicit
+      cv_time_by_value              = gv_time_by_value ).
+
+  WRITE: / `Pass by reference (implicit):`.
+  WRITE: / gv_time_by_reference_implicit.
+
+  WRITE: / `Pass by reference (explicit):`.
+  WRITE: / gv_time_by_reference_explicit.
+
+  WRITE: / `Pass by value:`.
+  WRITE: / gv_time_by_value.
+
+  WRITE: / `Method call unsuccessful:`.
+
+  TRY.
+      lcl_time_utility=>add_10_seconds_with_exception(
+        CHANGING
+          cv_time_by_reference_implicit = gv_time_by_reference_implicit
+          cv_time_by_reference_explicit = gv_time_by_reference_explicit
+          cv_time_by_value              = gv_time_by_value ).
+    CATCH cx_abap_datfm_invalid_date.
+      " do nothing
+  ENDTRY.
+
+  WRITE: / `Pass by reference (implicit):`.
+  WRITE: / gv_time_by_reference_implicit.
+
+  WRITE: / `Pass by reference (explicit):`.
+  WRITE: / gv_time_by_reference_explicit.
+
+  WRITE: / `Pass by value:`.
+  WRITE: / gv_time_by_value.

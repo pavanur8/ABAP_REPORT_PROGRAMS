@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Report ZSINGLETON_CLASS3_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSINGLETON_CLASS3_641.
+
+DATA lo_obj TYPE REF TO zsingleton_class1_641.
+DATA poutput TYPE i.
+
+PARAMETERS p1 TYPE i.
+PARAMETERS p2 TYPE i.
+
+CALL METHOD zsingleton_class1_641=>get_instance
+  RECEIVING
+    ru_obj = lo_obj
+    .
+
+CALL METHOD lo_obj->sum
+  EXPORTING
+    p1      = p1
+    p2      = p2
+  IMPORTING
+    poutput = poutput
+    .
+
+WRITE : poutput.

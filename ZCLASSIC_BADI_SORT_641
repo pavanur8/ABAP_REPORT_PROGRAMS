@@ -1,0 +1,29 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASSIC_BADI_SORT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclassic_badi_sort_641.
+
+DATA obj_interface TYPE REF TO zif_ex_badi_sort_641.
+
+CALL METHOD cl_exithandler=>get_instance
+  EXPORTING
+    exit_name                     = 'ZBADI_SORT_641'
+  CHANGING
+    instance                      = obj_interface
+  EXCEPTIONS
+    no_reference                  = 1
+    no_interface_reference        = 2
+    no_exit_interface             = 3
+    class_not_implement_interface = 4
+    single_exit_multiply_active   = 5
+    cast_error                    = 6
+    exit_not_existing             = 7
+    data_incons_in_exit_managem   = 8
+    OTHERS                        = 9.
+IF sy-subrc <> 0.
+  RETURN.
+ENDIF.
+
+CALL METHOD obj_interface->test.

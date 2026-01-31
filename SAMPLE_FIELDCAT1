@@ -1,0 +1,154 @@
+*&---------------------------------------------------------------------*
+*& Report ZREPORT_SAMPLE_FIELDCAT1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZREPORT_SAMPLE_FIELDCAT1.
+
+TYPES : BEGIN OF lty_vbak,
+        VBELN TYPE VBELN_VA,
+        ERDAT TYPE ERDAT,
+        ERZET TYPE ERZET,
+        ERNAM TYPE ERNAM,
+        VBTYP TYPE VBTYPL,
+        END OF lty_vbak.
+
+TYPES : BEGIN OF lty_vbap,
+        VBELN TYPE VBELN_VA,
+        POSNR TYPE POSNR_VA,
+        MATNR TYPE MATNR,
+        END OF lty_vbap.
+
+DATA : lt TYPE TABLE OF lty_vbak.
+DATA : lw TYPE lty_vbak.
+DATA : lt1 TYPE TABLE OF lty_vbap.
+DATA : lw1 TYPE lty_vbap.
+DATA : lv_vbln TYPE VBELN_VA.
+DATA : lt_fieldcat TYPE SLIS_T_FIELDCAT_ALV.
+DATA : ls_fieldcat TYPE SLIS_FIELDCAT_ALV.
+DATA : lt_final TYPE TABLE OF ZALV_STR.
+DATA : lw_final TYPE ZALV_STR.
+
+SELECT-OPTIONS : s_ono FOR lv_vbln.
+
+SELECT vbeln erdat erzet ernam vbtyp
+FROM vbak
+INTO TABLE lt
+WHERE vbeln IN s_ono.
+
+IF lt IS NOT INITIAL.
+SELECT vbeln posnr matnr
+FROM vbap
+INTO TABLE lt1
+FOR ALL ENTRIES IN lt
+WHERE vbeln = lt-vbeln.
+ENDIF.
+
+LOOP at lt into lw.
+LOOP AT lt1 into lw1 WHERE vbeln = lw-vbeln.
+lw_final-vbeln = lw-vbeln.
+lw_final-erdat = lw-erdat.
+lw_final-erzet = lw-erzet.
+lw_final-ernam = lw-ernam.
+lw_final-vbtyp = lw-vbtyp.
+lw_final-posnr = lw1-posnr.
+lw_final-matnr = lw1-matnr.
+APPEND lw_final TO lt_final.
+CLEAR : lw_final.
+ENDLOOP.
+ENDLOOP.
+
+ls_fieldcat-row_pos =  '1'.
+ls_fieldcat-fieldname = 'VBELN'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Sales Document Number'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '2'.
+ls_fieldcat-fieldname = 'ERDAT'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Creation Date'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '3'.
+ls_fieldcat-fieldname = 'ERZET'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Time'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '4'.
+ls_fieldcat-fieldname = 'ERNAM'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Name'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '5'.
+ls_fieldcat-fieldname = 'VBTYP'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Category'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '6'.
+ls_fieldcat-fieldname = 'POSNR'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Item Number'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+ls_fieldcat-row_pos =  '7'.
+ls_fieldcat-fieldname = 'MATNR'.
+ls_fieldcat-tabname = 'LT_FINAL'.
+ls_fieldcat-seltext_l = 'Material Number'.
+APPEND ls_fieldcat TO lt_fieldcat.
+CLEAR : ls_fieldcat.
+
+
+CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
+ EXPORTING
+*   I_INTERFACE_CHECK              = ' '
+*   I_BYPASSING_BUFFER             =
+*   I_BUFFER_ACTIVE                = ' '
+*   I_CALLBACK_PROGRAM             = ' '
+*   I_CALLBACK_PF_STATUS_SET       = ' '
+*   I_CALLBACK_USER_COMMAND        = ' '
+*   I_STRUCTURE_NAME               =
+*   IS_LAYOUT                      =
+    IT_FIELDCAT                    = lt_fieldcat
+*   IT_EXCLUDING                   =
+*   IT_SPECIAL_GROUPS              =
+*   IT_SORT                        =
+*   IT_FILTER                      =
+*   IS_SEL_HIDE                    =
+*   I_DEFAULT                      = 'X'
+*   I_SAVE                         = ' '
+*   IS_VARIANT                     =
+*   IT_EVENTS                      =
+*   IT_EVENT_EXIT                  =
+*   IS_PRINT                       =
+*   IS_REPREP_ID                   =
+*   I_SCREEN_START_COLUMN          = 0
+*   I_SCREEN_START_LINE            = 0
+*   I_SCREEN_END_COLUMN            = 0
+*   I_SCREEN_END_LINE              = 0
+*   IR_SALV_LIST_ADAPTER           =
+*   IT_EXCEPT_QINFO                =
+*   I_SUPPRESS_EMPTY_DATA          = ABAP_FALSE
+*   IO_SALV_ADAPTER                =
+*   O_COMMON_HUB                   =
+* IMPORTING
+*   E_EXIT_CAUSED_BY_CALLER        =
+*   ES_EXIT_CAUSED_BY_USER         =
+  TABLES
+    t_outtab                       = lt_final
+* EXCEPTIONS
+*   PROGRAM_ERROR                  = 1
+*   OTHERS                         = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.

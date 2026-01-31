@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Report ZTEST_SELECT_READ_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztest_select_read_641.
+
+DATA carrid TYPE spfli-carrid VALUE 'AA'.
+DATA connid TYPE spfli-connid VALUE '0064'.
+
+SELECT SINGLE @abap_true FROM spfli WHERE carrid = @carrid AND
+  connid = @connid  INTO @DATA(wa_exist).
+
+cl_demo_output=>display( wa_exist ).

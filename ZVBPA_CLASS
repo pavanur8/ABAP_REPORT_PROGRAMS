@@ -1,0 +1,97 @@
+*&---------------------------------------------------------------------*
+*& Include          ZVBPA_CLASS
+*&---------------------------------------------------------------------*
+CLASS vbpa_class DEFINITION INHERITING FROM ab_class.
+  PUBLIC SECTION.
+    METHODS ab_method REDEFINITION.
+    METHODS : vbpa,vbpa_display.
+ENDCLASS.
+
+CLASS vbpa_class IMPLEMENTATION.
+  METHOD ab_method.
+    me->ab_method( s_vbeln[] ).
+  ENDMETHOD.
+
+  METHOD vbpa.
+    SELECT vbeln posnr parvw kunnr lifnr land1
+    FROM vbpa
+    INTO TABLE itab_vbpa
+    WHERE vbeln IN  s_vbeln.
+  ENDMETHOD.
+
+  METHOD vbpa_display.
+    me->vbpa( ).
+    DATA wa_fieldcat TYPE lvc_s_fcat.
+    DATA itab_fieldcat TYPE lvc_t_fcat.
+    DATA lo_object TYPE REF TO cl_gui_custom_container.
+    DATA lo_grid TYPE REF TO cl_gui_alv_grid.
+
+    wa_fieldcat-col_pos = '1'.
+    wa_fieldcat-fieldname = 'VBELN'.
+    wa_fieldcat-scrtext_l = 'Sales Document Number'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = '2'.
+    wa_fieldcat-fieldname = 'POSNR'.
+    wa_fieldcat-scrtext_l = 'Sales Document Item'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = '3'.
+    wa_fieldcat-fieldname = 'PARVW'.
+    wa_fieldcat-scrtext_l = 'Partner Function'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = '4'.
+    wa_fieldcat-fieldname = 'KUNNR'.
+    wa_fieldcat-scrtext_l = 'Customer Number'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = '5'.
+    wa_fieldcat-fieldname = 'LIFNR'.
+    wa_fieldcat-scrtext_l = 'Account Number of Supplier'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = '6'.
+    wa_fieldcat-fieldname = 'LAND1'.
+    wa_fieldcat-scrtext_l = 'Region Key'.
+    wa_fieldcat-just = 'X'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    CREATE OBJECT lo_object
+      EXPORTING
+        container_name = 'CONTA'.
+
+    CREATE OBJECT lo_grid
+      EXPORTING
+        i_parent = lo_object.
+
+    CALL METHOD lo_grid->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'LS'
+      CHANGING
+        it_outtab                     = itab_vbpa
+        it_fieldcatalog               = itab_fieldcat
+*       it_sort                       =
+*       it_filter                     =
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+      MESSAGE 'Implement suitable error handling here' TYPE 'E'.
+    ENDIF.
+  ENDMETHOD.
+
+ENDCLASS.

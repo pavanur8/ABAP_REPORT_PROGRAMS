@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Include          ZCLASS_DEFIMPLEMNTATION
+*&---------------------------------------------------------------------*
+CLASS clas DEFINITION.
+  PUBLIC SECTION.
+    METHODS handler FOR EVENT double_click OF cl_salv_events_table IMPORTING row column.
+ENDCLASS.
+
+CLASS clas IMPLEMENTATION.
+  METHOD handler.
+    READ TABLE itab INTO wa INDEX row.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar       = 'Confirmation Popup'
+        text_question  = 'Do you want to proceed?'
+        text_button_1  = 'Yes'
+        text_button_2  = 'No'
+        default_button = '1'
+      IMPORTING
+        answer         = lv_answer.
+    IF sy-subrc = 0.
+      IF lv_answer = '1'.
+        SELECT vbeln posnr matnr
+        FROM vbap
+        INTO TABLE itab_vbap
+        WHERE vbeln = wa-vbeln.
+
+        TRY.
+            CALL METHOD cl_salv_table=>factory
+              IMPORTING
+                r_salv_table = lo_alv1
+              CHANGING
+                t_table      = itab_vbap.
+          CATCH cx_salv_msg.
+        ENDTRY.
+
+        CALL METHOD lo_alv1->if_salv_gui_om_table_action~display.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

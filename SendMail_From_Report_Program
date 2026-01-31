@@ -1,0 +1,11 @@
+*&---------------------------------------------------------------------*
+*& Report Z_MAIL_FROM_REPORT_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_mail_from_report_641.
+
+DATA(lv_mailto) = |mailto:gundaiahgari.b@laderatechnology.com?subject=please Read!&body=Hello!| &&
+                  |%0d%0d This is Important Message This Mail Sending From ABAP REPORT Program! %0d%0d Regards|.
+
+cl_abap_browser=>show_url( url          =    lv_mailto ).

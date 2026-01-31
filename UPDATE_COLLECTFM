@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Report ZUPDATE_COLLECTFM
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZUPDATE_COLLECTFM.
+
+*DATA: lv_matnr    TYPE matnr,
+*      lv_quantity TYPE menge_d.
+*
+*PARAMETERS: p_matnr TYPE matnr,
+*            p_qty   TYPE menge_d.
+
+PARAMETERS : p_mat TYPE matnr,
+             p_qun TYPE ZQUANTITL.
+
+
+CALL FUNCTION 'ZUPDATE_COLLECTFUN18'
+  EXPORTING
+    ipmatnr          = p_mat
+    ipquantity       =  p_qun
+          .
+
+*IF sy-subrc eq 0.
+*MESSAGE 'Successfully collected ' TYPE 'I'.
+* ENDIF.

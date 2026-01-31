@@ -1,0 +1,55 @@
+*&---------------------------------------------------------------------*
+*& Report ZTEST_KERNAL_BADI_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztest_kernal_badi_641.
+SELECTION-SCREEN BEGIN OF BLOCK b1.
+  PARAMETERS p_num1 TYPE num2.
+  PARAMETERS p_oper TYPE char01.
+  PARAMETERS p_num2 TYPE num2.
+SELECTION-SCREEN END OF BLOCK b1.
+
+START-OF-SELECTION.
+
+  DATA lv_res TYPE num2.
+  DATA lo_badi TYPE REF TO ztest_kernal_badi.
+*===================================================================================
+
+ "Catching Exception here AND insted of fall back class..
+
+
+  TRY.
+      GET BADI lo_badi.
+
+      CALL BADI lo_badi->meth_calcul
+        EXPORTING
+          pnum1   = p_num1
+          popera  = p_oper
+          pnum2   = p_num2
+        IMPORTING
+          presult = lv_res.
+
+    CATCH cx_badi_not_implemented.
+
+  ENDTRY.
+
+  IF lv_res IS INITIAL.
+    WRITE : text-000.
+  ELSE.
+    WRITE : p_num1,p_oper,p_num2,'=',lv_res.
+
+  ENDIF.
+
+
+
+*    GET BADI lo_badi.
+*  CALL BADI lo_badi->meth_calcul
+*    EXPORTING
+*      pnum1   = p_num1
+*      popera  = p_oper
+*      pnum2   = p_num2
+*    IMPORTING
+*      presult = lv_res.
+*
+*  WRITE : p_num1,p_oper,p_num2,'=',lv_res.

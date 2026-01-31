@@ -1,0 +1,12 @@
+*&---------------------------------------------------------------------*
+*& Report ZCDS_CALLING_ASSOCIATION_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcds_calling_association_641.
+
+SELECT vbeln,erdat,ernam,  \_item-matnr AS material FROM zassociation_3_641 INTO TABLE @DATA(itab).
+
+IF sy-subrc EQ 0.
+  cl_demo_output=>display( itab ).
+ENDIF.

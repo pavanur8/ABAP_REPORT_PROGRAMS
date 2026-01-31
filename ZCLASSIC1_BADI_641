@@ -1,0 +1,59 @@
+*&---------------------------------------------------------------------*
+*& Report ZCLASSIC1_BADI_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zclassic1_badi_641.
+
+DATA ject TYPE REF TO zif_ex_badi_classic_641.
+
+CALL METHOD cl_exithandler=>get_instance
+  EXPORTING
+    exit_name = 'ZBADI_CLASSIC_641'
+  CHANGING
+    instance  = ject
+*  EXCEPTIONS
+*   no_reference                  = 1
+*   no_interface_reference        = 2
+*   no_exit_interface             = 3
+*   class_not_implement_interface = 4
+*   single_exit_multiply_active   = 5
+*   cast_error                    = 6
+*   exit_not_existing             = 7
+*   data_incons_in_exit_managem   = 8
+*   others    = 9
+  .
+IF sy-subrc = 0.
+  CALL METHOD ject->display_message.
+ENDIF.
+
+
+
+*GET BADI lo_object.
+*
+*CALL BADI lo_object->display_message.
+
+
+*CALL METHOD cl_exithandler=>get_instance
+*  EXPORTING
+*    exit_name                     = 'ZCLASSIC_BADI_641'
+**   null_instance_accepted        = SEEX_FALSE
+**  IMPORTING
+**   act_imp_existing              =
+*  CHANGING
+*    instance                      = lo_object
+*  EXCEPTIONS
+*    no_reference                  = 1
+*    no_interface_reference        = 2
+*    no_exit_interface             = 3
+*    class_not_implement_interface = 4
+*    single_exit_multiply_active   = 5
+*    cast_error                    = 6
+*    exit_not_existing             = 7
+*    data_incons_in_exit_managem   = 8
+*    OTHERS                        = 9.
+*IF sy-subrc <> 0.
+*  CALL METHOD lo_object->display_message.
+*ELSE.
+*  WRITE 'No implementation is called'.
+*ENDIF.

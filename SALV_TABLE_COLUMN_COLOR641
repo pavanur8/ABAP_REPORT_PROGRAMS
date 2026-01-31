@@ -1,0 +1,56 @@
+*&---------------------------------------------------------------------*
+*& Report ZSALV_TABLE_COLUMN_COLOR641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsalv_table_column_color641.
+
+INCLUDE <color>.  " For color constants like COL_POSITIVE
+
+CLASS lcl_flight DEFINITION.
+  PUBLIC SECTION.
+    DATA: lt_flight TYPE TABLE OF spfli,
+          lo_salv   TYPE REF TO cl_salv_table,
+          ls_color  TYPE lvc_s_colo.
+
+    METHODS: get_data,
+      color_column,
+      display_data.
+ENDCLASS.
+
+CLASS lcl_flight IMPLEMENTATION.
+  METHOD get_data.
+    SELECT * FROM spfli INTO TABLE lt_flight UP TO 10 ROWS.
+  ENDMETHOD.
+
+  METHOD color_column.
+    DATA: lo_cols TYPE REF TO cl_salv_columns_table,
+          lo_col  TYPE REF TO cl_salv_column_table.
+
+    lo_cols = lo_salv->get_columns( ).
+    lo_col ?= lo_cols->get_column( 'CITYFROM' ).
+
+    ls_color-col = col_positive.
+    lo_col->set_color( ls_color ).
+  ENDMETHOD.
+
+  METHOD display_data.
+    TRY.
+        cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table = lo_salv
+          CHANGING
+            t_table = lt_flight ).
+
+        color_column( ).
+        lo_salv->display( ).
+      CATCH cx_salv_msg INTO DATA(lx_salv_msg).
+        MESSAGE lx_salv_msg->get_text( ) TYPE 'E'.
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(lo_flight) = NEW lcl_flight( ).
+  lo_flight->get_data( ).
+  lo_flight->display_data( ).

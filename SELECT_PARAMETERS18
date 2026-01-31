@@ -1,0 +1,34 @@
+*&---------------------------------------------------------------------*
+*& Report ZSELECT_PARAMETERS18
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSELECT_PARAMETERS18.
+
+DATA lv(18) TYPE c.
+
+SELECTION-SCREEN : BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-143.
+
+  "Using Parameters Input From the end users.
+*PARAMETERS : ono TYPE ZORDER_ID01 DEFAULT 1.
+PARAMETERS : p_amount(5) TYPE c."ZORDER_AMOUNT1.
+
+**SELECT-OPTIONS : s_no FOR lv DEFAULT 1 TO 5 NO-INTERVALS.
+*SELECT-OPTIONS : s_no FOR lv OBLIGATORY NO-EXTENSION.
+*
+*SELECTION-SCREEN : BEGIN OF LINE.
+*PARAMETERS r1 TYPE c RADIOBUTTON GROUP R1.
+*SELECTION-SCREEN : COMMENT 3(3) TEXT-000.
+*PARAMETERS r2 TYPE c RADIOBUTTON GROUP R1 DEFAULT 'X'.
+*SELECTION-SCREEN : COMMENT 9(3) TEXT-001.
+*PARAMETERS r3 TYPE c RADIOBUTTON GROUP R1 .
+*SELECTION-SCREEN : COMMENT 15(3) TEXT-002.
+*SELECTION-SCREEN : END OF LINE.
+*
+*PARAMETERS : c_da AS CHECKBOX.
+*PARAMETERS : c1_da AS CHECKBOX.
+SELECTION-SCREEN : END OF BLOCK b1 .
+
+IF p_amount IS NOT INITIAL.
+  MESSAGE 'Please enter Numeric Values' TYPE 'W'.
+ENDIF.

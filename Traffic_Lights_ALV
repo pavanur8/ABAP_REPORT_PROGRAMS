@@ -1,0 +1,135 @@
+*&---------------------------------------------------------------------*
+*& Report ZALV_TRAFFIC641
+*&---------------------------------------------------------------------*
+*&  LT_641
+*&---------------------------------------------------------------------*
+REPORT zalv_traffic641.
+
+TYPES : BEGIN OF lty,
+          vbeln    TYPE vbeln_va,
+          erdat    TYPE erdat,
+          ernam    TYPE ernam,
+          light(4) TYPE c,
+        END OF lty.
+
+DATA : lt TYPE TABLE OF lty,
+       lw TYPE lty.
+
+DATA : d_vb TYPE vbeln_va.
+
+SELECT-OPTIONS : s_vbeln FOR d_vb.
+
+SELECT vbeln erdat ernam
+FROM vbak
+INTO TABLE lt
+WHERE vbeln IN s_vbeln.
+
+LOOP AT lt INTO lw.
+  IF lw-ernam = 'TECH_17'.
+    lw-light = 1.
+  ELSEIF lw-ernam = 'TECH_16'.
+    lw-light = 2.
+  ELSE.
+    lw-light = 3.
+  ENDIF.
+  MODIFY lt FROM lw TRANSPORTING light.
+  CLEAR lw.
+ENDLOOP.
+*
+*LOOP AT lt INTO lw.
+*  IF lw-ernam = 'TECH_17'.
+*    lw-light = 'C610'.
+*  ELSEIF lw-ernam = 'TECH_16'.
+*    lw-light = 'C510'.
+*  ELSE.
+*    lw-light = 'C410'.
+*  ENDIF.
+*  MODIFY lt FROM lw TRANSPORTING light.
+*  CLEAR lw.
+*ENDLOOP.
+
+*LOOP AT lt INTO lw.
+*  IF lw-ernam = 'TECH_17'.
+*    lw-light = 'C601'.
+*  ELSEIF lw-ernam = 'TECH_16'.
+*    lw-light = 'C501'.
+*  ELSE.
+*    lw-light = 'C401'.
+*  ENDIF.
+*  MODIFY lt FROM lw TRANSPORTING light.
+*  CLEAR lw.
+*ENDLOOP.
+
+
+
+
+PERFORM alv1.
+
+FORM alv1.
+  DATA : lt_fieldcat TYPE slis_t_fieldcat_alv,
+       lw_fieldcat TYPE slis_fieldcat_alv.
+  DATA : wa_layout TYPE slis_layout_alv.
+
+lw_fieldcat-col_pos = 1.
+lw_fieldcat-fieldname = 'VBELN'.
+lw_fieldcat-seltext_m = text-000.
+lw_fieldcat-icon = 'X'.
+APPEND lw_fieldcat TO lt_fieldcat.
+CLEAR lw_fieldcat.
+
+lw_fieldcat-col_pos = 2.
+lw_fieldcat-fieldname = 'ERDAT'.
+lw_fieldcat-seltext_m = text-001.
+lw_fieldcat-icon = 'X'.
+APPEND lw_fieldcat TO lt_fieldcat.
+CLEAR lw_fieldcat.
+
+lw_fieldcat-col_pos = 3.
+lw_fieldcat-fieldname = 'ERNAM'.
+lw_fieldcat-seltext_m = text-002.
+lw_fieldcat-icon = 'X'.
+APPEND lw_fieldcat TO lt_fieldcat.
+CLEAR lw_fieldcat.
+
+wa_layout-lights_fieldname = 'LIGHT'.
+*wa_layout-info_fieldname = 'LIGHT'.
+wa_layout-colwidth_optimize = 'X'.
+wa_layout-zebra = 'X'.
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+  EXPORTING
+    i_callback_top_of_page = 'TOP_OF_PAGE'
+    i_callback_program = sy-repid
+    is_layout          = wa_layout
+    it_fieldcat        = lt_fieldcat
+  TABLES
+    t_outtab           = lt
+  EXCEPTIONS
+    program_error      = 1
+    OTHERS             = 2.
+IF sy-subrc <> 0.
+  WRITE text-003.
+ENDIF.
+ENDFORM.
+
+FORM TOP_OF_PAGE.
+
+DATA : lt_logo TYPE slis_t_listheader.
+DATA : lw_logo TYPE slis_listheader.
+
+lw_logo-typ = 'H'.
+lw_logo-info = text-004.
+APPEND lw_logo to  lt_logo.
+CLEAR lw_logo.
+
+lw_logo-typ = 'S'.
+lw_logo-info = sy-uname.
+APPEND lw_logo to  lt_logo.
+CLEAR lw_logo.
+
+
+CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+  EXPORTING
+    it_list_commentary = lt_logo
+    i_logo             = 'ZLT_LOGO18'.
+ENDFORM.

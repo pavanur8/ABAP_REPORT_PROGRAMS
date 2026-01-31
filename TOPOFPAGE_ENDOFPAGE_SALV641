@@ -1,0 +1,115 @@
+*&---------------------------------------------------------------------*
+*& Report ZTOPOFPAGE_ENDOFPAGE_SALV641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztopofpage_endofpage_salv641.
+
+CLASS zcl_sales DEFINITION.
+  PUBLIC SECTION.
+    DATA o_salv TYPE REF TO cl_salv_table.
+    METHODS : build_salesorder,
+      disp_salesorder.
+  PRIVATE SECTION.
+    DATA : lt_vbak TYPE TABLE OF vbak.
+    METHODS : build_top_of_page CHANGING obj_salv TYPE REF TO cl_salv_table,
+      build_end_of_page CHANGING obj_salv TYPE REF TO cl_salv_table.
+ENDCLASS.
+
+CLASS zcl_sales IMPLEMENTATION.
+  METHOD build_salesorder.
+    SELECT *
+    FROM vbak
+    INTO TABLE lt_vbak
+    UP TO 20 ROWS.
+  ENDMETHOD.
+
+  METHOD disp_salesorder.
+    TRY.
+        cl_salv_table=>factory(
+        IMPORTING
+        r_salv_table   = o_salv    "Basis CLASS Simple alv TABLES
+        CHANGING
+        t_table        = lt_vbak
+        ).
+      CATCH cx_salv_msg.
+    ENDTRY.
+    me->build_top_of_page(
+    CHANGING
+    obj_salv = o_salv ).
+
+    me->build_end_of_page(
+    CHANGING
+    obj_salv = o_salv ).
+
+    o_salv->display( ).
+
+  ENDMETHOD.
+
+  METHOD build_top_of_page.
+
+    DATA : o_top   TYPE REF TO cl_salv_form_layout_grid,
+           o_label TYPE REF TO cl_salv_form_label,
+           o_flow  TYPE REF TO cl_salv_form_layout_flow.
+    CREATE OBJECT o_top.
+
+    o_top->create_label(
+    EXPORTING
+    row         =  1   "Natural Number
+    column      =  1   "Natural Number
+    RECEIVING
+    r_value     =  o_label ).
+
+    o_label->set_text( value = 'Sales Order Details' ).
+
+    o_top->create_flow(
+    EXPORTING
+    row     = 2    " Natural Number
+    column  =  1   " Natural Number
+    RECEIVING
+    r_value = o_flow ).
+
+    o_flow->create_text(
+    EXPORTING
+    text    = 'For the Month of 29-09-2025' ). "Dec-2013' ).
+
+    obj_salv->set_top_of_list( value =  o_top ).
+
+  ENDMETHOD.
+
+  METHOD build_end_of_page.
+
+    DATA : o_end   TYPE REF TO cl_salv_form_layout_grid,
+           o_label TYPE REF TO cl_salv_form_label,
+           o_flow  TYPE REF TO cl_salv_form_layout_flow.
+    CREATE OBJECT o_end.
+
+    o_end->create_label(
+    EXPORTING
+    row         =  1    "Natural Number
+    column      =  1    "Natural Number
+    RECEIVING
+    r_value     =  o_label ).
+    o_label->set_text( value = 'sap Labs India.' ).
+
+    o_end->create_flow(
+    EXPORTING
+    row     = 2    "Natural Number
+    column  =  1   "Natural Number
+    RECEIVING
+    r_value = o_flow ).
+    o_flow->create_text(
+    EXPORTING
+    text    = 'All rights reserved.' ).
+
+    obj_salv->set_end_of_list( value = o_end ).
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+*DATA(obj) = zcl_sales( ).
+  DATA obj TYPE REF TO zcl_sales.
+  CREATE OBJECT obj.
+  obj->build_salesorder( ).
+  obj->disp_salesorder( ).

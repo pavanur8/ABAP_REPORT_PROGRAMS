@@ -1,0 +1,43 @@
+*&---------------------------------------------------------------------*
+*& Report ZRFC_TEST_TRANSACTIONAL_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zrfc_test_transactional_641.
+
+DATA : lv_tid    TYPE arfctid,
+       lv_fnum   TYPE qretstate-qrfnum,
+       lv_flg    TYPE char1,
+       ls_struct TYPE zbsp001_tab_641.
+
+ls_struct-mandt = '100'.
+ls_struct-fname = 'Virat'.
+ls_struct-sname = 'Kholi'.
+ls_struct-dob = '19901105'.
+ls_struct-address = 'London'.
+
+CALL FUNCTION 'ZFM_CREATE_ZBSP001_TAB641'
+  EXPORTING
+    im_struct = ls_struct.
+
+IF  sy-subrc = 0.
+  CALL FUNCTION 'ID_OF_BACKGROUNDTASK'
+    EXPORTING
+      dest = 'NONE'
+    IMPORTING
+      tid  = lv_tid
+      fnum = lv_fnum.
+
+  IF lv_tid IS INITIAL."IS NOT INITIAL..
+    WRITE : 'tRFC' COLOR COL_HEADING.
+    WRITE : 'ENTRY CREATED SUCCESSFULLY - TID : ', lv_tid COLOR COL_KEY.
+    CLEAR ls_struct.
+    COMMIT WORK. "Important to get TID in SM58 view
+  ELSE.
+    WRITE : 'ENTRY CREATION FAILED' COLOR COL_BACKGROUND.
+    CLEAR ls_struct.      ROLLBACK WORK.
+  ENDIF.
+
+ENDIF.
+
+CLEAR : lv_tid, lv_fnum, lv_flg, ls_struct.

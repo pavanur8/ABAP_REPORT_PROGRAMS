@@ -1,0 +1,13 @@
+*&---------------------------------------------------------------------*
+*& Report ZWARNINGFM641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZWARNINGFM641.
+CALL FUNCTION 'POPUP_WITH_WARNING'
+  EXPORTING
+    textline1       = 'Some Important info miss'
+   TEXTLINE2       = 'Still Want to continue '
+   TITEL           = 'Warnung'.
+
+WRITE 'Procced afterwarining popup'.

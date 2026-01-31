@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRO_UNORDERED_LIST_POPUP_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zpro_unordered_list_popup_641.
+
+CONSTANTS: newline VALUE cl_abap_char_utilities=>newline,
+           maxlen  TYPE i VALUE 57.
+
+DATA: question  TYPE string,
+      answer(1).
+
+question &&=:
+  |If you click Yes, the following steps will be performed:| , newline,
+  |• Check incompleteness|                                   , newline,
+  |• Verify the data|                                        , newline,
+  |• Update the document|                                    , newline,
+  |• Log the errors|                                         , newline.
+
+
+SPLIT question AT newline INTO TABLE DATA(segments).
+CLEAR question.
+
+LOOP AT segments ASSIGNING FIELD-SYMBOL(<segment>).
+  DO COND #( WHEN strlen( <segment> ) EQ maxlen THEN 1 ELSE ( maxlen - strlen( <segment> ) ) ) TIMES.
+    <segment> &&= | |.
+  ENDDO.
+  question &&= <segment>.
+ENDLOOP.
+
+question &&= newline.
+
+CALL FUNCTION 'POPUP_TO_CONFIRM'
+  EXPORTING
+    text_question       = question
+    userdefined_f1_help = '_'
+  IMPORTING
+    answer              = answer
+  EXCEPTIONS
+    OTHERS              = 2.

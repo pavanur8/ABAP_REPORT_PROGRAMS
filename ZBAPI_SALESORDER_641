@@ -1,0 +1,84 @@
+*&---------------------------------------------------------------------*
+*& Report ZBAPI_SALESORDER_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zbapi_salesorder_641.
+
+DATA : header LIKE bapisdhd1 .
+DATA : headerx LIKE bapisdhd1x .
+DATA : i_partners TYPE TABLE OF bapiparnr .
+DATA : wa_partners TYPE  bapiparnr .
+DATA : v_vbeln TYPE vbak-vbeln .
+DATA : i_return TYPE TABLE OF bapiret2 .
+DATA : wa_return TYPE bapiret2 .
+
+
+*********HRADER INFORMATION
+header-doc_type = 'TA'.
+header-sales_org = '1000'.
+header-distr_chan = '12'.
+header-division = '00' .
+
+headerx-doc_type = 'X'.
+headerx-sales_org = 'X'.
+headerx-distr_chan = 'X'.
+headerx-division = 'X' .
+**************PARTNER INFORMATION
+wa_partners-partn_role = 'AG' .
+wa_partners-partn_numb = '0000001175' .
+APPEND wa_partners TO i_partners .
+
+CALL FUNCTION 'BAPI_SALESORDER_CREATEFROMDAT2'
+  EXPORTING
+*   SALESDOCUMENTIN  =
+    order_header_in  = header
+    order_header_inx = headerx
+*   SENDER           =
+*   BINARY_RELATIONSHIPTYPE       =
+*   INT_NUMBER_ASSIGNMENT         =
+*   BEHAVE_WHEN_ERROR             =
+*   LOGIC_SWITCH     =
+*   TESTRUN          =
+*   CONVERT          = ' '
+  IMPORTING
+    salesdocument    = v_vbeln
+  TABLES
+    return           = i_return
+*   ORDER_ITEMS_IN   =
+*   ORDER_ITEMS_INX  =
+    order_partners   = i_partners
+*   ORDER_SCHEDULES_IN            =
+*   ORDER_SCHEDULES_INX           =
+*   ORDER_CONDITIONS_IN           =
+*   ORDER_CONDITIONS_INX          =
+*   ORDER_CFGS_REF   =
+*   ORDER_CFGS_INST  =
+*   ORDER_CFGS_PART_OF            =
+*   ORDER_CFGS_VALUE =
+*   ORDER_CFGS_BLOB  =
+*   ORDER_CFGS_VK    =
+*   ORDER_CFGS_REFINST            =
+*   ORDER_CCARD      =
+*   ORDER_TEXT       =
+*   ORDER_KEYS       =
+*   EXTENSIONIN      =
+*   PARTNERADDRESSES =
+  .
+
+IF v_vbeln  IS NOT INITIAL .
+  WRITE : / v_vbeln ,  'IS CREATED ' .
+  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+    EXPORTING
+      wait = 'X'.
+
+ELSE.
+  CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'
+*     IMPORTING
+*       RETURN        =
+    .
+
+  LOOP  AT i_return INTO wa_return .
+    WRITE : / wa_return-message .
+  ENDLOOP .
+ENDIF .

@@ -1,0 +1,61 @@
+*&---------------------------------------------------------------------*
+*& Report ZCDS_SELECT_OPTIONS_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zcds_select_options_641.
+
+TABLES : ekpo.
+SELECT-OPTIONS : s_ebeln FOR ekpo-ebeln.
+
+DATA lv_alv TYPE REF TO if_salv_gui_table_ida.
+
+*DATA lo_select_options  TYPE REF TO cl_salv_range_tab_collector.
+*
+*lo_select_options = cl_salv_gui_tab_collector=>get_instance( ).
+
+TRY.
+    CALL METHOD cl_salv_gui_table_ida=>create_for_cds_view
+      EXPORTING
+        iv_cds_view_name     = 'ZCONSUMPTION_VIEW641'
+*       io_gui_container     =
+*       io_calc_field_handler =
+      RECEIVING
+        ro_alv_gui_table_ida = lv_alv.
+  CATCH cx_salv_db_connection.
+  CATCH cx_salv_db_table_not_supported.
+  CATCH cx_salv_ida_contract_violation.
+  CATCH cx_salv_function_not_supported.
+ENDTRY.
+
+DATA(lo_select_options) = NEW cl_salv_range_tab_collector( ).
+
+CALL METHOD lo_select_options->add_ranges_for_name
+  EXPORTING
+    iv_name   = 'EBELN'
+    it_ranges = s_ebeln[].
+
+CALL METHOD lo_select_options->get_collected_ranges
+  IMPORTING
+    et_named_ranges = DATA(lt_select_options).
+
+TRY.
+    CALL METHOD lv_alv->set_select_options
+      EXPORTING
+        it_ranges = lt_select_options
+*       io_condition =
+      .
+  CATCH cx_salv_ida_associate_invalid. " Superclass for all dynamic ALV IDA exceptions
+  CATCH cx_salv_db_connection.         " Error connecting to database
+  CATCH cx_salv_ida_condition_invalid. " Superclass for all dynamic ALV IDA exceptions
+  CATCH cx_salv_ida_unknown_name.      " Unknown name: FieldName,DataElementName,...
+ENDTRY.
+
+TRY.
+    CALL METHOD lv_alv->fullscreen
+      RECEIVING
+        ro_fullscreen = DATA(lo_display).
+  CATCH cx_salv_ida_contract_violation. " IDA API contract violated by caller
+ENDTRY.
+
+lo_display->display( ).

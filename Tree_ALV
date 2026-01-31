@@ -1,0 +1,134 @@
+REPORT zalv_tree_641.
+
+TYPE-POOLS slis.
+
+TYPES : BEGIN OF ty_scarr,
+          carrid   TYPE scarr-carrid,
+          carrname TYPE scarr-carrname,
+        END OF ty_scarr.
+
+TYPES : BEGIN OF ty_spfli,
+          carrid TYPE spfli-carrid,
+          connid TYPE spfli-connid,
+        END OF ty_spfli.
+
+TYPES : BEGIN OF ty_sflight,
+          carrid TYPE sflight-carrid,
+          connid TYPE sflight-connid,
+          fldate TYPE sflight-fldate,
+        END OF ty_sflight.
+
+DATA itab_scarr TYPE TABLE OF ty_scarr.
+DATA wa_scarr TYPE ty_scarr.
+DATA itab_spfli TYPE TABLE OF ty_spfli.
+DATA wa_spfli TYPE ty_spfli.
+DATA itab_sflight TYPE TABLE OF ty_sflight.
+DATA wa_sflight TYPE ty_sflight.
+DATA itab_node  TYPE TABLE OF snodetext.
+DATA wa_node  TYPE  snodetext.
+
+START-OF-SELECTION.
+  PERFORM data_fetch.
+  PERFORM build_tree.
+  PERFORM display_tree.
+
+FORM data_fetch .
+  SELECT carrid carrname
+     FROM scarr
+    INTO TABLE itab_scarr.
+  IF itab_scarr IS NOT INITIAL.
+    SELECT carrid connid
+      FROM spfli INTO TABLE itab_spfli
+      FOR ALL ENTRIES IN itab_scarr
+      WHERE carrid = itab_scarr-carrid.
+    IF itab_spfli IS  NOT INITIAL.
+      SELECT carrid connid
+      FROM sflight
+      INTO TABLE itab_sflight
+      FOR ALL ENTRIES IN itab_spfli
+      WHERE carrid = itab_spfli-carrid AND connid = itab_spfli-connid.
+    ENDIF.
+  ENDIF.
+  SORT : itab_scarr BY carrid,
+          itab_spfli BY carrid connid,
+          itab_sflight BY carrid connid fldate.
+ENDFORM.
+
+FORM build_tree .
+  CLEAR : itab_node,wa_node.
+  "Root Node
+  wa_node-type = 'T'.
+  wa_node-name = 'Airline'.
+  wa_node-tlevel = '01'.
+  wa_node-nlength = '23'.
+  wa_node-color = '05'.
+
+  wa_node-text = 'CARRER ID'.
+  wa_node-tlength1 = '15'.
+  wa_node-tcolor1 = '05'.
+  wa_node-text = 'CARRER NAME '.
+  wa_node-tlength1 = '20'.
+  wa_node-tcolor1 = '05'.
+  APPEND wa_node TO itab_node.
+  CLEAR wa_node.
+
+  LOOP AT itab_scarr INTO wa_scarr.
+    wa_node-name = 'CARRID'.
+    wa_node-tlevel = '02'.
+    wa_node-nlength = '15'.
+    wa_node-color = '06'.
+    wa_node-text = wa_scarr-carrid.
+    wa_node-tlength = '20'.
+    wa_node-tcolor = '06'.
+    wa_node-text = wa_scarr-carrname.
+    wa_node-tlength = '04'.
+    wa_node-tcolor = '06'.
+    APPEND wa_node TO itab_node.
+    CLEAR wa_node.
+
+
+    LOOP AT itab_spfli INTO wa_spfli WHERE carrid = wa_scarr-carrid.
+      wa_node-name = 'CONNID'.
+      wa_node-tlevel = '03'.
+      wa_node-nlength = '06'.
+      wa_node-color = '04'.
+      wa_node-text = wa_spfli-connid.
+      wa_node-tlength = '04'.
+      wa_node-tcolor = '04'.
+      APPEND wa_node TO itab_node.
+      CLEAR wa_node.
+
+      LOOP AT itab_sflight INTO wa_sflight .
+        wa_node-name = 'FLDATE'.
+        wa_node-tlevel = '04'.
+        wa_node-nlength = '04'.
+        wa_node-text = wa_sflight-fldate.
+        wa_node-tlength = '10'.
+        wa_node-tcolor = '04'.
+        APPEND wa_node TO itab_node.
+        CLEAR wa_node.
+      ENDLOOP.
+    ENDLOOP.
+  ENDLOOP.
+
+ENDFORM.
+
+FORM display_tree .
+
+  CALL FUNCTION 'RS_TREE_CONSTRUCT'
+    TABLES
+      nodetab            = itab_node
+    EXCEPTIONS
+      tree_failure       = 1
+      id_not_found       = 2
+      wrong_relationship = 3
+      OTHERS             = 4.
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  CALL FUNCTION 'RS_TREE_LIST_DISPLAY'
+    EXPORTING
+      callback_program = sy-cprog.
+
+ENDFORM.

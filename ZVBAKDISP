@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*& Include          ZVBAKDISP
+*&---------------------------------------------------------------------*
+ SELECT vbeln erdat erzet ernam vbtyp
+  FROM vbak
+  INTO TABLE itab
+  WHERE vbeln IN svbeln.
+
+
+ TRY.
+     CALL METHOD cl_salv_table=>factory
+       IMPORTING
+         r_salv_table = lo_alv
+       CHANGING
+         t_table      = itab.
+   CATCH cx_salv_msg.
+ ENDTRY.
+
+ CALL METHOD lo_alv->if_salv_gui_om_table_info~get_event
+   RECEIVING
+     value = lo_event.
+
+ DATA(lo_obj) = NEW clas( ).
+ SET HANDLER lo_obj->handler FOR lo_event.
+
+ CALL METHOD lo_alv->if_salv_gui_om_table_action~display.

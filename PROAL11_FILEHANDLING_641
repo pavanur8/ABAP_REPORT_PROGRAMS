@@ -1,0 +1,36 @@
+*&---------------------------------------------------------------------*
+*& Report ZPROAL11_FILEHANDLING_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zproal11_filehandling_641.
+
+TYPES : BEGIN OF ts_zemployedetail,
+          emp_id     TYPE zemployedetail-emp_id,
+          first_name TYPE zemployedetail-first_name,
+          last_name  TYPE zemployedetail-last_name,
+          phone_no   TYPE zemployedetail-phone_no,
+          address    TYPE zemployedetail-address,
+        END OF ts_zemployedetail.
+
+DATA itab TYPE TABLE OF zemployedetail.
+DATA wa TYPE zemployedetail.
+DATA lv_eid TYPE zemp_id.
+DATA lv_filename(28) TYPE c VALUE '/temp/emp.txt'.
+DATA lv_string TYPE string.
+
+SELECT-OPTIONS s_eid FOR lv_eid.
+
+SELECT emp_id first_name last_name phone_no address ctc
+FROM zemployedetail
+INTO TABLE itab
+WHERE emp_id IN s_eid.
+
+OPEN DATASET lv_filename  FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+IF sy-subrc = 0.
+  LOOP AT itab INTO wa.
+    CONCATENATE wa-emp_id wa-first_name wa-last_name wa-phone_no wa-address  INTO lv_string SEPARATED BY  '#'.
+    TRANSFER lv_string TO lv_filename.
+  ENDLOOP.
+  CLOSE DATASET lv_filename.
+ENDIF.

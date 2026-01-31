@@ -1,0 +1,103 @@
+*&---------------------------------------------------------------------*
+*& Include          ZCLASSDEFINE_IMPLEMENTATION
+*&---------------------------------------------------------------------*
+PARAMETERS p_vbeln TYPE vbak-vbeln.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS all_details.
+
+  PROTECTED SECTION.
+
+    METHODS:
+      fetch_data IMPORTING pvbeln TYPE vbeln_va,
+      display_data.
+
+  PRIVATE SECTION.
+    TYPES:
+      BEGIN OF ls,
+        vbeln TYPE vbak-vbeln,
+        erzet TYPE vbak-erzet,
+        erdat TYPE vbak-erdat,
+        ernam TYPE vbak-ernam,
+        vbtyp TYPE vbak-vbtyp,
+      END OF ls.
+    TYPES lt TYPE STANDARD TABLE OF ls WITH DEFAULT KEY.
+
+    DATA it_data TYPE lt.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+
+  METHOD all_details.
+    me->fetch_data( p_vbeln ).
+    me->display_data( ).
+  ENDMETHOD.
+
+  METHOD fetch_data.
+    SELECT vbeln, erzet, erdat, ernam, vbtyp
+      FROM vbak
+      INTO TABLE @me->it_data
+      WHERE vbeln = @pvbeln.
+
+      IF sy-subrc ne 0.
+        WRITE text-001.
+      ENDIF.
+  ENDMETHOD.
+
+  METHOD display_data.
+    DATA: wa_fieldcat   TYPE lvc_s_fcat,
+          itab_fieldcat TYPE lvc_t_fcat,
+          lo_object     TYPE REF TO cl_gui_custom_container,
+          lo_grid       TYPE REF TO cl_gui_alv_grid.
+
+    CLEAR itab_fieldcat.
+
+    wa_fieldcat-col_pos = 1.
+    wa_fieldcat-fieldname = 'VBELN'.
+    wa_fieldcat-scrtext_l = 'Sales Document Number'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = 2.
+    wa_fieldcat-fieldname = 'ERDAT'.
+    wa_fieldcat-scrtext_l = 'Creation Date'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = 3.
+    wa_fieldcat-fieldname = 'ERZET'.
+    wa_fieldcat-scrtext_l = 'Time'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = 4.
+    wa_fieldcat-fieldname = 'ERNAM'.
+    wa_fieldcat-scrtext_l = 'Name'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    wa_fieldcat-col_pos = 5.
+    wa_fieldcat-fieldname = 'VBTYP'.
+    wa_fieldcat-scrtext_l = 'Document Type'.
+    APPEND wa_fieldcat TO itab_fieldcat.
+    CLEAR wa_fieldcat.
+
+    CREATE OBJECT lo_object
+      EXPORTING
+        container_name = 'CNT'.
+
+    CREATE OBJECT lo_grid
+      EXPORTING
+        i_parent = lo_object.
+
+    CALL METHOD lo_grid->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'LS'
+      CHANGING
+        it_outtab        = me->it_data
+        it_fieldcatalog  = itab_fieldcat.
+
+  ENDMETHOD.
+
+ENDCLASS.

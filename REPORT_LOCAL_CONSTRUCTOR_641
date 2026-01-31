@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG12_LOCAL_CONSTRUCTOR_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg12_local_constructor_641.
+
+CLASS class1 DEFINITION.
+  PUBLIC SECTION.
+    METHODS constrUctor.
+    METHODS get.
+    CLASS-METHODS class_constructor1.
+    CLASS-METHODS class_constructor2.
+ENDCLASS.
+
+CLASS class1 IMPLEMENTATION.
+
+  METHOD class_constructor2.
+    WRITE : / ' 222 SStatic Constructor is triggered'.
+  ENDMETHOD.
+  METHOD constrUctor.
+    WRITE : / 'Insance  Constructor Triggered'.
+  ENDMETHOD.
+  METHOD get.
+    WRITE : / 'Get Method Triggered'.
+  ENDMETHOD.
+  METHOD class_constructor1.
+    WRITE : / 'Static Constructor is triggered'.
+  ENDMETHOD.
+ENDCLASS.
+
+
+START-OF-SELECTION.
+
+  DATA(obj1) = NEW class1( ).
+  DATA(obj2) = NEW class1( ).
+
+*  obj1->get( ).
+
+*  class1=>class_constructor1( ).
+  class1=>class_constructor2( ).

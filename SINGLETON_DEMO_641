@@ -1,0 +1,109 @@
+*&---------------------------------------------------------------------*
+*& Report ZSINGLETON_DEMO_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsingleton_demo_641.
+
+TABLES zemployeeid641.
+DATA : lt_ZEMPLOYEEID641 TYPE TABLE OF zemployeeid641 WITH HEADER LINE.
+DATA : logn_count TYPE i .
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001 NO INTERVALS.
+  SELECTION-SCREEN SKIP.
+  PARAMETERS p_id TYPE zemployeeid641-empid.
+  SELECTION-SCREEN SKIP.
+  PARAMETERS p_pwd TYPE zemployeeid641-empid.
+  SELECTION-SCREEN SKIP.
+  SELECTION-SCREEN BEGIN OF LINE.
+    SELECTION-SCREEN PUSHBUTTON 15(15) login USER-COMMAND login.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN SKIP.
+SELECTION-SCREEN END OF BLOCK b1.
+
+INITIALIZATION.
+  login = 'Log in'.
+
+CLASS singleton_demo DEFINITION CREATE PRIVATE.
+  PUBLIC SECTION.
+    CLASS-DATA : obj TYPE REF TO singleton_demo.
+
+    CLASS-METHODS : get_obj RETURNING VALUE(ret_obj) TYPE REF TO singleton_demo.
+
+    METHODS : instance_meth.
+
+ENDCLASS.
+*&---------------------------------------------------------------------*
+*& Class (Implementation) singleton_demo
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+CLASS singleton_demo IMPLEMENTATION.
+  METHOD get_obj.
+    IF obj IS NOT BOUND.
+      CREATE OBJECT obj.
+      ret_obj = obj.
+    ELSE.
+      ret_obj = obj.
+    ENDIF.
+  ENDMETHOD.
+  METHOD instance_meth.
+
+  ENDMETHOD.
+ENDCLASS.
+
+AT SELECTION-SCREEN.
+  IF sy-ucomm = 'LOGIN' OR  sy-ucomm = ' '.
+    IF p_id IS NOT INITIAL.
+      IF p_id CA '1243567890'.
+        SET CURSOR FIELD 'P_ID'.
+        MESSAGE 'Numbers are not allowed' TYPE 'E'.
+      ELSEIF p_id CA '!@#~`$%^&*()-=_+[]\;,./<>?:"{}|'.
+        MESSAGE ' Special Character is not allowed' TYPE 'E'.
+      ENDIF.
+    ELSE.
+      SET CURSOR FIELD 'P_ID'.
+      MESSAGE ' Enter the Customer id ' TYPE 'E'.
+    ENDIF.                                                     "id validation
+    "------------------------------------------------------------------------------
+    IF p_pwd IS NOT INITIAL.
+      IF p_pwd NA '1234567890'.
+        SET CURSOR FIELD 'P_PWD'.
+        MESSAGE 'Password should contains atleast one number' TYPE 'E'.
+      ELSEIF p_pwd NA '!@#~`$%^&*()-=_+[]\;,./<>?:"{}|'.
+        SET CURSOR FIELD 'P_PWD'.
+        MESSAGE 'Password should contains atleast one Special Character' TYPE 'E'.
+      ENDIF.
+    ELSE.
+      SET CURSOR FIELD 'P_PWD'.
+      MESSAGE ' Enter the password ' TYPE 'E'.
+    ENDIF.                                                    "Password validation
+    "----------------------------------------------------------------------------------
+    CLEAR lt_ZEMPLOYEEID641.
+    SELECT SINGLE empid empname empdepartment FROM zemployeeid641
+                                   INTO lt_ZEMPLOYEEID641
+                                  WHERE empid = p_id AND empname = p_pwd.
+
+    IF lt_ZEMPLOYEEID641 IS NOT INITIAL.
+      IF lt_ZEMPLOYEEID641-empid = p_id AND lt_ZEMPLOYEEID641-empname = p_pwd.
+        IF logn_count > 1.
+          CLEAR logn_count.
+        ENDIF.
+        IF logn_count < 1.
+          logn_count = logn_count + 1 .
+          DATA(obj) = singleton_demo=>get_obj( ).
+          MESSAGE 'Log in Successfully..' TYPE 'S'.
+        ELSE.
+          CLEAR logn_count.
+          MESSAGE 'Already logged in..' TYPE 'S'.
+        ENDIF.
+      ENDIF.
+    ELSE.
+      IF logn_count <= 3.
+        logn_count = logn_count + 1 .
+        SET CURSOR FIELD 'P_PWD'.
+        MESSAGE 'Please enter the valid credentials' TYPE 'E'.
+      ENDIF.
+      MESSAGE 'triels limit exceded,Please try again later' TYPE 'A'.
+    ENDIF.
+  ENDIF.

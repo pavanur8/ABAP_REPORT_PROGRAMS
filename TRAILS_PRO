@@ -1,0 +1,24 @@
+*&---------------------------------------------------------------------*
+*& Report ZTRAILS_PRO
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZTRAILS_PRO.
+*SYSTEM FIELDS
+WRITE : / sy-uline,sy-mandt,
+        /  sy-vline, sy-uname,
+         / sy-vline,sy-langu,
+         / sy-vline,sy-host,
+         / sy-datum,
+         / sy-datlo,
+         / sy-uzeit,
+         / sy-timlo,
+         sy-vline,
+         / sy-pagno,
+         / sy-linno,
+         / sy-colno,
+         / sy-index,
+         / sy-cprog,
+         / sy-repid,
+         / sy-subrc,
+         / sy-dbcnt.

@@ -1,0 +1,49 @@
+*&---------------------------------------------------------------------*
+*& Report ZPRG_SELECT_NEWSYNTAX_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zprg_select_newsyntax_641.
+
+*SELECT * FROM sflight INTO TABLE @DATA(itab). "Selecting All the Values From a table..
+
+
+*SELECT carrid,connid,fldate,price FROM sflight INTO TABLE @DATA(itab)."Selecting required fields from table
+
+
+*SELECT carrid AS Airline_Code, "Giving Alias Name to the table fields.
+*       connid AS Flight_Connection_Number,
+*       fldate AS Flight_date,
+*        price,
+*       seatsmax AS Max_Seats,
+*        CASE
+*        WHEN seatsmax > 150
+*        THEN 'MAX' END AS status
+*       FROM sflight INTO TABLE @DATA(itab).
+
+
+
+*SELECT carrid AS Airline_Code, "Aggerigate Functions
+*     connid,
+*      price,
+*      currency,
+*    seatsmax AS Max_Seats,
+*      CASE
+*      WHEN currency = 'DEM'
+*      THEN price + 100 END AS Total_Price,
+*      CASE
+*      WHEN seatsmax > 150
+*      THEN 'MAX' END AS status
+*     FROM sflight INTO TABLE @DATA(itab).
+
+DATA carrid TYPE sflight-carrid.
+*PARAMETERS p_carrid TYPE sflight-carrid.
+
+cl_demo_input=>request( CHANGING field = carrid ).
+
+SELECT carrid,connid,fldate,price,currency,planetype,seatsmax,paymentsum
+FROM sflight
+WHERE carrid = @carrid
+INTO TABLE @DATA(itab).
+
+cl_demo_output=>display( itab ).

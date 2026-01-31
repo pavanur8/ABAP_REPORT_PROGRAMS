@@ -1,0 +1,39 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTATIC_METHOD_641
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zstatic_method_641.
+
+CLASS zcl_demo DEFINITION.
+  PUBLIC SECTION.
+    METHODS instance_method.
+    CLASS-METHODS static_method.
+ENDCLASS.
+
+CLASS zcl_demo IMPLEMENTATION.
+  METHOD instance_method.
+    WRITE 'This is Instance Method' COLOR 3.
+  ENDMETHOD.
+
+  METHOD static_method.
+    DATA(obj) = NEW zcl_demo( ).
+    obj->instance_method( ).
+  ENDMETHOD.
+ENDCLASS.
+
+*CLASS zcl_demo1 DEFINITION INHERITING FROM zcl_demo.
+*  PUBLIC SECTION.
+*    METHODS instance_method REDEFINITION.
+*ENDCLASS.
+*
+*CLASS zcl_demo1 IMPLEMENTATION.
+*  METHOD instance_method.
+*    zcl_demo=>static_method( ).
+*  ENDMETHOD.
+*ENDCLASS.
+
+START-OF-SELECTION.
+  zcl_demo=>static_method( ).
+*DATA(obj) = NEW zcl_demo1( ).
+*obj->instance_method( ).
